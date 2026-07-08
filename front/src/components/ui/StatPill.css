@@ -1,0 +1,26 @@
+.statpill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px 5px 9px;
+  border-radius: var(--r-pill);
+  font-size: var(--text-sm);
+  font-weight: 800;
+  line-height: 1;
+}
+.statpill__value {
+  font-size: var(--text-base);
+}
+
+.statpill--accent {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+.statpill--primary {
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+.statpill--success {
+  background: var(--success-soft);
+  color: oklch(0.42 0.13 150);
+}

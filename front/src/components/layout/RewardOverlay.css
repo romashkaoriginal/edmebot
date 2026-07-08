@@ -1,0 +1,71 @@
+.reward {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-toast);
+  display: grid;
+  place-items: center;
+  background: oklch(0.22 0.03 260 / 0.28);
+  backdrop-filter: blur(3px);
+  padding: var(--sp-5);
+}
+
+.reward__card {
+  background: var(--surface);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-lg);
+  padding: var(--sp-6) var(--sp-7);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 240px;
+}
+.reward__card--levelup {
+  background: linear-gradient(160deg, var(--surface), var(--primary-soft));
+}
+
+.reward__burst {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+  color: var(--on-primary);
+  box-shadow: var(--shadow-primary);
+}
+
+.reward__title {
+  font-size: var(--text-xl);
+  color: var(--ink);
+}
+.reward__level {
+  font-size: 3.5rem;
+  line-height: 1;
+  color: var(--primary);
+}
+
+.reward__gains {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.reward__gain {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: var(--r-pill);
+  font-weight: 800;
+  font-size: var(--text-base);
+}
+.reward__gain--xp {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+.reward__gain--coins {
+  background: var(--warning-soft);
+  color: oklch(0.48 0.11 75);
+}

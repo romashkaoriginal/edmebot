@@ -1,0 +1,10 @@
+.sectiontitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+.sectiontitle h2 {
+  font-size: var(--text-lg);
+}

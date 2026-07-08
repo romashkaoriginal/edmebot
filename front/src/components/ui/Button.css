@@ -1,0 +1,114 @@
+.btn {
+  --_bg: var(--primary);
+  --_fg: var(--on-primary);
+  --_bg-hover: var(--primary-strong);
+  --_shadow: var(--shadow-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  font-weight: 800;
+  border-radius: var(--r-md);
+  background: var(--_bg);
+  color: var(--_fg);
+  white-space: nowrap;
+  transition:
+    transform var(--dur-press) var(--ease-out),
+    background-color var(--dur-pop) var(--ease-out),
+    box-shadow var(--dur-pop) var(--ease-out),
+    filter var(--dur-pop) var(--ease-out);
+  position: relative;
+  isolation: isolate;
+  min-height: 44px;
+  padding-inline: var(--sp-5);
+  box-shadow: var(--_shadow);
+}
+
+.btn__content {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.btn--sm {
+  min-height: 36px;
+  padding-inline: var(--sp-4);
+  font-size: var(--text-sm);
+  border-radius: var(--r-sm);
+}
+.btn--lg {
+  min-height: 54px;
+  padding-inline: var(--sp-6);
+  font-size: var(--text-md);
+  border-radius: var(--r-lg);
+}
+.btn--full {
+  width: 100%;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover:not(:disabled) {
+    background: var(--_bg-hover);
+  }
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Variants */
+.btn--accent {
+  --_bg: var(--accent);
+  --_fg: var(--on-accent);
+  --_bg-hover: var(--accent-strong);
+  --_shadow: var(--shadow-accent);
+}
+
+.btn--danger {
+  --_bg: var(--danger);
+  --_fg: var(--on-solid);
+  --_bg-hover: oklch(0.52 0.2 25);
+  --_shadow: none;
+}
+
+.btn--soft {
+  --_bg: var(--primary-soft);
+  --_fg: var(--primary-strong);
+  --_bg-hover: oklch(0.9 0.04 258);
+  --_shadow: none;
+}
+
+.btn--ghost {
+  --_bg: transparent;
+  --_fg: var(--ink);
+  --_bg-hover: var(--surface-2);
+  --_shadow: none;
+}
+
+/* Loading spinner */
+.btn[data-loading] .btn__content {
+  opacity: 0;
+}
+.btn__spinner {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin 0.6s linear infinite;
+}
+
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

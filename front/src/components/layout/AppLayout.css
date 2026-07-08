@@ -1,0 +1,175 @@
+.app {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+}
+
+/* ---------- Sidebar (desktop) ---------- */
+.app__sidebar {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  padding: var(--sp-5) var(--sp-4);
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+}
+.app__brand {
+  padding: var(--sp-2) var(--sp-2) 0;
+}
+.app__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+.navitem {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 11px var(--sp-3);
+  border-radius: var(--r-md);
+  color: var(--muted);
+  font-weight: 700;
+  transition:
+    background-color var(--dur-pop) var(--ease-out),
+    color var(--dur-pop) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .navitem:hover {
+    background: var(--surface-2);
+    color: var(--ink);
+  }
+}
+.navitem.active {
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+.app__sidebar-foot {
+  padding: var(--sp-2);
+}
+.app__subject {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--muted);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--surface-2);
+  border-radius: var(--r-pill);
+  text-align: center;
+}
+
+/* ---------- Main column ---------- */
+.app__main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.app__header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  height: var(--header-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: 0 var(--sp-5);
+  background: oklch(0.985 0.004 250 / 0.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.app__header-brand {
+  display: none;
+}
+.app__stats {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-left: auto;
+}
+.app__level {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+  color: var(--on-primary);
+  box-shadow: var(--shadow-primary);
+}
+.app__level-num {
+  font-size: var(--text-base);
+  line-height: 1;
+}
+
+.app__content {
+  flex: 1;
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--sp-6) var(--sp-5) var(--sp-8);
+}
+
+/* ---------- Bottom tab bar (mobile) ---------- */
+.app__tabbar {
+  display: none;
+}
+
+/* ---------- Focus mode ---------- */
+.app--focus .app__sidebar,
+.app--focus .app__tabbar {
+  display: none;
+}
+.app--focus.app {
+  grid-template-columns: 1fr;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 860px) {
+  .app {
+    grid-template-columns: 1fr;
+  }
+  .app__sidebar {
+    display: none;
+  }
+  .app__header-brand {
+    display: block;
+  }
+  .app__content {
+    padding: var(--sp-5) var(--sp-4);
+    padding-bottom: calc(var(--tabbar-h) + var(--sp-6));
+  }
+  .app__tabbar {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: var(--z-sticky);
+    height: var(--tabbar-h);
+    background: oklch(1 0 0 / 0.92);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  .tabitem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 700;
+    transition: color var(--dur-pop) var(--ease-out);
+  }
+  .tabitem span {
+    line-height: 1;
+  }
+  .tabitem.active {
+    color: var(--primary);
+  }
+}
