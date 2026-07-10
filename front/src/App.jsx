@@ -1,5 +1,7 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import AppLayout from "./components/layout/AppLayout";
+import AdminLayout from "./components/layout/AdminLayout";
+import RoleGate from "./pages/RoleGate";
 import Dashboard from "./pages/Dashboard";
 import Practice from "./pages/Practice";
 import PracticeRun from "./pages/PracticeRun";
@@ -8,11 +10,19 @@ import DiagnosticRun from "./pages/DiagnosticRun";
 import Homework from "./pages/Homework";
 import Pet from "./pages/Pet";
 import Profile from "./pages/Profile";
+import Students from "./pages/admin/Students";
+import Tasks from "./pages/admin/Tasks";
+import HomeworkAdmin from "./pages/admin/HomeworkAdmin";
+import Stats from "./pages/admin/Stats";
 
 export default function App() {
   return (
     <Routes>
-      <Route element={<AppLayout />}>
+      {/* Entry: choose admin or demo student */}
+      <Route index element={<RoleGate />} />
+
+      {/* Student app */}
+      <Route path="app" element={<AppLayout />}>
         <Route index element={<Dashboard />} />
         <Route path="practice" element={<Practice />} />
         <Route path="practice/run" element={<PracticeRun />} />
@@ -22,6 +32,17 @@ export default function App() {
         <Route path="pet" element={<Pet />} />
         <Route path="profile" element={<Profile />} />
       </Route>
+
+      {/* Admin panel */}
+      <Route path="admin" element={<AdminLayout />}>
+        <Route index element={<Navigate to="students" replace />} />
+        <Route path="students" element={<Students />} />
+        <Route path="tasks" element={<Tasks />} />
+        <Route path="homework" element={<HomeworkAdmin />} />
+        <Route path="stats" element={<Stats />} />
+      </Route>
+
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

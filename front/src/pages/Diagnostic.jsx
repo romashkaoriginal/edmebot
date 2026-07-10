@@ -36,7 +36,7 @@ export default function Diagnostic() {
             <span>Можно ответить «не знаю»</span>
           </li>
         </ul>
-        <Button as={Link} to="/diagnostic/run" size="lg" icon={ArrowRight}>
+        <Button as={Link} to="/app/diagnostic/run" size="lg" icon={ArrowRight}>
           {profile.diagnosticDone ? "Пройти заново" : "Начать тест"}
         </Button>
       </Card>

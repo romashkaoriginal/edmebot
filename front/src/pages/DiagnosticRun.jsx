@@ -48,10 +48,10 @@ export default function DiagnosticRun() {
             <KnowledgeMap topics={resultTopics} />
           </div>
           <div className="run__result-actions">
-            <Button variant="soft" onClick={() => navigate("/")}>
+            <Button variant="soft" onClick={() => navigate("/app")}>
               На главную
             </Button>
-            <Button icon={ArrowRight} onClick={() => navigate("/practice/run")}>
+            <Button icon={ArrowRight} onClick={() => navigate("/app/practice/run")}>
               Начать практику
             </Button>
           </div>
@@ -63,7 +63,7 @@ export default function DiagnosticRun() {
   return (
     <div className="run">
       <header className="run__top">
-        <button className="run__close" onClick={() => navigate("/diagnostic")} aria-label="Выйти">
+        <button className="run__close" onClick={() => navigate("/app/diagnostic")} aria-label="Выйти">
           <X size={22} strokeWidth={2.4} />
         </button>
         <div className="run__progress">

@@ -1,27 +1,46 @@
-import { useState } from "react";
-import { BookOpen, Clock, Check, Upload, MessageCircleQuestion, Paperclip, CircleAlert } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { BookOpen, Clock, Check, Upload, MessageCircleQuestion, CircleAlert } from "lucide-react";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
-import { useApp } from "../store/AppStore";
+import { apiUrl } from "../api/base";
 import "./Homework.css";
 
 const FILTERS = [
   { id: "all", label: "Все" },
   { id: "active", label: "Активные" },
-  { id: "overdue", label: "Просрочено" },
   { id: "done", label: "Выполнено" },
 ];
 
+// Homework is now assigned by the teacher via the admin panel and read from
+// the backend (DB-backed). No more mock list.
 export default function Homework() {
-  const { homework, completeHomework } = useApp();
+  const [homework, setHomework] = useState([]);
+  const [counts, setCounts] = useState({ active: 0, overdue: 0 });
   const [filter, setFilter] = useState("all");
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch(apiUrl("/api/homework"));
+      const data = await res.json();
+      setHomework(data.homework ?? []);
+      setCounts(data.counts ?? { active: 0, overdue: 0 });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function complete(id) {
+    await fetch(apiUrl(`/api/homework/${id}/complete`), { method: "POST" });
+    await load();
+  }
 
   const list = filter === "all" ? homework : homework.filter((h) => h.status === filter);
-  const counts = {
-    active: homework.filter((h) => h.status === "active").length,
-    overdue: homework.filter((h) => h.status === "overdue").length,
-  };
 
   return (
     <div className="hw">
@@ -50,15 +69,19 @@ export default function Homework() {
         ))}
       </div>
 
-      {list.length === 0 ? (
+      {loading ? (
+        <Card pad="lg" className="hw__empty">
+          <p>Загрузка…</p>
+        </Card>
+      ) : list.length === 0 ? (
         <Card pad="lg" className="hw__empty">
           <span className="hw__empty-emoji">🎉</span>
-          <p>Здесь пусто. Все задания в этой категории закрыты!</p>
+          <p>Здесь пусто. Учитель пока ничего не задал в этой категории!</p>
         </Card>
       ) : (
         <div className="hw__list">
           {list.map((h) => (
-            <HomeworkCard key={h.id} hw={h} onComplete={() => completeHomework(h.id)} />
+            <HomeworkCard key={h.id} hw={h} onComplete={() => complete(h.id)} />
           ))}
         </div>
       )}
@@ -68,28 +91,18 @@ export default function Homework() {
 
 function HomeworkCard({ hw, onComplete }) {
   const notice = deadlineNotice(hw);
+  const taskCount = Array.isArray(hw.task_ids) ? hw.task_ids.length : 0;
   return (
     <Card className={`hwcard hwcard--${hw.status}`} pad="md">
       <div className="hwcard__top">
-        <Badge tone="primary">{hw.topic}</Badge>
+        {taskCount > 0 && <Badge tone="primary">{taskCount} заданий</Badge>}
         <span className={`hwcard__due hwcard__due--${notice.tone}`}>
           {notice.icon}
           {notice.text}
         </span>
       </div>
       <h3 className="hwcard__title">{hw.title}</h3>
-      <p className="hwcard__desc">{hw.description}</p>
-
-      {hw.materials.length > 0 && (
-        <div className="hwcard__materials">
-          {hw.materials.map((m) => (
-            <a key={m.label} href={m.url} className="hwcard__material">
-              <Paperclip size={14} strokeWidth={2.4} />
-              {m.label}
-            </a>
-          ))}
-        </div>
-      )}
+      {hw.description && <p className="hwcard__desc">{hw.description}</p>}
 
       {hw.status === "done" ? (
         <div className="hwcard__done">
@@ -112,9 +125,10 @@ function HomeworkCard({ hw, onComplete }) {
   );
 }
 
-// Rule-based deadline notifications (module 8): 24h before / due today / overdue.
+// Rule-based deadline notifications: 24h before / due today / overdue.
 function deadlineNotice(hw) {
   if (hw.status === "done") return { tone: "done", text: "сдано", icon: <Check size={14} strokeWidth={2.6} /> };
+  if (!hw.due) return { tone: "muted", text: "без срока", icon: <Clock size={14} strokeWidth={2.6} /> };
   const now = new Date();
   const due = new Date(hw.due);
   const hours = (due - now) / 36e5;

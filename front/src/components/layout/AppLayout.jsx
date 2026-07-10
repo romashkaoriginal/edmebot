@@ -7,12 +7,12 @@ import { useApp } from "../../store/AppStore";
 import "./AppLayout.css";
 
 const NAV = [
-  { to: "/", label: "Главная", icon: Home, end: true },
-  { to: "/practice", label: "Практика", icon: Dumbbell },
-  { to: "/diagnostic", label: "Диагностика", icon: Target },
-  { to: "/homework", label: "Домашка", icon: BookOpen },
-  { to: "/pet", label: "Питомец", icon: PawPrint },
-  { to: "/profile", label: "Кабинет", icon: User },
+  { to: "/app", label: "Главная", icon: Home, end: true },
+  { to: "/app/practice", label: "Практика", icon: Dumbbell },
+  { to: "/app/diagnostic", label: "Диагностика", icon: Target },
+  { to: "/app/homework", label: "Домашка", icon: BookOpen },
+  { to: "/app/pet", label: "Питомец", icon: PawPrint },
+  { to: "/app/profile", label: "Кабинет", icon: User },
 ];
 
 export default function AppLayout() {

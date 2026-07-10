@@ -1,0 +1,15 @@
+# Render deployment for the Express backend.
+# Create the service via "New → Blueprint" pointing at this repo,
+# then set DATABASE_URL (Supabase pooler connection string) in the dashboard.
+services:
+  - type: web
+    name: edmebot-api
+    runtime: node
+    rootDir: back
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        sync: false # set manually in the Render dashboard (secret)

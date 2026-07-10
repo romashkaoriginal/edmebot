@@ -1,56 +1,107 @@
-import { useState, useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Lightbulb, ArrowRight, Check, Zap, Info, RefreshCw, Home } from "lucide-react";
+import { X, ArrowRight, Check, Info, RefreshCw, Home } from "lucide-react";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import OptionList from "../components/shared/OptionList";
 import { useApp } from "../store/AppStore";
-import { taskBank, topics as allTopics } from "../data/mock";
+import { topics as allTopics } from "../data/mock";
+import { apiUrl } from "../api/base";
 import "./RunMode.css";
 import "./PracticeRun.css";
 
-const SERIES_LEN = 5;
-const XP_BY_DIFFICULTY = { easy: 10, medium: 15, hard: 25 };
-
+// Practice series + grading now come from the backend (DB-backed). Tasks
+// created in the admin panel appear here automatically.
 export default function PracticeRun() {
   const navigate = useNavigate();
-  const [params] = useSearchParams();
   const { awardXp, setTopicMastery } = useApp();
 
-  const tasks = useMemo(() => buildSeries(params), []); // rule-based selection
-
+  const [tasks, setTasks] = useState(null); // null = loading
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState(null);
   const [graded, setGraded] = useState(null); // null | "correct" | "wrong"
-  const [hintsUsed, setHintsUsed] = useState(0);
+  const [feedback, setFeedback] = useState(null); // { explanation, commonMistake }
   const [attempts, setAttempts] = useState(0);
-  const [results, setResults] = useState([]); // {taskId, correct, hints, topic}
+  const [results, setResults] = useState([]);
   const [done, setDone] = useState(false);
+  const [checking, setChecking] = useState(false);
+
+  useEffect(() => {
+    fetch(apiUrl("/api/practice/series?length=5"))
+      .then((r) => r.json())
+      .then((d) => setTasks(d.tasks ?? []))
+      .catch(() => setTasks([]));
+  }, []);
+
+  if (tasks === null) {
+    return (
+      <div className="run">
+        <div className="run__body">
+          <Card pad="lg">
+            <p style={{ textAlign: "center", color: "var(--muted)" }}>Загружаем задания…</p>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (tasks.length === 0) {
+    return (
+      <div className="run">
+        <div className="run__body">
+          <Card pad="lg">
+            <h2 className="run__prompt">Заданий пока нет</h2>
+            <p style={{ color: "var(--muted)", marginTop: 8 }}>
+              Учитель ещё не добавил задания для твоего класса. Загляни позже.
+            </p>
+            <div style={{ marginTop: 16 }}>
+              <Button icon={Home} onClick={() => navigate("/app")}>
+                На главную
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (done) return <Summary results={results} onExit={() => navigate("/app")} />;
 
   const task = tasks[idx];
   const progress = ((idx + (graded ? 1 : 0)) / tasks.length) * 100;
 
-  function check() {
-    const isCorrect = selected === task.correct;
-    if (isCorrect) {
-      // XP: base by difficulty, minus hint penalty (3/hint), minus retry penalty.
-      const base = XP_BY_DIFFICULTY[task.difficulty] ?? 10;
-      const gained = Math.max(3, base - hintsUsed * 3 - attempts * 2);
-      awardXp(gained, Math.round(gained / 2));
-      setTopicMastery(task.topic, 6 - hintsUsed);
-      setGraded("correct");
-      setResults((r) => [...r, { taskId: task.id, correct: true, hints: hintsUsed, topic: task.topic }]);
-    } else {
-      // First wrong attempt lets them retry; second locks the explanation.
-      if (attempts === 0) {
-        setAttempts(1);
-        setSelected(null);
-        return;
+  async function check() {
+    if (checking) return;
+    setChecking(true);
+    try {
+      const res = await fetch(apiUrl("/api/practice/answer"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId: task.id, selected, attempts }),
+      });
+      const data = await res.json();
+
+      if (data.correct) {
+        if (data.award?.gained) awardXp(data.award.gained, data.award.coins ?? 0);
+        setTopicMastery(task.topic, 6);
+        setGraded("correct");
+        setFeedback({ explanation: data.explanation, commonMistake: null, correctIndex: data.correctIndex });
+        setResults((r) => [...r, { taskId: task.id, correct: true, topic: task.topic }]);
+      } else {
+        // First wrong attempt lets them retry; second locks the explanation.
+        if (attempts === 0) {
+          setAttempts(1);
+          setSelected(null);
+          return;
+        }
+        setTopicMastery(task.topic, -4);
+        setGraded("wrong");
+        setFeedback({ explanation: data.explanation, commonMistake: data.commonMistake, correctIndex: data.correctIndex });
+        setResults((r) => [...r, { taskId: task.id, correct: false, topic: task.topic }]);
       }
-      setTopicMastery(task.topic, -4);
-      setGraded("wrong");
-      setResults((r) => [...r, { taskId: task.id, correct: false, hints: hintsUsed, topic: task.topic }]);
+    } finally {
+      setChecking(false);
     }
   }
 
@@ -62,18 +113,14 @@ export default function PracticeRun() {
     setIdx(idx + 1);
     setSelected(null);
     setGraded(null);
-    setHintsUsed(0);
+    setFeedback(null);
     setAttempts(0);
   }
-
-  if (done) return <Summary results={results} onExit={() => navigate("/")} />;
-
-  const canHint = hintsUsed < task.hints.length && !graded;
 
   return (
     <div className="run">
       <header className="run__top">
-        <button className="run__close" onClick={() => navigate("/practice")} aria-label="Выйти">
+        <button className="run__close" onClick={() => navigate("/app/practice")} aria-label="Выйти">
           <X size={22} strokeWidth={2.4} />
         </button>
         <div className="run__progress">
@@ -103,30 +150,10 @@ export default function PracticeRun() {
             selected={selected}
             onSelect={setSelected}
             state={graded}
-            correctIndex={task.correct}
+            correctIndex={feedback?.correctIndex}
             disabled={!!graded}
           />
 
-          {/* Hints revealed so far */}
-          <AnimatePresence>
-            {hintsUsed > 0 && !graded && (
-              <motion.div
-                className="pr__hints"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-              >
-                {task.hints.slice(0, hintsUsed).map((h, i) => (
-                  <div key={i} className="pr__hint">
-                    <Lightbulb size={16} strokeWidth={2.4} />
-                    <span>{h}</span>
-                  </div>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Feedback after grading */}
           <AnimatePresence>
             {graded && (
               <motion.div
@@ -145,9 +172,9 @@ export default function PracticeRun() {
                     </>
                   )}
                 </div>
-                <p className="pr__feedback-text">{task.explanation}</p>
-                {graded === "wrong" && (
-                  <p className="pr__mistake">{task.commonMistake}</p>
+                {feedback?.explanation && <p className="pr__feedback-text">{feedback.explanation}</p>}
+                {graded === "wrong" && feedback?.commonMistake && (
+                  <p className="pr__mistake">{feedback.commonMistake}</p>
                 )}
               </motion.div>
             )}
@@ -157,19 +184,9 @@ export default function PracticeRun() {
 
       <footer className="run__footer">
         {!graded ? (
-          <>
-            <Button
-              variant="ghost"
-              icon={Lightbulb}
-              disabled={!canHint}
-              onClick={() => setHintsUsed((h) => h + 1)}
-            >
-              Намекни {task.hints.length - hintsUsed > 0 ? `(${task.hints.length - hintsUsed})` : ""}
-            </Button>
-            <Button icon={ArrowRight} disabled={selected === null} onClick={check}>
-              Проверить
-            </Button>
-          </>
+          <Button icon={ArrowRight} full disabled={selected === null || checking} onClick={check}>
+            Проверить
+          </Button>
         ) : (
           <Button icon={ArrowRight} full onClick={nextTask}>
             {idx + 1 >= tasks.length ? "Завершить" : "Следующее задание"}
@@ -224,9 +241,6 @@ function Summary({ results, onExit }) {
                 </span>
               ))}
             </div>
-            <p className="pr__recap-hint">
-              Эти темы добавлены в план повторения. Порекомендуем их в следующей практике.
-            </p>
           </div>
         )}
 
@@ -243,28 +257,7 @@ function Summary({ results, onExit }) {
   );
 }
 
-/* ---------------- Rule-based helpers ---------------- */
-function buildSeries(params) {
-  const mode = params.get("mode") ?? "weak";
-  const topicFilter = params.get("topic");
-  let pool = [...taskBank];
-  if (mode === "topic" && topicFilter) {
-    pool = pool.filter((t) => t.topic === topicFilter);
-  } else if (mode === "weak") {
-    const weak = allTopics.filter((t) => t.status !== "green").map((t) => t.id);
-    const weakPool = pool.filter((t) => weak.includes(t.topic));
-    if (weakPool.length) pool = weakPool;
-  }
-  // repeat pool to reach series length, keep variety
-  const series = [];
-  let i = 0;
-  while (series.length < SERIES_LEN && pool.length) {
-    series.push(pool[i % pool.length]);
-    i++;
-  }
-  return series;
-}
-
+/* ---------------- helpers ---------------- */
 function topicName(id) {
   return allTopics.find((t) => t.id === id)?.name ?? id;
 }

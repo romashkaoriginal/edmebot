@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Flame, Zap, Play, ChevronRight, BookOpen, Sparkles } from "lucide-react";
 import Card from "../components/ui/Card";
@@ -8,7 +9,7 @@ import SectionTitle from "../components/ui/SectionTitle";
 import PetAvatar from "../components/pet/PetAvatar";
 import KnowledgeMap from "../components/shared/KnowledgeMap";
 import { useApp } from "../store/AppStore";
-import { homework } from "../data/mock";
+import { apiUrl } from "../api/base";
 import "./Dashboard.css";
 
 export default function Dashboard() {
@@ -16,7 +17,15 @@ export default function Dashboard() {
   const xpInLevel = profile.xp - profile.xpFromLevel;
   const xpNeeded = profile.xpForNext - profile.xpFromLevel;
   const weakest = [...topics].sort((a, b) => a.mastery - b.mastery)[0];
-  const activeHw = homework.filter((h) => h.status === "active").slice(0, 2);
+
+  // Homework preview comes from the backend (assigned via admin panel).
+  const [activeHw, setActiveHw] = useState([]);
+  useEffect(() => {
+    fetch(apiUrl("/api/homework?status=active"))
+      .then((r) => r.json())
+      .then((d) => setActiveHw((d.homework ?? []).slice(0, 2)))
+      .catch(() => setActiveHw([]));
+  }, []);
 
   return (
     <div className="dash">
@@ -34,7 +43,7 @@ export default function Dashboard() {
             </span>
           </div>
           <div className="dash__cta">
-            <Button as={Link} to="/practice/run" size="lg" icon={Play}>
+            <Button as={Link} to="/app/practice/run" size="lg" icon={Play}>
               Начать практику
             </Button>
           </div>
@@ -70,7 +79,7 @@ export default function Dashboard() {
         <section className="dash__col">
           <SectionTitle
             action={
-              <Link to="/diagnostic" className="dash__link">
+              <Link to="/app/diagnostic" className="dash__link">
                 Пройти диагностику <ChevronRight size={16} />
               </Link>
             }
@@ -87,7 +96,7 @@ export default function Dashboard() {
                 «{weakest.name}» — самая слабая тема. Несколько заданий помогут закрыть пробел.
               </p>
             </div>
-            <Button as={Link} to="/practice/run" variant="soft" size="sm">
+            <Button as={Link} to="/app/practice/run" variant="soft" size="sm">
               Тренировать
             </Button>
           </Card>
@@ -97,7 +106,7 @@ export default function Dashboard() {
         <section className="dash__col">
           <SectionTitle
             action={
-              <Link to="/homework" className="dash__link">
+              <Link to="/app/homework" className="dash__link">
                 Все <ChevronRight size={16} />
               </Link>
             }
@@ -116,10 +125,10 @@ export default function Dashboard() {
                     <BookOpen size={18} strokeWidth={2.4} />
                   </span>
                   <div className="dash__hw-body">
-                    <div className="dash__hw-topic">{h.topic}</div>
                     <div className="dash__hw-title">{h.title}</div>
+                    {h.description && <div className="dash__hw-topic">{h.description}</div>}
                   </div>
-                  <Badge tone="warning">до {formatDue(h.due)}</Badge>
+                  {h.due && <Badge tone="warning">до {formatDue(h.due)}</Badge>}
                 </Card>
               ))}
             </div>

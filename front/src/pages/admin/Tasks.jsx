@@ -1,0 +1,264 @@
+import { useEffect, useState, useCallback } from "react";
+import { ListChecks, Plus, Trash2, X } from "lucide-react";
+import Card from "../../components/ui/Card";
+import Button from "../../components/ui/Button";
+import SectionTitle from "../../components/ui/SectionTitle";
+import { adminApi } from "../../api/admin";
+import "./admin.css";
+
+const GRADES = [5, 6, 7, 8, 9, 10, 11];
+const DIFFICULTIES = [
+  { id: "easy", label: "Лёгкое" },
+  { id: "medium", label: "Среднее" },
+  { id: "hard", label: "Сложное" },
+];
+
+function emptyForm(grade, subject) {
+  return {
+    grade,
+    subject,
+    topic: "",
+    prompt: "",
+    options: ["", ""],
+    correct: 0,
+    explanation: "",
+    difficulty: "medium",
+  };
+}
+
+export default function Tasks() {
+  const [grade, setGrade] = useState(7);
+  const [subject, setSubject] = useState("Математика");
+  const [tasks, setTasks] = useState([]);
+  const [form, setForm] = useState(() => emptyForm(7, "Математика"));
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { tasks } = await adminApi.listTasks({ grade, subject });
+      setTasks(tasks);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [grade, subject]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // Keep the form's class/subject in sync with the current filter.
+  useEffect(() => {
+    setForm((f) => ({ ...f, grade, subject }));
+  }, [grade, subject]);
+
+  function setOption(i, value) {
+    setForm((f) => {
+      const options = [...f.options];
+      options[i] = value;
+      return { ...f, options };
+    });
+  }
+
+  function addOption() {
+    setForm((f) => (f.options.length >= 6 ? f : { ...f, options: [...f.options, ""] }));
+  }
+
+  function removeOption(i) {
+    setForm((f) => {
+      if (f.options.length <= 2) return f;
+      const options = f.options.filter((_, idx) => idx !== i);
+      let correct = f.correct;
+      if (i === correct) correct = 0;
+      else if (i < correct) correct -= 1;
+      return { ...f, options, correct };
+    });
+  }
+
+  async function submit(e) {
+    e.preventDefault();
+    setError("");
+    const options = form.options.map((o) => o.trim());
+    if (options.some((o) => !o)) {
+      setError("Заполните все варианты ответа");
+      return;
+    }
+    try {
+      await adminApi.createTask({ ...form, options });
+      setForm(emptyForm(grade, subject));
+      await load();
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
+  async function remove(id) {
+    if (!confirm("Удалить задание?")) return;
+    try {
+      await adminApi.deleteTask(id);
+      await load();
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
+  return (
+    <div className="apage">
+      <header className="apage__head">
+        <span className="apage__head-icon">
+          <ListChecks size={24} strokeWidth={2.4} />
+        </span>
+        <div>
+          <h1>Задания</h1>
+          <p className="apage__sub">Создавайте задания с вариантами ответа для класса и предмета</p>
+        </div>
+      </header>
+
+      <Card pad="md">
+        <SectionTitle>Класс и предмет</SectionTitle>
+        <div className="aform__row">
+          <label className="afield">
+            <span>Класс</span>
+            <select className="aselect" value={grade} onChange={(e) => setGrade(Number(e.target.value))}>
+              {GRADES.map((g) => (
+                <option key={g} value={g}>
+                  {g} класс
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="afield">
+            <span>Предмет</span>
+            <input className="ainput" value={subject} onChange={(e) => setSubject(e.target.value)} />
+          </label>
+        </div>
+      </Card>
+
+      <Card className="asection" pad="md">
+        <SectionTitle>Новое задание</SectionTitle>
+        <form className="aform" onSubmit={submit}>
+          <div className="aform__row">
+            <label className="afield">
+              <span>Тема (ключ)</span>
+              <input
+                className="ainput"
+                value={form.topic}
+                onChange={(e) => setForm({ ...form, topic: e.target.value })}
+                placeholder="fractions"
+                required
+              />
+            </label>
+            <label className="afield">
+              <span>Сложность</span>
+              <select
+                className="aselect"
+                value={form.difficulty}
+                onChange={(e) => setForm({ ...form, difficulty: e.target.value })}
+              >
+                {DIFFICULTIES.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <label className="afield">
+            <span>Условие задания</span>
+            <textarea
+              className="atextarea"
+              value={form.prompt}
+              onChange={(e) => setForm({ ...form, prompt: e.target.value })}
+              placeholder="Сложи дроби: 1/4 + 1/4"
+              required
+            />
+          </label>
+
+          <div className="afield">
+            <span>Варианты ответа (отметьте правильный)</span>
+            {form.options.map((opt, i) => (
+              <div className="aopt" key={i}>
+                <label className="aopt__radio">
+                  <input
+                    type="radio"
+                    name="correct"
+                    checked={form.correct === i}
+                    onChange={() => setForm({ ...form, correct: i })}
+                  />
+                </label>
+                <input
+                  className="ainput"
+                  value={opt}
+                  onChange={(e) => setOption(i, e.target.value)}
+                  placeholder={`Вариант ${i + 1}`}
+                  required
+                />
+                {form.options.length > 2 && (
+                  <button type="button" className="aopt__del" onClick={() => removeOption(i)} aria-label="Убрать вариант">
+                    <X size={16} strokeWidth={2.6} />
+                  </button>
+                )}
+              </div>
+            ))}
+            {form.options.length < 6 && (
+              <Button type="button" variant="soft" size="sm" icon={Plus} onClick={addOption}>
+                Добавить вариант
+              </Button>
+            )}
+          </div>
+
+          <label className="afield">
+            <span>Пояснение (необязательно)</span>
+            <textarea
+              className="atextarea"
+              value={form.explanation}
+              onChange={(e) => setForm({ ...form, explanation: e.target.value })}
+              placeholder="Почему этот ответ верный…"
+            />
+          </label>
+
+          {error && <p className="aerror">{error}</p>}
+          <div className="aform__actions">
+            <Button type="submit" icon={Plus}>
+              Создать задание
+            </Button>
+          </div>
+        </form>
+      </Card>
+
+      <div className="asection">
+        <SectionTitle>
+          Задания: {grade} класс · {subject} ({tasks.length})
+        </SectionTitle>
+        {loading ? (
+          <p className="aempty">Загрузка…</p>
+        ) : tasks.length === 0 ? (
+          <p className="aempty">Для этого класса и предмета заданий пока нет.</p>
+        ) : (
+          <div className="alist">
+            {tasks.map((t) => (
+              <div className="arow" key={t.id}>
+                <div className="arow__main">
+                  <div className="arow__title">{t.prompt}</div>
+                  <div className="arow__meta">
+                    <span className="achip">{t.topic}</span>{" "}
+                    {t.options.length} вар. · верный: «{t.options[t.correct]}» · {t.difficulty}
+                  </div>
+                </div>
+                <div className="arow__actions">
+                  <button className="aicon-btn" onClick={() => remove(t.id)} aria-label="Удалить">
+                    <Trash2 size={17} strokeWidth={2.4} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

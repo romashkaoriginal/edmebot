@@ -48,7 +48,7 @@ export default function Practice() {
   function start() {
     const params = new URLSearchParams({ mode, level });
     if (mode === "topic") params.set("topic", topic);
-    navigate(`/practice/run?${params}`);
+    navigate(`/app/practice/run?${params}`);
   }
 
   return (
