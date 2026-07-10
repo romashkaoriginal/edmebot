@@ -1,6 +1,6 @@
 // Telegram bot wiring (webhook mode). Responds to /start with a button that
 // opens the frontend as a Telegram Mini App.
-const TelegramBot = require("node-telegram-bot-api");
+const { TelegramBot } = require("node-telegram-bot-api");
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const APP_URL = process.env.APP_URL; // frontend URL (Vercel), e.g. https://edmebot.vercel.app
@@ -18,7 +18,10 @@ function init(app) {
     return;
   }
 
-  bot = new TelegramBot(TOKEN, { webHook: true });
+  // No built-in transport: Express owns the HTTP server and forwards
+  // updates to processUpdate() below. The library only makes outgoing
+  // API calls (sendMessage, setWebHook, etc).
+  bot = new TelegramBot(TOKEN, { webHook: false, polling: false });
 
   app.post(WEBHOOK_PATH, (req, res) => {
     bot.processUpdate(req.body);
