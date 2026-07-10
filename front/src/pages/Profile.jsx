@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   Flame,
   Zap,
@@ -18,6 +19,7 @@ import KnowledgeMap from "../components/shared/KnowledgeMap";
 import Achievements from "../components/shared/Achievements";
 import { useApp } from "../store/AppStore";
 import { achievements, weekActivity } from "../data/mock";
+import { apiUrl } from "../api/base";
 import "./Profile.css";
 
 export default function Profile() {
@@ -28,6 +30,21 @@ export default function Profile() {
   const strong = topics.filter((t) => t.status === "green");
   const maxTasks = Math.max(...weekActivity.map((d) => d.tasks));
   const earned = achievements.filter((a) => a.earned);
+
+  // Real practice stats from the DB (solved/accuracy/topic mastery), fetched
+  // via the admin stats endpoint for the demo student.
+  const [dbStats, setDbStats] = useState(null);
+  useEffect(() => {
+    fetch(apiUrl("/api/admin/stats"))
+      .then((r) => r.json())
+      .then(({ students }) => students?.[0]?.id)
+      .then((id) => (id ? fetch(apiUrl(`/api/admin/stats/${id}`)).then((r) => r.json()) : null))
+      .then((data) => data && setDbStats(data))
+      .catch(() => setDbStats(null));
+  }, []);
+
+  const solvedTotal = dbStats?.stats.attempts ?? profile.solvedTotal;
+  const accuracy = dbStats?.stats.accuracy ?? profile.accuracy;
 
   return (
     <div className="prof">
@@ -67,8 +84,8 @@ export default function Profile() {
 
       {/* Stat tiles */}
       <div className="prof__stats">
-        <StatTile icon={CheckCircle2} value={profile.solvedTotal} label="решено заданий" tone="primary" />
-        <StatTile icon={Target} value={`${profile.accuracy}%`} label="правильных" tone="success" />
+        <StatTile icon={CheckCircle2} value={solvedTotal} label="решено заданий" tone="primary" />
+        <StatTile icon={Target} value={`${accuracy}%`} label="правильных" tone="success" />
         <StatTile icon={Clock} value={`${profile.avgTimeSec}с`} label="среднее время" tone="accent" />
       </div>
 

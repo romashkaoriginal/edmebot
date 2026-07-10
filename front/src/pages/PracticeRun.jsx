@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ArrowRight, Check, Info, RefreshCw, Home } from "lucide-react";
+import { X, ArrowRight, Check, Info, RefreshCw, Home, Lightbulb } from "lucide-react";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import OptionList from "../components/shared/OptionList";
@@ -23,6 +23,7 @@ export default function PracticeRun() {
   const [graded, setGraded] = useState(null); // null | "correct" | "wrong"
   const [feedback, setFeedback] = useState(null); // { explanation, commonMistake }
   const [attempts, setAttempts] = useState(0);
+  const [hintsUsed, setHintsUsed] = useState(0);
   const [results, setResults] = useState([]);
   const [done, setDone] = useState(false);
   const [checking, setChecking] = useState(false);
@@ -78,7 +79,7 @@ export default function PracticeRun() {
       const res = await fetch(apiUrl("/api/practice/answer"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ taskId: task.id, selected, attempts }),
+        body: JSON.stringify({ taskId: task.id, selected, attempts, hintsUsed }),
       });
       const data = await res.json();
 
@@ -115,6 +116,7 @@ export default function PracticeRun() {
     setGraded(null);
     setFeedback(null);
     setAttempts(0);
+    setHintsUsed(0);
   }
 
   return (
@@ -155,6 +157,24 @@ export default function PracticeRun() {
           />
 
           <AnimatePresence>
+            {hintsUsed > 0 && !graded && (
+              <motion.div
+                className="pr__hints"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+              >
+                {(task.hints ?? []).slice(0, hintsUsed).map((h, i) => (
+                  <div key={i} className="pr__hint">
+                    <Lightbulb size={16} strokeWidth={2.4} />
+                    <span>{h}</span>
+                  </div>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
             {graded && (
               <motion.div
                 className={`pr__feedback pr__feedback--${graded}`}
@@ -184,9 +204,21 @@ export default function PracticeRun() {
 
       <footer className="run__footer">
         {!graded ? (
-          <Button icon={ArrowRight} full disabled={selected === null || checking} onClick={check}>
-            Проверить
-          </Button>
+          <>
+            {(task.hints ?? []).length > 0 && (
+              <Button
+                variant="ghost"
+                icon={Lightbulb}
+                disabled={hintsUsed >= task.hints.length}
+                onClick={() => setHintsUsed((h) => h + 1)}
+              >
+                Намекни {task.hints.length - hintsUsed > 0 ? `(${task.hints.length - hintsUsed})` : ""}
+              </Button>
+            )}
+            <Button icon={ArrowRight} disabled={selected === null || checking} onClick={check}>
+              Проверить
+            </Button>
+          </>
         ) : (
           <Button icon={ArrowRight} full onClick={nextTask}>
             {idx + 1 >= tasks.length ? "Завершить" : "Следующее задание"}

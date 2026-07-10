@@ -23,6 +23,7 @@ function emptyForm(grade, subject) {
     correct: 0,
     explanation: "",
     difficulty: "medium",
+    hints: [],
   };
 }
 
@@ -78,6 +79,22 @@ export default function Tasks() {
     });
   }
 
+  function setHint(i, value) {
+    setForm((f) => {
+      const hints = [...f.hints];
+      hints[i] = value;
+      return { ...f, hints };
+    });
+  }
+
+  function addHint() {
+    setForm((f) => (f.hints.length >= 2 ? f : { ...f, hints: [...f.hints, ""] }));
+  }
+
+  function removeHint(i) {
+    setForm((f) => ({ ...f, hints: f.hints.filter((_, idx) => idx !== i) }));
+  }
+
   async function submit(e) {
     e.preventDefault();
     setError("");
@@ -87,7 +104,8 @@ export default function Tasks() {
       return;
     }
     try {
-      await adminApi.createTask({ ...form, options });
+      const hints = form.hints.map((h) => h.trim()).filter(Boolean);
+      await adminApi.createTask({ ...form, options, hints });
       setForm(emptyForm(grade, subject));
       await load();
     } catch (e) {
@@ -220,6 +238,28 @@ export default function Tasks() {
               placeholder="Почему этот ответ верный…"
             />
           </label>
+
+          <div className="afield">
+            <span>Подсказки «Намекни» (не более 2, необязательно)</span>
+            {form.hints.map((h, i) => (
+              <div className="aopt" key={i}>
+                <input
+                  className="ainput"
+                  value={h}
+                  onChange={(e) => setHint(i, e.target.value)}
+                  placeholder={`Подсказка ${i + 1}`}
+                />
+                <button type="button" className="aopt__del" onClick={() => removeHint(i)} aria-label="Убрать подсказку">
+                  <X size={16} strokeWidth={2.6} />
+                </button>
+              </div>
+            ))}
+            {form.hints.length < 2 && (
+              <Button type="button" variant="soft" size="sm" icon={Plus} onClick={addHint}>
+                Добавить подсказку
+              </Button>
+            )}
+          </div>
 
           {error && <p className="aerror">{error}</p>}
           <div className="aform__actions">

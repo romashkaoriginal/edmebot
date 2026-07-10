@@ -36,8 +36,11 @@ CREATE TABLE IF NOT EXISTS tasks (
   correct      INTEGER NOT NULL,
   explanation  TEXT,
   difficulty   TEXT NOT NULL DEFAULT 'medium',
+  hints        JSONB NOT NULL DEFAULT '[]',
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS hints JSONB NOT NULL DEFAULT '[]';
 
 CREATE TABLE IF NOT EXISTS homework (
   id           BIGSERIAL PRIMARY KEY,
@@ -74,8 +77,8 @@ async function seedIfEmpty() {
   if (taskCount[0].n === 0) {
     for (const t of seed.taskBank) {
       await query(
-        `INSERT INTO tasks (grade, subject, topic, prompt, options, correct, explanation, difficulty)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        `INSERT INTO tasks (grade, subject, topic, prompt, options, correct, explanation, difficulty, hints)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
         [
           SEED_GRADE,
           SEED_SUBJECT,
@@ -85,6 +88,7 @@ async function seedIfEmpty() {
           t.correct,
           t.explanation ?? null,
           t.difficulty ?? "medium",
+          JSON.stringify(t.hints ?? []),
         ]
       );
     }

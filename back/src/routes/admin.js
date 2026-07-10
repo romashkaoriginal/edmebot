@@ -94,15 +94,15 @@ router.get("/tasks", async (req, res, next) => {
 
 router.post("/tasks", async (req, res, next) => {
   try {
-    const { grade, subject, topic, prompt, options, correct, explanation, difficulty } =
+    const { grade, subject, topic, prompt, options, correct, explanation, difficulty, hints } =
       req.body ?? {};
     if (!grade || !subject || !topic || !prompt) return bad(res, "grade_subject_topic_prompt_required");
     if (!Array.isArray(options) || options.length < 2) return bad(res, "at_least_two_options");
     if (typeof correct !== "number" || correct < 0 || correct >= options.length)
       return bad(res, "correct_index_out_of_range");
     const { rows } = await db.query(
-      `INSERT INTO tasks (grade, subject, topic, prompt, options, correct, explanation, difficulty)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      `INSERT INTO tasks (grade, subject, topic, prompt, options, correct, explanation, difficulty, hints)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
       [
         Number(grade),
         subject,
@@ -112,6 +112,7 @@ router.post("/tasks", async (req, res, next) => {
         correct,
         explanation || null,
         difficulty || "medium",
+        JSON.stringify(Array.isArray(hints) ? hints.filter(Boolean) : []),
       ]
     );
     res.status(201).json({ task: rows[0] });

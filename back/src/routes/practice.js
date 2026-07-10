@@ -15,7 +15,7 @@ router.get("/series", async (req, res, next) => {
     if (!student) return res.json({ tasks: [] });
 
     const { rows } = await db.query(
-      `SELECT id, topic, prompt, options, difficulty
+      `SELECT id, topic, prompt, options, difficulty, hints
          FROM tasks WHERE grade = $1 AND subject = $2
          ORDER BY id ASC`,
       [student.grade, student.subject]
@@ -25,7 +25,14 @@ router.get("/series", async (req, res, next) => {
     const series = [];
     for (let i = 0; series.length < length; i++) {
       const t = rows[i % rows.length];
-      series.push({ id: String(t.id), topic: t.topic, prompt: t.prompt, options: t.options, difficulty: t.difficulty });
+      series.push({
+        id: String(t.id),
+        topic: t.topic,
+        prompt: t.prompt,
+        options: t.options,
+        difficulty: t.difficulty,
+        hints: t.hints ?? [],
+      });
     }
     res.json({ tasks: series });
   } catch (e) {
