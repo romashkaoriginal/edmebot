@@ -12,7 +12,7 @@
 
 OKLCH throughout. Committed strategy: brand blue + brand orange do the identity work on a
 near-pure surface.
-g
+gп
 ### Light theme (default)
 
 | Role | OKLCH | Use |
