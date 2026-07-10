@@ -2,12 +2,16 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const db = require('./src/db');
+const bot = require('./src/bot');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
+
+// Registers the webhook route (POST /api/telegram/webhook) if configured.
+bot.init(app);
 
 // Health
 app.get('/api/health', (req, res) => {
@@ -38,6 +42,10 @@ db.init()
   .then(() => {
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
+      // RENDER_EXTERNAL_URL is set automatically by Render; falls back to
+      // BACKEND_URL for other hosts.
+      const backendUrl = process.env.RENDER_EXTERNAL_URL || process.env.BACKEND_URL;
+      if (backendUrl) bot.setWebhook(backendUrl).catch((e) => console.error('setWebhook failed:', e.message));
     });
   })
   .catch((err) => {
