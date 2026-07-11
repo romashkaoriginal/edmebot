@@ -33,10 +33,50 @@ function Face({ mood, cx = [47, 73], cy = 51, noseY = 64 }) {
 function Finish({ accessories, anchor }) { return accessories.map((item) => <Accessory key={item} type={item} anchor={anchor} />); }
 
 function Fox({ mood, accessories, designVariant }) {
-  if (designVariant === "cozy") return <FoxCozy mood={mood} accessories={accessories} />;
-  if (designVariant === "sticker") return <FoxSticker mood={mood} accessories={accessories} />;
-  if (designVariant === "storybook") return <FoxStorybook mood={mood} accessories={accessories} />;
-  return <FoxWidget mood={mood} accessories={accessories} />;
+  if (designVariant === "cozy") return <FoxOrigami mood={mood} accessories={accessories} />;
+  if (designVariant === "sticker") return <FoxLong mood={mood} accessories={accessories} />;
+  if (designVariant === "storybook") return <FoxFluffy mood={mood} accessories={accessories} />;
+  return <FoxRound mood={mood} accessories={accessories} />;
+}
+
+function FoxRound({ mood, accessories }) {
+  const anchor = { neckY: 77, eyes: [48, 72], crownY: 25 };
+  return <g className="pet__body">
+    <path d="M76 96 C107 101 107 72 84 74 C99 84 90 96 75 89 Z" fill="#dc7136" stroke={INK} strokeWidth="2.2" /><path d="M92 83 q9 1 8-6 q-7 5-14 2" fill="#fff5ea" />
+    <circle cx="60" cy="89" r="23" fill="#f28a41" stroke={INK} strokeWidth="2.2" /><ellipse cx="60" cy="97" rx="13" ry="12" fill="#fff8f1" />
+    <path d="M34 42 L29 19 L51 33 Z M86 42 L91 19 L69 33 Z" fill="#e67a39" stroke={INK} strokeWidth="2.2" strokeLinejoin="round" /><circle cx="60" cy="52" r="29" fill="#f28a41" stroke={INK} strokeWidth="2.2" />
+    <ellipse cx="60" cy="65" rx="19" ry="13" fill="#fff8f1" /><Face mood={mood} cx={[48, 72]} cy={53} noseY={66} /><Finish accessories={accessories} anchor={anchor} />
+  </g>;
+}
+
+function FoxOrigami({ mood, accessories }) {
+  const anchor = { neckY: 76, eyes: [48, 72], crownY: 20 };
+  return <g className="pet__body">
+    <path d="M75 95 L104 86 L88 67 L76 78 Z" fill="#b9502f" stroke={INK} strokeWidth="2" strokeLinejoin="round" /><path d="M85 84 l15 2 -11-12 Z" fill="#fff3e8" />
+    <path d="M43 77 L60 67 L80 81 L75 106 L45 106 L38 90 Z" fill="#d96535" stroke={INK} strokeWidth="2.2" strokeLinejoin="round" /><path d="M60 76 l12 12 -12 15 -12-15 Z" fill="#fff5ea" />
+    <path d="M33 43 L30 12 L54 31 Z M87 43 L90 12 L66 31 Z" fill="#c65b32" stroke={INK} strokeWidth="2.2" strokeLinejoin="round" /><path d="M60 18 L84 40 L78 65 L60 80 L42 65 L36 40 Z" fill="#eb7a3c" stroke={INK} strokeWidth="2.2" strokeLinejoin="round" />
+    <path d="M60 18 L60 53 L42 65 L36 40 Z" fill="#f59a52" opacity=".7" /><path d="M60 53 L78 65 L60 80 Z" fill="#c75b32" opacity=".55" /><path d="M60 53 L48 67 L60 74 L72 67 Z" fill="#fff5ea" /><Eyes mood={mood} cx={[48, 72]} cy={52} scale={.84} /><path d="M60 59 l-4 5 h8 Z" fill={INK} /><path d="M55 68 q5 5 10 0" fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" /><Finish accessories={accessories} anchor={anchor} />
+  </g>;
+}
+
+function FoxLong({ mood, accessories }) {
+  const anchor = { neckY: 73, eyes: [38, 50], crownY: 27 };
+  return <g className="pet__body">
+    <path d="M77 85 C109 92 106 55 78 62 C97 70 91 83 73 80 Z" fill="#d86e36" stroke={INK} strokeWidth="2.2" /><path d="M91 70 q11 0 9-8 q-8 6-16 3" fill="#fff4e8" />
+    <path d="M39 74 C52 62 78 66 84 82 L80 98 H31 L29 83 Z" fill="#ee8540" stroke={INK} strokeWidth="2.2" strokeLinejoin="round" /><path d="M47 79 C57 73 70 76 73 87 L65 96 H42 Z" fill="#fff5ec" /><path d="M37 94 v13 M52 94 v13 M70 94 v13 M80 92 v15" stroke={INK} strokeWidth="3" strokeLinecap="round" />
+    <path d="M25 58 L22 31 L42 52 Z M54 52 L58 27 L68 57 Z" fill="#d96d35" stroke={INK} strokeWidth="2.2" strokeLinejoin="round" /><path d="M44 48 C30 46 20 56 24 70 C28 80 47 82 59 72 C70 63 61 49 44 48 Z" fill="#f08a44" stroke={INK} strokeWidth="2.2" />
+    <path d="M25 63 L13 67 L25 70" fill="#f08a44" stroke={INK} strokeWidth="2" strokeLinejoin="round" /><ellipse cx="41" cy="67" rx="15" ry="9" fill="#fff5ec" /><Eyes mood={mood} cx={[37, 49]} cy={60} scale={.66} /><path d="M27 66 l-3 3 h6 Z" fill={INK} /><path d="M28 73 q5 4 10 0" fill="none" stroke={INK} strokeWidth="1.8" strokeLinecap="round" /><Finish accessories={accessories} anchor={anchor} />
+  </g>;
+}
+
+function FoxFluffy({ mood, accessories }) {
+  const anchor = { neckY: 77, eyes: [47, 73], crownY: 20 };
+  return <g className="pet__body">
+    <path d="M76 97 C110 100 106 62 80 70 C99 80 91 95 74 89 Z" fill="#cc6232" stroke={INK} strokeWidth="2.2" /><path d="M91 80 q12 0 10-10 q-8 7-17 3" fill="#fff5eb" />
+    <path d="M38 84 q-4 8 3 12 q-5 9 5 12 h28 q10-3 5-12 q7-6 1-12 q4-10-6-14 H46 q-11 4-8 14 Z" fill="#e87c3d" stroke={INK} strokeWidth="2.2" /><path d="M60 79 q-14 9-7 25 h14 q7-16-7-25 Z" fill="#fff7f0" />
+    <path d="M33 43 L27 13 L53 30 Z M87 43 L93 13 L67 30 Z" fill="#cd6132" stroke={INK} strokeWidth="2.2" strokeLinejoin="round" /><path d="M60 18 q-16 0-25 14 q-10 10 0 18 q-5 12 8 16 q4 12 17 14 q13-2 17-14 q13-4 8-16 q10-8 0-18 Q76 18 60 18 Z" fill="#ee8441" stroke={INK} strokeWidth="2.2" />
+    <path d="M60 52 q-14 0-18 10 q1 12 10 16 q8 4 8 4 q0 0 8-4 q9-4 10-16 q-4-10-18-10 Z" fill="#fff7f0" /><Face mood={mood} noseY={66} /><path d="M41 42 l5-5 M79 42 l-5-5 M46 30 l4 5 M74 30 l-4 5" stroke="#f5ae71" strokeWidth="2" strokeLinecap="round" /><Finish accessories={accessories} anchor={anchor} />
+  </g>;
 }
 
 function FoxWidget({ mood, accessories }) {

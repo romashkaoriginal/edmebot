@@ -17,10 +17,10 @@ const CATEGORIES = [
 ];
 
 const FOX_DESIGNS = [
-  { id: "widget", name: "Маскот", note: "классический питомец" },
-  { id: "cozy", name: "Лесной", note: "спит клубком" },
-  { id: "sticker", name: "Стикер", note: "голова-эмодзи" },
-  { id: "storybook", name: "Ученик", note: "книга и рюкзак" },
+  { id: "widget", name: "Круглая", note: "мягкие формы" },
+  { id: "cozy", name: "Оригами", note: "острые грани" },
+  { id: "sticker", name: "Стройная", note: "лисица в профиль" },
+  { id: "storybook", name: "Пушистая", note: "объёмная шерсть" },
 ];
 
 export default function Pet() {
