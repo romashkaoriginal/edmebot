@@ -40,23 +40,12 @@
 .pet-page__section-head { margin-bottom: var(--sp-3); }
 .pet-page__section-head .section-title { margin: 0; }
 
-.pet-designs { padding: var(--sp-5); border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
-.pet-designs__hint { margin: 4px 0 0; color: var(--muted); font-size: var(--text-sm); font-weight: 700; }
-.pet-designs__grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-3); }
-.pet-design { position: relative; display: flex; min-height: 160px; flex-direction: column; align-items: center; justify-content: end; gap: 2px; padding: var(--sp-2) var(--sp-2) var(--sp-3); overflow: hidden; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); color: var(--ink); transition: transform var(--dur-press) var(--ease-out), border-color var(--dur-pop) var(--ease-out), background-color var(--dur-pop) var(--ease-out); }
-.pet-design::before { position: absolute; top: -34px; width: 110px; height: 110px; border-radius: 50%; background: var(--accent-soft); content: ""; }
-.pet-design .pet { position: relative; z-index: 1; }
-.pet-design__name, .pet-design__note { position: relative; z-index: 1; }
-.pet-design__name { font-weight: 900; }
-.pet-design__note { color: var(--muted); font-size: var(--text-xs); font-weight: 700; }
-.pet-design--on { border: 2px solid var(--accent); background: oklch(0.98 0.035 80); }
-.pet-design__check { position: absolute; z-index: 2; top: 8px; right: 8px; display: grid; width: 22px; height: 22px; place-items: center; border-radius: 50%; background: var(--accent); color: var(--on-accent); }
-.pet-design:active { transform: scale(.97); }
 
 .pet-page__species { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--sp-3); }
-.petpick { position: relative; display: flex; min-height: 126px; flex-direction: column; align-items: center; justify-content: end; gap: 3px; padding: var(--sp-2); overflow: hidden; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); transition: transform var(--dur-press) var(--ease-out), border-color var(--dur-pop) var(--ease-out), background-color var(--dur-pop) var(--ease-out); }
+.petpick { position: relative; display: flex; min-height: 142px; flex-direction: column; align-items: center; justify-content: end; gap: 3px; padding: var(--sp-2); overflow: hidden; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); transition: transform var(--dur-press) var(--ease-out), border-color var(--dur-pop) var(--ease-out), background-color var(--dur-pop) var(--ease-out); }
 .petpick::before { position: absolute; top: -24px; left: 50%; width: 92px; height: 92px; border-radius: 50%; background: var(--accent-soft); content: ""; transform: translateX(-50%); }
 .petpick .pet, .petpick__name { position: relative; z-index: 1; }
+.petpick .pet { margin-bottom: 2px; filter: drop-shadow(0 2px 1px oklch(0.28 0.04 260 / 0.08)); }
 .petpick__name { font-size: var(--text-sm); font-weight: 800; }
 .petpick:active { transform: scale(0.97); }
 .petpick--on { border: 2px solid var(--accent); background: oklch(0.98 0.035 80); }
@@ -82,5 +71,4 @@
 @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 8px); } }
 @media (min-width: 861px) { .pet-page__toast { bottom: var(--sp-6); } }
 @media (max-width: 760px) { .pet-page__shop { grid-template-columns: repeat(2, minmax(0, 1fr)); }.shopitem { grid-template-columns: 54px minmax(0, 1fr); gap: var(--sp-2); }.shopitem__icon { width: 54px; height: 54px; } }
-@media (max-width: 640px) { .pet-designs { padding: var(--sp-4); }.pet-designs__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }.pet-design { min-height: 148px; } }
-@media (max-width: 560px) { .pet-page { gap: var(--sp-5); }.pet-page__hero-top { padding: var(--sp-4) var(--sp-4) 0; }.pet-page__name { font-size: var(--text-xl); }.pet-page__room { min-height: 300px; margin-top: -12px; }.pet-page__avatar { margin-bottom: 20px; }.pet-page__speech { top: 12px; left: 7%; max-width: 184px; font-size: var(--text-xs); }.pet-page__sun { top: 38px; right: 9%; width: 48px; height: 48px; }.pet-page__plant { left: 5%; scale: 0.8; transform-origin: bottom left; }.pet-page__cloud--one { left: 2%; }.pet-page__actions { padding: var(--sp-2); }.pet-action { min-height: 50px; flex-direction: column; gap: 1px; padding: 5px; font-size: var(--text-xs); }.pet-page__streak { grid-template-columns: auto minmax(0, 1fr); align-items: start; }.pet-page__streak .badge { grid-column: 2; justify-self: start; }.pet-page__species { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-2); }.petpick { min-height: 116px; }.pet-page__shop { gap: var(--sp-2); }.shopitem { grid-template-columns: 1fr; justify-items: center; gap: 5px; min-height: 166px; text-align: center; }.shopitem .btn, .shopitem__owned { grid-column: 1; justify-self: center; }.shopitem__name { max-width: 100%; } }
+@media (max-width: 560px) { .pet-page { gap: var(--sp-5); }.pet-page__hero-top { padding: var(--sp-4) var(--sp-4) 0; }.pet-page__name { font-size: var(--text-xl); }.pet-page__room { min-height: 300px; margin-top: -12px; }.pet-page__avatar { margin-bottom: 20px; }.pet-page__speech { top: 12px; left: 7%; max-width: 184px; font-size: var(--text-xs); }.pet-page__sun { top: 38px; right: 9%; width: 48px; height: 48px; }.pet-page__plant { left: 5%; scale: 0.8; transform-origin: bottom left; }.pet-page__cloud--one { left: 2%; }.pet-page__actions { padding: var(--sp-2); }.pet-action { min-height: 50px; flex-direction: column; gap: 1px; padding: 5px; font-size: var(--text-xs); }.pet-page__streak { grid-template-columns: auto minmax(0, 1fr); align-items: start; }.pet-page__streak .badge { grid-column: 2; justify-self: start; }.pet-page__species { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-2); }.petpick { min-height: 134px; }.pet-page__shop { gap: var(--sp-2); }.shopitem { grid-template-columns: 1fr; justify-items: center; gap: 5px; min-height: 166px; text-align: center; }.shopitem .btn, .shopitem__owned { grid-column: 1; justify-self: center; }.shopitem__name { max-width: 100%; } }
