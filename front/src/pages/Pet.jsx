@@ -16,10 +16,18 @@ const CATEGORIES = [
   { id: "collect", label: "Коллекционное" },
 ];
 
+const FOX_DESIGNS = [
+  { id: "widget", name: "Widget", note: "яркий chibi" },
+  { id: "cozy", name: "Cozy", note: "мягкий и спокойный" },
+  { id: "sticker", name: "Sticker", note: "как стикер" },
+  { id: "storybook", name: "Story", note: "сказочный" },
+];
+
 export default function Pet() {
   const { profile, ownedItems, buyItem, setPetSpecies } = useApp();
   const [cat, setCat] = useState("food");
   const [feedback, setFeedback] = useState(null);
+  const [foxDesign, setFoxDesign] = useState("widget");
   const [worn, setWorn] = useState(() => ({ neck: "scarf" }));
   const [reaction, setReaction] = useState(null);
   const [eating, setEating] = useState(null);
@@ -118,7 +126,7 @@ export default function Pet() {
           <div className="pet-page__speech"><Sparkles size={15} aria-hidden="true" /><span>Мне нравится, когда ты учишься!</span></div>
           <div className="pet-page__plant" aria-hidden="true"><i /><i /><i /></div>
           <div className="pet-page__rug" aria-hidden="true" />
-          <PetAvatar className="pet-page__avatar" species={profile.pet.species} mood="happy" accessories={wornAccessories} reaction={reaction} eating={eating} size={220} />
+          <PetAvatar className="pet-page__avatar" species={profile.pet.species} mood="happy" accessories={wornAccessories} reaction={reaction} eating={eating} designVariant={profile.pet.species === "fox" ? foxDesign : "widget"} size={220} />
         </div>
 
         <div className="pet-page__actions" aria-label="Забота о питомце">
@@ -127,6 +135,31 @@ export default function Pet() {
           <button className="pet-action" onClick={scrollToShop}><Store size={19} strokeWidth={2.5} /><span>Предметы</span></button>
         </div>
       </Card>
+
+      <section className="pet-designs" aria-labelledby="pet-designs-title">
+        <div className="pet-page__section-head">
+          <div>
+            <p className="pet-page__eyebrow">Эскизы</p>
+            <SectionTitle id="pet-designs-title">Какой должна быть лиса?</SectionTitle>
+          </div>
+          <p className="pet-designs__hint">Выбор сразу меняет питомца на сцене</p>
+        </div>
+        <div className="pet-designs__grid">
+          {FOX_DESIGNS.map((design) => (
+            <button
+              key={design.id}
+              className={`pet-design ${foxDesign === design.id ? "pet-design--on" : ""}`}
+              onClick={() => setFoxDesign(design.id)}
+              aria-pressed={foxDesign === design.id}
+            >
+              <PetAvatar species="fox" mood="happy" designVariant={design.id} size={102} />
+              <span className="pet-design__name">{design.name}</span>
+              <span className="pet-design__note">{design.note}</span>
+              {foxDesign === design.id && <Check className="pet-design__check" size={15} strokeWidth={3} />}
+            </button>
+          ))}
+        </div>
+      </section>
 
       <Card className="pet-page__streak" pad="md">
         <Flame size={22} strokeWidth={2.4} className="pet-page__streak-icon" />

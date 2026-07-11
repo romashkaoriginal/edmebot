@@ -18,6 +18,17 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// Public: student list for the student-picker in RoleGate (no tg_id exposed).
+app.get('/api/students/list', async (_req, res, next) => {
+  try {
+    const db = require('./src/db');
+    const { rows } = await db.query(
+      'SELECT id, name, grade, subject FROM students ORDER BY id ASC'
+    );
+    res.json({ students: rows });
+  } catch (e) { next(e); }
+});
+
 // Module routes (no AI — rule-based logic only)
 app.use('/api/profile', require('./src/routes/profile'));
 app.use('/api/diagnostic', require('./src/routes/diagnostic'));

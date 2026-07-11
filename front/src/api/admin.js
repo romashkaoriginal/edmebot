@@ -2,14 +2,8 @@ import { apiUrl } from "./base";
 
 // Thin wrapper over the admin API. Sends x-telegram-id (from Telegram WebApp or
 // a localStorage fallback) — not enforced server-side yet, but wired for later.
-function tgId() {
-  try {
-    const wa = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
-    if (wa) return String(wa);
-  } catch {
-    /* not in Telegram */
-  }
-  return localStorage.getItem("edme_tg_id") || "demo";
+export function initData() {
+  return window.Telegram?.WebApp?.initData || "";
 }
 
 async function req(path, { method = "GET", body } = {}) {
@@ -17,7 +11,7 @@ async function req(path, { method = "GET", body } = {}) {
     method,
     headers: {
       "Content-Type": "application/json",
-      "x-telegram-id": tgId(),
+      "x-telegram-init-data": initData(),
     },
     body: body ? JSON.stringify(body) : undefined,
   });
