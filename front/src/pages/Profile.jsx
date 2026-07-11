@@ -19,7 +19,7 @@ import KnowledgeMap from "../components/shared/KnowledgeMap";
 import Achievements from "../components/shared/Achievements";
 import { useApp } from "../store/AppStore";
 import { achievements, weekActivity } from "../data/mock";
-import { apiUrl } from "../api/base";
+import { studentApi } from "../api/student";
 import "./Profile.css";
 
 export default function Profile() {
@@ -35,15 +35,12 @@ export default function Profile() {
   // via the admin stats endpoint for the demo student.
   const [dbStats, setDbStats] = useState(null);
   useEffect(() => {
-    fetch(apiUrl("/api/admin/stats"))
-      .then((r) => r.json())
-      .then(({ students }) => students?.[0]?.id)
-      .then((id) => (id ? fetch(apiUrl(`/api/admin/stats/${id}`)).then((r) => r.json()) : null))
-      .then((data) => data && setDbStats(data))
+    studentApi.analytics()
+      .then(setDbStats)
       .catch(() => setDbStats(null));
   }, []);
 
-  const solvedTotal = dbStats?.stats.attempts ?? profile.solvedTotal;
+  const solvedTotal = dbStats?.stats.solvedTotal ?? profile.solvedTotal;
   const accuracy = dbStats?.stats.accuracy ?? profile.accuracy;
 
   return (

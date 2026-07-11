@@ -77,6 +77,14 @@ export function AppProvider({ children }) {
 
   const clearReward = useCallback(() => setReward(null), []);
 
+  const hydrate = useCallback((data) => {
+    if (data.profile) {
+      setProfile((current) => ({ ...current, ...data.profile, pet: { ...current.pet, ...data.profile.pet } }));
+      setOwnedItems(data.profile.ownedItems ?? []);
+    }
+    if (data.topics) setTopics(data.topics);
+  }, []);
+
   const value = useMemo(
     () => ({
       profile,
@@ -92,8 +100,9 @@ export function AppProvider({ children }) {
       completeHomework,
       setPetSpecies,
       clearReward,
+      hydrate,
     }),
-    [profile, topics, homework, ownedItems, reward, awardXp, spendCoins, buyItem, bumpStreak, setTopicMastery, completeHomework, setPetSpecies, clearReward]
+    [profile, topics, homework, ownedItems, reward, awardXp, spendCoins, buyItem, bumpStreak, setTopicMastery, completeHomework, setPetSpecies, clearReward, hydrate]
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

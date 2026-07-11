@@ -1,7 +1,9 @@
 const express = require("express");
 const db = require("../db");
+const { requireStudent } = require("../middleware/auth");
 
 const router = express.Router();
+router.use(requireStudent);
 
 // Rule-based deadline notice (module 8): 24h / today / overdue.
 function deadlineNotice(hw) {
@@ -14,16 +16,13 @@ function deadlineNotice(hw) {
   return { tone: "muted", text: "предстоит" };
 }
 
-// Homework for the demo student, read from the DB (assigned via admin panel).
 router.get("/", async (req, res, next) => {
   try {
     const { status } = req.query;
-    const student = await db.getDemoStudent();
-    if (!student) return res.json({ homework: [], counts: { active: 0, overdue: 0 } });
 
     const { rows } = await db.query(
       "SELECT * FROM homework WHERE student_id = $1 ORDER BY id DESC",
-      [student.id]
+      [req.student.id]
     );
 
     let list = rows;
@@ -44,8 +43,8 @@ router.get("/", async (req, res, next) => {
 router.post("/:id/complete", async (req, res, next) => {
   try {
     const { rows } = await db.query(
-      "UPDATE homework SET status = 'done' WHERE id = $1 RETURNING *",
-      [req.params.id]
+      "UPDATE homework SET status = 'done' WHERE id = $1 AND student_id = $2 RETURNING *",
+      [req.params.id, req.student.id]
     );
     if (!rows.length) return res.status(404).json({ error: "not_found" });
     res.json({ ok: true, homework: rows[0] });

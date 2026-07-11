@@ -3,7 +3,7 @@ import { BookOpen, Clock, Check, Upload, MessageCircleQuestion, CircleAlert } fr
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
-import { apiUrl } from "../api/base";
+import { studentApi } from "../api/student";
 import "./Homework.css";
 
 const FILTERS = [
@@ -22,8 +22,7 @@ export default function Homework() {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch(apiUrl("/api/homework"));
-      const data = await res.json();
+      const data = await studentApi.homework();
       setHomework(data.homework ?? []);
       setCounts(data.counts ?? { active: 0, overdue: 0 });
     } finally {
@@ -36,7 +35,7 @@ export default function Homework() {
   }, [load]);
 
   async function complete(id) {
-    await fetch(apiUrl(`/api/homework/${id}/complete`), { method: "POST" });
+    await studentApi.completeHomework(id);
     await load();
   }
 

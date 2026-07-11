@@ -62,6 +62,33 @@ CREATE TABLE IF NOT EXISTS attempts (
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS student_profiles (
+  student_id           BIGINT PRIMARY KEY REFERENCES students(id) ON DELETE CASCADE,
+  xp                   INTEGER NOT NULL DEFAULT 0,
+  coins                INTEGER NOT NULL DEFAULT 0,
+  level                INTEGER NOT NULL DEFAULT 1,
+  xp_from_level        INTEGER NOT NULL DEFAULT 0,
+  xp_for_next          INTEGER NOT NULL DEFAULT 400,
+  streak               INTEGER NOT NULL DEFAULT 0,
+  streak_last_done_on  DATE,
+  streak_freeze_used   BOOLEAN NOT NULL DEFAULT FALSE,
+  pet_species          TEXT NOT NULL DEFAULT 'fox',
+  pet_name             TEXT NOT NULL DEFAULT 'Рыжик',
+  owned_items          JSONB NOT NULL DEFAULT '[]',
+  worn_items           JSONB NOT NULL DEFAULT '{}',
+  diagnostic_done      BOOLEAN NOT NULL DEFAULT FALSE,
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS student_topics (
+  student_id   BIGINT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  topic_id     TEXT NOT NULL,
+  mastery      INTEGER NOT NULL DEFAULT 0 CHECK (mastery BETWEEN 0 AND 100),
+  status       TEXT NOT NULL DEFAULT 'red' CHECK (status IN ('red', 'yellow', 'green')),
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (student_id, topic_id)
+);
+
 CREATE TABLE IF NOT EXISTS users (
   id          BIGSERIAL PRIMARY KEY,
   tg_id       TEXT UNIQUE NOT NULL,
@@ -83,6 +110,7 @@ CREATE INDEX IF NOT EXISTS idx_tasks_grade_subject ON tasks (grade, subject);
 CREATE INDEX IF NOT EXISTS idx_homework_student ON homework (student_id);
 CREATE INDEX IF NOT EXISTS idx_attempts_student ON attempts (student_id);
 CREATE INDEX IF NOT EXISTS idx_bonus_student ON bonus_transactions (student_id);
+CREATE INDEX IF NOT EXISTS idx_student_topics_student ON student_topics (student_id);
 `;
 
 // Map the current hardcoded task bank to grade 7 / Математика so the demo

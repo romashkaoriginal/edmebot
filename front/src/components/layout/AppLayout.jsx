@@ -1,9 +1,11 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import { Home, Target, Dumbbell, PawPrint, BookOpen, User, Flame, Zap } from "lucide-react";
 import Logo from "../brand/Logo";
 import StatPill from "../ui/StatPill";
 import RewardOverlay from "./RewardOverlay";
 import { useApp } from "../../store/AppStore";
+import { studentApi } from "../../api/student";
 import "./AppLayout.css";
 
 const NAV = [
@@ -16,10 +18,14 @@ const NAV = [
 ];
 
 export default function AppLayout() {
-  const { profile } = useApp();
+  const { profile, hydrate } = useApp();
   const { pathname } = useLocation();
   // Practice/diagnostic run in a focused mode — hide chrome distractions there.
   const focus = pathname.startsWith("/practice/run") || pathname.startsWith("/diagnostic/run");
+
+  useEffect(() => {
+    studentApi.profile().then(hydrate).catch(() => undefined);
+  }, [hydrate]);
 
   return (
     <div className={`app ${focus ? "app--focus" : ""}`}>

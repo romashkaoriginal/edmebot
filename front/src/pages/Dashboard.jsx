@@ -9,7 +9,7 @@ import SectionTitle from "../components/ui/SectionTitle";
 import PetAvatar from "../components/pet/PetAvatar";
 import KnowledgeMap from "../components/shared/KnowledgeMap";
 import { useApp } from "../store/AppStore";
-import { apiUrl } from "../api/base";
+import { studentApi } from "../api/student";
 import "./Dashboard.css";
 
 export default function Dashboard() {
@@ -21,8 +21,7 @@ export default function Dashboard() {
   // Homework preview comes from the backend (assigned via admin panel).
   const [activeHw, setActiveHw] = useState([]);
   useEffect(() => {
-    fetch(apiUrl("/api/homework?status=active"))
-      .then((r) => r.json())
+    studentApi.homework()
       .then((d) => setActiveHw((d.homework ?? []).slice(0, 2)))
       .catch(() => setActiveHw([]));
   }, []);

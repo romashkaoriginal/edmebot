@@ -1,39 +1,48 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { X, ArrowRight, CircleHelp, PartyPopper } from "lucide-react";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import OptionList from "../components/shared/OptionList";
 import KnowledgeMap from "../components/shared/KnowledgeMap";
-import { diagnostic, topics as topicSeed } from "../data/mock";
+import { studentApi } from "../api/student";
+import { useApp } from "../store/AppStore";
 import "./RunMode.css";
 
 export default function DiagnosticRun() {
   const navigate = useNavigate();
+  const { hydrate } = useApp();
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState(null);
-  const [answers, setAnswers] = useState({}); // topicId -> {correct, total}
+  const [questions, setQuestions] = useState(null);
+  const [answers, setAnswers] = useState([]);
+  const [resultTopics, setResultTopics] = useState([]);
   const [done, setDone] = useState(false);
 
-  const q = diagnostic[idx];
-  const progress = ((idx + (done ? 1 : 0)) / diagnostic.length) * 100;
+  useEffect(() => {
+    studentApi.diagnostic().then((data) => setQuestions(data.questions ?? [])).catch(() => setQuestions([]));
+  }, []);
 
-  function record(isCorrect) {
-    setAnswers((a) => {
-      const cur = a[q.topic] ?? { correct: 0, total: 0 };
-      return { ...a, [q.topic]: { correct: cur.correct + (isCorrect ? 1 : 0), total: cur.total + 1 } };
-    });
-  }
+  const q = questions?.[idx];
+  const progress = questions?.length ? ((idx + (done ? 1 : 0)) / questions.length) * 100 : 0;
 
-  function next(isCorrect) {
-    record(isCorrect);
+  async function next(answer) {
+    const nextAnswers = [...answers, { id: q.id, selected: answer }];
+    setAnswers(nextAnswers);
     setSelected(null);
-    if (idx + 1 >= diagnostic.length) setDone(true);
+    if (idx + 1 >= questions.length) {
+      const result = await studentApi.submitDiagnostic(nextAnswers);
+      setResultTopics(result.knowledgeMap ?? []);
+      hydrate({ profile: result.profile, topics: result.knowledgeMap });
+      setDone(true);
+    }
     else setIdx(idx + 1);
   }
 
+  if (questions === null) return <div className="run"><div className="run__body"><Card pad="lg">Загрузка диагностики…</Card></div></div>;
+  if (!questions.length) return <div className="run"><div className="run__body"><Card pad="lg">Нет вопросов для диагностики.</Card></div></div>;
+
   if (done) {
-    const resultTopics = buildKnowledgeMap(answers);
     return (
       <div className="run run--result">
         <Card className="run__result-card" pad="lg">
@@ -45,7 +54,7 @@ export default function DiagnosticRun() {
             Вот твоя персональная карта знаний. Красные темы — с них и начнём.
           </p>
           <div className="run__result-map">
-            <KnowledgeMap topics={resultTopics} />
+          <KnowledgeMap topics={resultTopics} />
           </div>
           <div className="run__result-actions">
             <Button variant="soft" onClick={() => navigate("/app")}>
@@ -70,7 +79,7 @@ export default function DiagnosticRun() {
           <div className="run__progress-fill" style={{ width: `${progress}%` }} />
         </div>
         <span className="run__counter font-display">
-          {idx + 1}/{diagnostic.length}
+          {idx + 1}/{questions.length}
         </span>
       </header>
 
@@ -83,28 +92,17 @@ export default function DiagnosticRun() {
       </div>
 
       <footer className="run__footer">
-        <Button variant="ghost" icon={CircleHelp} onClick={() => next(false)}>
+        <Button variant="ghost" icon={CircleHelp} onClick={() => next(null)}>
           Не знаю
         </Button>
         <Button
           icon={ArrowRight}
           disabled={selected === null}
-          onClick={() => next(selected === q.correct)}
+          onClick={() => next(selected)}
         >
-          {idx + 1 >= diagnostic.length ? "Завершить" : "Дальше"}
+          {idx + 1 >= questions.length ? "Завершить" : "Дальше"}
         </Button>
       </footer>
     </div>
   );
-}
-
-// Rule-based knowledge map: ratio of correct answers per topic → status.
-function buildKnowledgeMap(answers) {
-  return topicSeed.map((t) => {
-    const a = answers[t.id];
-    if (!a || a.total === 0) return t;
-    const mastery = Math.round((a.correct / a.total) * 100);
-    const status = mastery >= 75 ? "green" : mastery >= 50 ? "yellow" : "red";
-    return { ...t, mastery, status };
-  });
 }

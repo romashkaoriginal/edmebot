@@ -1,32 +1,26 @@
 const express = require("express");
-const store = require("../store");
 const seed = require("../data/seed");
+const state = require("../studentState");
+const { requireStudent } = require("../middleware/auth");
 
 const router = express.Router();
+router.use(requireStudent);
 
-// Pet state + shop (module 6)
-router.get("/", (req, res) => {
-  const p = store.state.profile;
-  res.json({
-    pet: p.pet,
-    coins: p.coins,
-    streak: p.streak,
-    streakFreezeUsed: p.streakFreezeUsed,
-    ownedItems: p.ownedItems,
-    shop: seed.shopItems,
-  });
+router.get("/", async (req, res, next) => {
+  try {
+    const current = await state.getState(req.student);
+    res.json({ ...current.profile, shop: seed.shopItems });
+  } catch (e) { next(e); }
 });
 
-// Buy a shop item
-router.post("/buy", (req, res) => {
-  const { itemId } = req.body ?? {};
-  if (!itemId) return res.status(400).json({ error: "itemId_required" });
-  const result = store.buyItem(itemId);
-  if (result.error) {
-    const code = result.error === "item_not_found" ? 404 : 400;
-    return res.status(code).json(result);
-  }
-  res.json(result);
+router.post("/buy", async (req, res, next) => {
+  try {
+    const item = seed.shopItems.find((entry) => entry.id === req.body?.itemId);
+    if (!item) return res.status(404).json({ error: "item_not_found" });
+    const result = await state.buyItem(req.student, item);
+    if (result.error) return res.status(400).json(result);
+    res.json({ ok: true, profile: result.state.profile });
+  } catch (e) { next(e); }
 });
 
 module.exports = router;

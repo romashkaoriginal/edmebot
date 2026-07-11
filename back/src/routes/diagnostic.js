@@ -1,21 +1,22 @@
 const express = require("express");
-const store = require("../store");
 const seed = require("../data/seed");
+const state = require("../studentState");
+const { requireStudent } = require("../middleware/auth");
 
 const router = express.Router();
+router.use(requireStudent);
 
-// Get the diagnostic questions (module 1). Answers stripped.
 router.get("/", (req, res) => {
-  const questions = seed.diagnostic.map(({ correct, ...q }) => q);
-  res.json({ subject: seed.profile.subject, questions });
+  res.json({ subject: req.student.subject, questions: seed.diagnostic.map(({ correct, ...question }) => question) });
 });
 
-// Submit answers → knowledge map
-router.post("/submit", (req, res) => {
-  const answers = Array.isArray(req.body?.answers) ? req.body.answers : [];
-  if (!answers.length) return res.status(400).json({ error: "answers_required" });
-  const map = store.scoreDiagnostic(answers);
-  res.json({ knowledgeMap: map });
+router.post("/submit", async (req, res, next) => {
+  try {
+    const answers = Array.isArray(req.body?.answers) ? req.body.answers : [];
+    if (!answers.length) return res.status(400).json({ error: "answers_required" });
+    const result = await state.submitDiagnostic(req.student, answers);
+    res.json({ knowledgeMap: result.topics, profile: result.profile });
+  } catch (e) { next(e); }
 });
 
 module.exports = router;

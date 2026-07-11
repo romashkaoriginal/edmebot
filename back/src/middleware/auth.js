@@ -60,6 +60,23 @@ async function requireAuth(req, res, next) {
   }
 }
 
+async function requireStudent(req, res, next) {
+  try {
+    const initData = req.header("x-telegram-init-data");
+    if (!initData) return res.status(401).json({ error: "telegram_auth_required" });
+    const telegramUser = verifyTelegramInitData(initData);
+    if (!telegramUser) return res.status(401).json({ error: "telegram_auth_invalid" });
+
+    const { rows } = await db.query("SELECT * FROM students WHERE tg_id = $1", [String(telegramUser.id)]);
+    if (!rows.length) return res.status(403).json({ error: "student_not_linked" });
+    req.telegramUser = telegramUser;
+    req.student = rows[0];
+    next();
+  } catch (e) {
+    next(e);
+  }
+}
+
 function requireRole(...roles) {
   return (req, res, next) => {
     if (!req.user || !roles.includes(req.user.role)) {
@@ -69,4 +86,4 @@ function requireRole(...roles) {
   };
 }
 
-module.exports = { requireAuth, requireRole };
+module.exports = { requireAuth, requireRole, requireStudent };

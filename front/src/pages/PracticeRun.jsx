@@ -7,7 +7,7 @@ import Card from "../components/ui/Card";
 import OptionList from "../components/shared/OptionList";
 import { useApp } from "../store/AppStore";
 import { topics as allTopics } from "../data/mock";
-import { apiUrl } from "../api/base";
+import { studentApi } from "../api/student";
 import "./RunMode.css";
 import "./PracticeRun.css";
 
@@ -15,7 +15,7 @@ import "./PracticeRun.css";
 // created in the admin panel appear here automatically.
 export default function PracticeRun() {
   const navigate = useNavigate();
-  const { awardXp, setTopicMastery } = useApp();
+  const { hydrate } = useApp();
 
   const [tasks, setTasks] = useState(null); // null = loading
   const [idx, setIdx] = useState(0);
@@ -29,8 +29,7 @@ export default function PracticeRun() {
   const [checking, setChecking] = useState(false);
 
   useEffect(() => {
-    fetch(apiUrl("/api/practice/series?length=5"))
-      .then((r) => r.json())
+    studentApi.practiceSeries()
       .then((d) => setTasks(d.tasks ?? []))
       .catch(() => setTasks([]));
   }, []);
@@ -76,16 +75,10 @@ export default function PracticeRun() {
     if (checking) return;
     setChecking(true);
     try {
-      const res = await fetch(apiUrl("/api/practice/answer"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ taskId: task.id, selected, attempts, hintsUsed }),
-      });
-      const data = await res.json();
+      const data = await studentApi.answer({ taskId: task.id, selected, attempts, hintsUsed });
+      hydrate({ profile: data.profile, topics: data.topics });
 
       if (data.correct) {
-        if (data.award?.gained) awardXp(data.award.gained, data.award.coins ?? 0);
-        setTopicMastery(task.topic, 6);
         setGraded("correct");
         setFeedback({ explanation: data.explanation, commonMistake: null, correctIndex: data.correctIndex });
         setResults((r) => [...r, { taskId: task.id, correct: true, topic: task.topic }]);
@@ -96,7 +89,6 @@ export default function PracticeRun() {
           setSelected(null);
           return;
         }
-        setTopicMastery(task.topic, -4);
         setGraded("wrong");
         setFeedback({ explanation: data.explanation, commonMistake: data.commonMistake, correctIndex: data.correctIndex });
         setResults((r) => [...r, { taskId: task.id, correct: false, topic: task.topic }]);
