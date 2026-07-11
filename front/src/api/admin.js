@@ -2,8 +2,20 @@ import { apiUrl } from "./base";
 
 // Thin wrapper over the admin API. Sends x-telegram-id (from Telegram WebApp or
 // a localStorage fallback) — not enforced server-side yet, but wired for later.
+export function telegramWebApp() {
+  return window.Telegram?.WebApp ?? null;
+}
+
 export function initData() {
-  return window.Telegram?.WebApp?.initData || "";
+  return telegramWebApp()?.initData || "";
+}
+
+export function initTelegramWebApp() {
+  const webApp = telegramWebApp();
+  if (!webApp) return null;
+  webApp.ready();
+  webApp.expand();
+  return webApp;
 }
 
 async function req(path, { method = "GET", body } = {}) {

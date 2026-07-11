@@ -4,7 +4,7 @@ import { ShieldCheck, GraduationCap, ArrowRight, ChevronLeft } from "lucide-reac
 import Logo from "../components/brand/Logo";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
-import { adminApi, initData } from "../api/admin";
+import { adminApi, initData, initTelegramWebApp } from "../api/admin";
 import { apiUrl } from "../api/base";
 import "./RoleGate.css";
 
@@ -22,11 +22,18 @@ export default function RoleGate() {
   const [view, setView] = useState("main");
   const [students, setStudents] = useState([]);
   const [studentsLoading, setStudentsLoading] = useState(false);
-
-  const hasInitData = Boolean(initData());
+  const [hasInitData, setHasInitData] = useState(() => Boolean(initData()));
 
   useEffect(() => {
-    if (!hasInitData) { setLoading(false); return; }
+    const webApp = initTelegramWebApp();
+    const receivedInitData = Boolean(webApp?.initData);
+    setHasInitData(receivedInitData);
+
+    if (!receivedInitData) {
+      setLoading(false);
+      return;
+    }
+
     adminApi
       .me()
       .then(({ user }) => setRole(user.role))

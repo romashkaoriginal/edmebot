@@ -4,6 +4,9 @@ import { BrowserRouter } from "react-router-dom";
 import "./index.css";
 import App from "./App.jsx";
 import { AppProvider } from "./store/AppStore";
+import { initTelegramWebApp } from "./api/admin";
+
+initTelegramWebApp();
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
