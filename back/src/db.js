@@ -62,9 +62,27 @@ CREATE TABLE IF NOT EXISTS attempts (
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS users (
+  id          BIGSERIAL PRIMARY KEY,
+  tg_id       TEXT UNIQUE NOT NULL,
+  name        TEXT NOT NULL,
+  role        TEXT NOT NULL CHECK (role IN ('admin','tutor')),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS bonus_transactions (
+  id          BIGSERIAL PRIMARY KEY,
+  student_id  BIGINT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  amount      INTEGER NOT NULL,
+  reason      TEXT,
+  created_by  TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE INDEX IF NOT EXISTS idx_tasks_grade_subject ON tasks (grade, subject);
 CREATE INDEX IF NOT EXISTS idx_homework_student ON homework (student_id);
 CREATE INDEX IF NOT EXISTS idx_attempts_student ON attempts (student_id);
+CREATE INDEX IF NOT EXISTS idx_bonus_student ON bonus_transactions (student_id);
 `;
 
 // Map the current hardcoded task bank to grade 7 / Математика so the demo
@@ -102,6 +120,17 @@ async function seedIfEmpty() {
       ["demo", seed.profile.name, seed.profile.grade, seed.profile.subject]
     );
     console.log("Seeded demo student.");
+  }
+
+  // Bootstrap the first admin so someone can get into the panel at all.
+  // Without this, requireAuth would lock everyone out on a fresh DB.
+  const { rows: userCount } = await query("SELECT COUNT(*)::int AS n FROM users");
+  if (userCount[0].n === 0 && process.env.SEED_ADMIN_TG_ID) {
+    await query(
+      `INSERT INTO users (tg_id, name, role) VALUES ($1,$2,'admin') ON CONFLICT (tg_id) DO NOTHING`,
+      [process.env.SEED_ADMIN_TG_ID, "Admin"]
+    );
+    console.log("Seeded initial admin user.");
   }
 }
 

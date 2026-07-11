@@ -38,6 +38,11 @@
   gap: var(--sp-4);
 }
 
+.gate__cards--single {
+  grid-template-columns: minmax(0, 380px);
+  justify-content: center;
+}
+
 .gate__card {
   display: flex;
   flex-direction: column;

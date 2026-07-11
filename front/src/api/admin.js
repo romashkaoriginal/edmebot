@@ -27,11 +27,24 @@ async function req(path, { method = "GET", body } = {}) {
 }
 
 export const adminApi = {
+  // Current user (role check)
+  me: () => req("/me"),
+
+  // Users
+  listUsers: () => req("/users"),
+  createUser: (u) => req("/users", { method: "POST", body: u }),
+  updateUser: (id, u) => req(`/users/${id}`, { method: "PUT", body: u }),
+  deleteUser: (id) => req(`/users/${id}`, { method: "DELETE" }),
+
   // Students
   listStudents: () => req("/students"),
   createStudent: (s) => req("/students", { method: "POST", body: s }),
   updateStudent: (id, s) => req(`/students/${id}`, { method: "PUT", body: s }),
   deleteStudent: (id) => req(`/students/${id}`, { method: "DELETE" }),
+
+  // Bonuses
+  bonusHistory: (studentId) => req(`/students/${studentId}/bonus`),
+  awardBonus: (studentId, b) => req(`/students/${studentId}/bonus`, { method: "POST", body: b }),
 
   // Tasks
   listTasks: (params = {}) => {

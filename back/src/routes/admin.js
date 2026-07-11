@@ -1,8 +1,9 @@
-// Admin panel API. Backed by Postgres (Supabase). No auth yet — access is open
-// to everyone (per product decision). The x-telegram-id header is read for
-// forward-compat, but not enforced. Role gating by tg_id lands later.
+// Admin panel API. Gated by tg_id -> role lookup (see ../middleware/auth.js).
+// Admin: students, users, tasks, homework, stats, bonuses.
+// Tutor: tasks, homework, stats only.
 const express = require("express");
 const db = require("../db");
+const { requireAuth, requireRole } = require("../middleware/auth");
 
 const router = express.Router();
 
@@ -10,9 +11,76 @@ function bad(res, msg, code = 400) {
   return res.status(code).json({ error: msg });
 }
 
-// ---------- Students ----------
+router.use(requireAuth);
 
-router.get("/students", async (_req, res, next) => {
+// ---------- Me ----------
+
+router.get("/me", (req, res) => {
+  res.json({ user: { id: req.user.id, tgId: req.user.tg_id, name: req.user.name, role: req.user.role } });
+});
+
+// ---------- Users (admin only) ----------
+
+router.get("/users", requireRole("admin"), async (_req, res, next) => {
+  try {
+    const { rows } = await db.query("SELECT * FROM users ORDER BY id ASC");
+    res.json({ users: rows });
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.post("/users", requireRole("admin"), async (req, res, next) => {
+  try {
+    const { tgId, name, role } = req.body ?? {};
+    if (!tgId) return bad(res, "tg_id_required");
+    if (!name || !role) return bad(res, "name_and_role_required");
+    if (!["admin", "tutor"].includes(role)) return bad(res, "invalid_role");
+    const { rows } = await db.query(
+      `INSERT INTO users (tg_id, name, role) VALUES ($1,$2,$3) RETURNING *`,
+      [tgId, name, role]
+    );
+    res.status(201).json({ user: rows[0] });
+  } catch (e) {
+    if (e.code === "23505") return bad(res, "tg_id_already_exists", 409);
+    next(e);
+  }
+});
+
+router.put("/users/:id", requireRole("admin"), async (req, res, next) => {
+  try {
+    const { name, role } = req.body ?? {};
+    if (role && !["admin", "tutor"].includes(role)) return bad(res, "invalid_role");
+    const { rows } = await db.query(
+      `UPDATE users
+         SET name = COALESCE($2, name),
+             role = COALESCE($3, role)
+       WHERE id = $1 RETURNING *`,
+      [req.params.id, name ?? null, role ?? null]
+    );
+    if (!rows.length) return bad(res, "not_found", 404);
+    res.json({ user: rows[0] });
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.delete("/users/:id", requireRole("admin"), async (req, res, next) => {
+  try {
+    if (String(req.user.id) === String(req.params.id)) {
+      return bad(res, "cannot_delete_self");
+    }
+    const { rowCount } = await db.query("DELETE FROM users WHERE id = $1", [req.params.id]);
+    if (!rowCount) return bad(res, "not_found", 404);
+    res.json({ ok: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ---------- Students (admin only: add/remove) ----------
+
+router.get("/students", requireRole("admin", "tutor"), async (_req, res, next) => {
   try {
     const { rows } = await db.query("SELECT * FROM students ORDER BY id ASC");
     res.json({ students: rows });
@@ -21,13 +89,14 @@ router.get("/students", async (_req, res, next) => {
   }
 });
 
-router.post("/students", async (req, res, next) => {
+router.post("/students", requireRole("admin"), async (req, res, next) => {
   try {
     const { name, grade, subject, tgId } = req.body ?? {};
+    if (!tgId) return bad(res, "tg_id_required");
     if (!name || !grade || !subject) return bad(res, "name_grade_subject_required");
     const { rows } = await db.query(
       `INSERT INTO students (tg_id, name, grade, subject) VALUES ($1,$2,$3,$4) RETURNING *`,
-      [tgId || null, name, Number(grade), subject]
+      [tgId, name, Number(grade), subject]
     );
     res.status(201).json({ student: rows[0] });
   } catch (e) {
@@ -36,9 +105,10 @@ router.post("/students", async (req, res, next) => {
   }
 });
 
-router.put("/students/:id", async (req, res, next) => {
+router.put("/students/:id", requireRole("admin"), async (req, res, next) => {
   try {
     const { name, grade, subject, tgId } = req.body ?? {};
+    if (tgId === "") return bad(res, "tg_id_required");
     const { rows } = await db.query(
       `UPDATE students
          SET name = COALESCE($2, name),
@@ -56,7 +126,7 @@ router.put("/students/:id", async (req, res, next) => {
   }
 });
 
-router.delete("/students/:id", async (req, res, next) => {
+router.delete("/students/:id", requireRole("admin"), async (req, res, next) => {
   try {
     const { rowCount } = await db.query("DELETE FROM students WHERE id = $1", [req.params.id]);
     if (!rowCount) return bad(res, "not_found", 404);
@@ -66,9 +136,44 @@ router.delete("/students/:id", async (req, res, next) => {
   }
 });
 
-// ---------- Tasks ----------
+// ---------- Bonuses (admin awards, admin+tutor can view history) ----------
 
-router.get("/tasks", async (req, res, next) => {
+router.get("/students/:id/bonus", requireRole("admin", "tutor"), async (req, res, next) => {
+  try {
+    const { rows: srows } = await db.query("SELECT id FROM students WHERE id = $1", [req.params.id]);
+    if (!srows.length) return bad(res, "not_found", 404);
+    const { rows } = await db.query(
+      `SELECT * FROM bonus_transactions WHERE student_id = $1 ORDER BY id DESC`,
+      [req.params.id]
+    );
+    const balance = rows.reduce((sum, t) => sum + t.amount, 0);
+    res.json({ balance, transactions: rows });
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.post("/students/:id/bonus", requireRole("admin"), async (req, res, next) => {
+  try {
+    const { amount, reason } = req.body ?? {};
+    const amt = Number(amount);
+    if (!amount || Number.isNaN(amt) || amt === 0) return bad(res, "amount_required");
+    const { rows: srows } = await db.query("SELECT id FROM students WHERE id = $1", [req.params.id]);
+    if (!srows.length) return bad(res, "not_found", 404);
+    const { rows } = await db.query(
+      `INSERT INTO bonus_transactions (student_id, amount, reason, created_by)
+       VALUES ($1,$2,$3,$4) RETURNING *`,
+      [req.params.id, amt, reason || null, req.user.tg_id]
+    );
+    res.status(201).json({ transaction: rows[0] });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ---------- Tasks (admin + tutor) ----------
+
+router.get("/tasks", requireRole("admin", "tutor"), async (req, res, next) => {
   try {
     const { grade, subject } = req.query;
     const clauses = [];
@@ -92,7 +197,7 @@ router.get("/tasks", async (req, res, next) => {
   }
 });
 
-router.post("/tasks", async (req, res, next) => {
+router.post("/tasks", requireRole("admin", "tutor"), async (req, res, next) => {
   try {
     const { grade, subject, topic, prompt, options, correct, explanation, difficulty, hints } =
       req.body ?? {};
@@ -121,7 +226,7 @@ router.post("/tasks", async (req, res, next) => {
   }
 });
 
-router.delete("/tasks/:id", async (req, res, next) => {
+router.delete("/tasks/:id", requireRole("admin", "tutor"), async (req, res, next) => {
   try {
     const { rowCount } = await db.query("DELETE FROM tasks WHERE id = $1", [req.params.id]);
     if (!rowCount) return bad(res, "not_found", 404);
@@ -131,9 +236,9 @@ router.delete("/tasks/:id", async (req, res, next) => {
   }
 });
 
-// ---------- Homework ----------
+// ---------- Homework (admin + tutor) ----------
 
-router.get("/homework", async (req, res, next) => {
+router.get("/homework", requireRole("admin", "tutor"), async (req, res, next) => {
   try {
     const { studentId } = req.query;
     const params = [];
@@ -155,7 +260,7 @@ router.get("/homework", async (req, res, next) => {
   }
 });
 
-router.post("/homework", async (req, res, next) => {
+router.post("/homework", requireRole("admin", "tutor"), async (req, res, next) => {
   try {
     const { studentId, title, description, due, taskIds } = req.body ?? {};
     if (!studentId || !title) return bad(res, "studentId_and_title_required");
@@ -171,7 +276,7 @@ router.post("/homework", async (req, res, next) => {
   }
 });
 
-router.delete("/homework/:id", async (req, res, next) => {
+router.delete("/homework/:id", requireRole("admin", "tutor"), async (req, res, next) => {
   try {
     const { rowCount } = await db.query("DELETE FROM homework WHERE id = $1", [req.params.id]);
     if (!rowCount) return bad(res, "not_found", 404);
@@ -181,10 +286,10 @@ router.delete("/homework/:id", async (req, res, next) => {
   }
 });
 
-// ---------- Stats ----------
+// ---------- Stats (admin + tutor) ----------
 
 // Summary across all students.
-router.get("/stats", async (_req, res, next) => {
+router.get("/stats", requireRole("admin", "tutor"), async (_req, res, next) => {
   try {
     const { rows } = await db.query(
       `SELECT s.id, s.name, s.grade, s.subject,
@@ -206,7 +311,7 @@ router.get("/stats", async (_req, res, next) => {
 });
 
 // Detailed stats for one student, broken down by topic.
-router.get("/stats/:studentId", async (req, res, next) => {
+router.get("/stats/:studentId", requireRole("admin", "tutor"), async (req, res, next) => {
   try {
     const id = req.params.studentId;
     const { rows: srows } = await db.query("SELECT * FROM students WHERE id = $1", [id]);

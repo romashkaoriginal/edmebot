@@ -1,6 +1,9 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import AppLayout from "./components/layout/AppLayout";
 import AdminLayout from "./components/layout/AdminLayout";
+import RequireRole from "./components/admin/RequireRole";
+import AdminIndex from "./components/admin/AdminIndex";
+import { AdminAuthProvider } from "./context/AdminAuth";
 import RoleGate from "./pages/RoleGate";
 import Dashboard from "./pages/Dashboard";
 import Practice from "./pages/Practice";
@@ -11,6 +14,7 @@ import Homework from "./pages/Homework";
 import Pet from "./pages/Pet";
 import Profile from "./pages/Profile";
 import Students from "./pages/admin/Students";
+import Users from "./pages/admin/Users";
 import Tasks from "./pages/admin/Tasks";
 import HomeworkAdmin from "./pages/admin/HomeworkAdmin";
 import Stats from "./pages/admin/Stats";
@@ -34,9 +38,31 @@ export default function App() {
       </Route>
 
       {/* Admin panel */}
-      <Route path="admin" element={<AdminLayout />}>
-        <Route index element={<Navigate to="students" replace />} />
-        <Route path="students" element={<Students />} />
+      <Route
+        path="admin"
+        element={
+          <AdminAuthProvider>
+            <AdminLayout />
+          </AdminAuthProvider>
+        }
+      >
+        <Route index element={<AdminIndex />} />
+        <Route
+          path="students"
+          element={
+            <RequireRole roles={["admin"]}>
+              <Students />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="users"
+          element={
+            <RequireRole roles={["admin"]}>
+              <Users />
+            </RequireRole>
+          }
+        />
         <Route path="tasks" element={<Tasks />} />
         <Route path="homework" element={<HomeworkAdmin />} />
         <Route path="stats" element={<Stats />} />

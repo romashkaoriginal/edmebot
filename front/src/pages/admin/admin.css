@@ -124,6 +124,7 @@
 .arow {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--sp-3);
   padding: var(--sp-3);
   background: var(--surface);
@@ -172,6 +173,51 @@
 
 .asection {
   margin-top: var(--sp-6);
+}
+
+/* ---- Bonus panel ---- */
+.arow__bonus {
+  flex: 1 0 100%;
+  display: grid;
+  gap: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--line);
+}
+.arow__bonus-balance {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+.arow__bonus-balance strong {
+  color: var(--ink);
+  font-size: var(--text-md);
+}
+.aform--inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+.aform--inline .ainput {
+  width: auto;
+  flex: 1;
+  min-width: 140px;
+}
+.arow__bonus-history {
+  display: grid;
+  gap: 4px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+.arow__bonus-item {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+.abonus-plus {
+  color: var(--success);
+  font-weight: 800;
+}
+.abonus-minus {
+  color: var(--danger);
+  font-weight: 800;
 }
 
 /* ---- Stats ---- */
