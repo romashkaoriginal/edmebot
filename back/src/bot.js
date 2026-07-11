@@ -8,6 +8,18 @@ const WEBHOOK_PATH = "/api/telegram/webhook";
 
 let bot = null;
 
+async function rememberContact(user) {
+  if (!user?.id) return;
+  const name = [user.first_name, user.last_name].filter(Boolean).join(" ") || "Telegram пользователь";
+  const db = require("./db");
+  await db.query(
+    `INSERT INTO telegram_contacts (tg_id, name, username)
+     VALUES ($1,$2,$3)
+     ON CONFLICT (tg_id) DO UPDATE SET name=EXCLUDED.name, username=EXCLUDED.username, last_seen_at=now()`,
+    [String(user.id), name, user.username ?? null]
+  );
+}
+
 function init(app) {
   if (!TOKEN) {
     console.log("TELEGRAM_BOT_TOKEN not set — Telegram bot disabled.");
@@ -22,6 +34,10 @@ function init(app) {
   // updates to processUpdate() below. The library only makes outgoing
   // API calls (sendMessage, setWebHook, etc).
   bot = new TelegramBot(TOKEN, { webHook: false, polling: false });
+
+  bot.on("message", (msg) => {
+    rememberContact(msg.from).catch((e) => console.error("telegram contact save failed:", e.message));
+  });
 
   app.post(WEBHOOK_PATH, (req, res) => {
     bot.processUpdate(req.body);

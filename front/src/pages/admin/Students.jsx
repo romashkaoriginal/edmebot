@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Users, Plus, Pencil, Trash2, X, Coins, ChevronDown, ChevronUp } from "lucide-react";
+import { Users, Plus, Pencil, Trash2, X, Coins, ChevronDown, ChevronUp, Search, MessageCircle } from "lucide-react";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import SectionTitle from "../../components/ui/SectionTitle";
@@ -10,6 +10,10 @@ const EMPTY = { name: "", grade: 7, subject: "Математика", tgId: "" };
 
 export default function Students() {
   const [students, setStudents] = useState([]);
+  const [contacts, setContacts] = useState([]);
+  const [selectedContactId, setSelectedContactId] = useState("");
+  const [search, setSearch] = useState("");
+  const [notice, setNotice] = useState("");
   const [form, setForm] = useState(EMPTY);
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState("");
@@ -18,8 +22,12 @@ export default function Students() {
 
   const load = useCallback(async () => {
     try {
-      const { students } = await adminApi.listStudents();
+      const [{ students }, contactsResponse] = await Promise.all([
+        adminApi.listStudents(),
+        adminApi.telegramContacts("student").catch(() => ({ contacts: [] })),
+      ]);
       setStudents(students);
+      setContacts(contactsResponse.contacts);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -33,6 +41,7 @@ export default function Students() {
 
   function reset() {
     setForm(EMPTY);
+    setSelectedContactId("");
     setEditingId(null);
     setError("");
   }
@@ -47,6 +56,7 @@ export default function Students() {
         await adminApi.createStudent(form);
       }
       reset();
+      setNotice(editingId ? "Данные ученика сохранены" : "Ученик добавлен и привязан к Telegram");
       await load();
     } catch (e) {
       setError(e.message);
@@ -58,6 +68,11 @@ export default function Students() {
     setForm({ name: s.name, grade: s.grade, subject: s.subject, tgId: s.tg_id || "" });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
+
+  const visibleStudents = students.filter((student) => {
+    const value = `${student.name} ${student.subject} ${student.tg_id ?? ""}`.toLowerCase();
+    return value.includes(search.trim().toLowerCase());
+  });
 
   async function remove(id) {
     if (!confirm("Удалить ученика? Его домашка и статистика тоже удалятся.")) return;
@@ -82,13 +97,31 @@ export default function Students() {
         </span>
         <div>
           <h1>Ученики</h1>
-          <p className="apage__sub">Добавляйте, изменяйте и удаляйте учеников</p>
+          <p className="apage__sub">Сначала ученик пишет боту, затем вы привязываете его к классу и предмету</p>
         </div>
       </header>
 
       <Card pad="md">
         <SectionTitle>{editingId ? "Редактирование ученика" : "Новый ученик"}</SectionTitle>
         <form className="aform" onSubmit={submit}>
+          {!editingId && (
+            <label className="afield acontact-field">
+              <span><MessageCircle size={15} /> 1. Выберите человека из чата бота</span>
+              <select
+                className="aselect"
+                value={selectedContactId}
+                onChange={(e) => {
+                  const contact = contacts.find((item) => item.tg_id === e.target.value);
+                  setSelectedContactId(e.target.value);
+                  if (contact) setForm({ ...form, name: contact.name, tgId: contact.tg_id });
+                }}
+              >
+                <option value="">Ввести данные вручную</option>
+                {contacts.map((contact) => <option key={contact.tg_id} value={contact.tg_id}>{contact.name}{contact.username ? ` (@${contact.username})` : ""}</option>)}
+              </select>
+              <small>{contacts.length ? `Доступно новых контактов: ${contacts.length}` : "Новых контактов пока нет: попросите ученика написать боту /start"}</small>
+            </label>
+          )}
           <div className="aform__row">
             <label className="afield">
               <span>Имя</span>
@@ -136,6 +169,7 @@ export default function Students() {
             </label>
           </div>
           {error && <p className="aerror">{error}</p>}
+          {notice && <p className="anotice">{notice}</p>}
           <div className="aform__actions">
             <Button type="submit" icon={editingId ? Pencil : Plus}>
               {editingId ? "Сохранить" : "Добавить ученика"}
@@ -150,14 +184,19 @@ export default function Students() {
       </Card>
 
       <div className="asection">
-        <SectionTitle>Список ({students.length})</SectionTitle>
+        <div className="asection__head">
+          <SectionTitle>Список ({visibleStudents.length})</SectionTitle>
+          <label className="asearch"><Search size={16} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Поиск по имени или Telegram ID" /></label>
+        </div>
         {loading ? (
           <p className="aempty">Загрузка…</p>
         ) : students.length === 0 ? (
           <p className="aempty">Пока нет учеников. Добавьте первого выше.</p>
+        ) : visibleStudents.length === 0 ? (
+          <p className="aempty">По этому запросу учеников нет.</p>
         ) : (
           <div className="alist">
-            {students.map((s) => (
+            {visibleStudents.map((s) => (
               <div className="arow" key={s.id}>
                 <div className="arow__main">
                   <div className="arow__title">{s.name}</div>
@@ -169,7 +208,7 @@ export default function Students() {
                 </div>
                 <div className="arow__actions">
                   <button
-                    className="aicon-btn"
+                    className="aicon-btn aicon-btn--bonus"
                     onClick={() => toggleBonus(s.id)}
                     aria-label="Бонусы"
                     aria-expanded={bonusOpenId === s.id}
@@ -181,10 +220,10 @@ export default function Students() {
                       <ChevronDown size={14} strokeWidth={2.4} />
                     )}
                   </button>
-                  <button className="aicon-btn" onClick={() => edit(s)} aria-label="Редактировать">
+                  <button className="aicon-btn aicon-btn--edit" onClick={() => edit(s)} aria-label="Редактировать">
                     <Pencil size={17} strokeWidth={2.4} />
                   </button>
-                  <button className="aicon-btn" onClick={() => remove(s.id)} aria-label="Удалить">
+                  <button className="aicon-btn aicon-btn--delete" onClick={() => remove(s.id)} aria-label="Удалить">
                     <Trash2 size={17} strokeWidth={2.4} />
                   </button>
                 </div>

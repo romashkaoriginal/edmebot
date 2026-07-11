@@ -35,6 +35,7 @@ async function req(path, { method = "GET", body } = {}) {
 export const adminApi = {
   // Current user (role check)
   me: () => req("/me"),
+  telegramContacts: (kind) => req(`/telegram-contacts?kind=${kind}`),
 
   // Users
   listUsers: () => req("/users"),

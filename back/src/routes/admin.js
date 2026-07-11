@@ -19,6 +19,22 @@ router.get("/me", (req, res) => {
   res.json({ user: { id: req.user.id, tgId: req.user.tg_id, name: req.user.name, role: req.user.role } });
 });
 
+router.get("/telegram-contacts", requireRole("admin"), async (req, res, next) => {
+  try {
+    const kind = req.query.kind === "user" ? "user" : "student";
+    const targetTable = kind === "user" ? "users" : "students";
+    const { rows } = await db.query(
+      `SELECT c.tg_id, c.name, c.username, c.last_seen_at
+         FROM telegram_contacts c
+        WHERE NOT EXISTS (SELECT 1 FROM ${targetTable} t WHERE t.tg_id = c.tg_id)
+        ORDER BY c.last_seen_at DESC`,
+    );
+    res.json({ contacts: rows });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ---------- Users (admin only) ----------
 
 router.get("/users", requireRole("admin"), async (_req, res, next) => {

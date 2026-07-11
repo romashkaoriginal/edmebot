@@ -89,6 +89,14 @@ CREATE TABLE IF NOT EXISTS student_topics (
   PRIMARY KEY (student_id, topic_id)
 );
 
+CREATE TABLE IF NOT EXISTS telegram_contacts (
+  tg_id        TEXT PRIMARY KEY,
+  name         TEXT NOT NULL,
+  username     TEXT,
+  first_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_seen_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS users (
   id          BIGSERIAL PRIMARY KEY,
   tg_id       TEXT UNIQUE NOT NULL,
@@ -111,6 +119,7 @@ CREATE INDEX IF NOT EXISTS idx_homework_student ON homework (student_id);
 CREATE INDEX IF NOT EXISTS idx_attempts_student ON attempts (student_id);
 CREATE INDEX IF NOT EXISTS idx_bonus_student ON bonus_transactions (student_id);
 CREATE INDEX IF NOT EXISTS idx_student_topics_student ON student_topics (student_id);
+CREATE INDEX IF NOT EXISTS idx_telegram_contacts_seen ON telegram_contacts (last_seen_at DESC);
 `;
 
 // Map the current hardcoded task bank to grade 7 / Математика so the demo
