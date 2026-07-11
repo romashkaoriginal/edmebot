@@ -3,6 +3,7 @@ import { UserCog, Plus, Pencil, Trash2, X, Search, MessageCircle } from "lucide-
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import SectionTitle from "../../components/ui/SectionTitle";
+import ContactPickerModal from "../../components/admin/ContactPickerModal";
 import { adminApi } from "../../api/admin";
 import { useAdminAuth } from "../../context/AdminAuth";
 import "./admin.css";
@@ -13,7 +14,8 @@ export default function Users() {
   const { user: me } = useAdminAuth();
   const [users, setUsers] = useState([]);
   const [contacts, setContacts] = useState([]);
-  const [selectedContactId, setSelectedContactId] = useState("");
+  const [selectedContact, setSelectedContact] = useState(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [notice, setNotice] = useState("");
   const [form, setForm] = useState(EMPTY);
@@ -42,7 +44,8 @@ export default function Users() {
 
   function reset() {
     setForm(EMPTY);
-    setSelectedContactId("");
+    setSelectedContact(null);
+    setPickerOpen(false);
     setEditingId(null);
     setError("");
   }
@@ -99,22 +102,19 @@ export default function Users() {
         <SectionTitle>{editingId ? "Редактирование пользователя" : "Новый пользователь"}</SectionTitle>
         <form className="aform" onSubmit={submit}>
           {!editingId && (
-            <label className="afield acontact-field">
+            <div className="afield acontact-field">
               <span><MessageCircle size={15} /> 1. Выберите человека из чата бота</span>
-              <select
-                className="aselect"
-                value={selectedContactId}
-                onChange={(e) => {
-                  const contact = contacts.find((item) => item.tg_id === e.target.value);
-                  setSelectedContactId(e.target.value);
-                  if (contact) setForm({ ...form, name: contact.name, tgId: contact.tg_id, role: form.role });
-                }}
-              >
-                <option value="">Ввести данные вручную</option>
-                {contacts.map((contact) => <option key={contact.tg_id} value={contact.tg_id}>{contact.name}{contact.username ? ` (@${contact.username})` : ""}</option>)}
-              </select>
+              <div className="acontact-field__selection">
+                <div>
+                  <strong>{selectedContact ? selectedContact.name : "Контакт ещё не выбран"}</strong>
+                  <small>{selectedContact ? `${selectedContact.username ? `@${selectedContact.username} · ` : ""}TG ${selectedContact.tg_id}` : "Поиск по имени, username или Telegram ID"}</small>
+                </div>
+                <Button type="button" size="sm" variant="soft" icon={MessageCircle} onClick={() => setPickerOpen(true)}>
+                  {selectedContact ? "Изменить" : "Выбрать из чата"}
+                </Button>
+              </div>
               <small>{contacts.length ? `Доступно новых контактов: ${contacts.length}` : "Новых контактов пока нет"}</small>
-            </label>
+            </div>
           )}
           <div className="aform__row">
             <label className="afield">
@@ -164,6 +164,17 @@ export default function Users() {
           </div>
         </form>
       </Card>
+      <ContactPickerModal
+        contacts={contacts}
+        isOpen={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSelect={(contact) => {
+          setSelectedContact(contact);
+          setForm({ ...form, name: contact.name, tgId: contact.tg_id, role: form.role });
+          setPickerOpen(false);
+        }}
+        title="Выберите сотрудника из чата бота"
+      />
 
       <div className="asection">
         <div className="asection__head">
