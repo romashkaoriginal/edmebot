@@ -7,6 +7,7 @@ import SectionTitle from "../components/ui/SectionTitle";
 import PetAvatar, { AccessoryPreview } from "../components/pet/PetAvatar";
 import { useApp } from "../store/AppStore";
 import { shopItems, petSpecies } from "../data/mock";
+import { plural } from "../utils/format";
 import "./Pet.css";
 
 const CATEGORIES = [
@@ -20,7 +21,7 @@ export default function Pet() {
   const { profile, ownedItems, buyItem, setPetSpecies } = useApp();
   const [cat, setCat] = useState("food");
   const [feedback, setFeedback] = useState(null);
-  const [worn, setWorn] = useState(() => ({ neck: "scarf" }));
+  const [worn, setWorn] = useState({});
   const [reaction, setReaction] = useState(null);
   const [eating, setEating] = useState(null);
   const timers = useRef([]);
@@ -131,10 +132,10 @@ export default function Pet() {
       <Card className="pet-page__streak" pad="md">
         <Flame size={22} strokeWidth={2.4} className="pet-page__streak-icon" />
         <div className="pet-page__streak-body">
-          <div className="pet-page__streak-title">Серия <b className="font-display">{profile.streak}</b> дней</div>
+          <div className="pet-page__streak-title">Серия <b className="font-display">{profile.streak}</b> {plural(profile.streak, "день", "дня", "дней")}</div>
           <p className="pet-page__streak-hint">Выполни одно задание сегодня, чтобы питомец не заскучал.</p>
         </div>
-        {!profile.streakFreezeUsed && <Badge tone="success" icon={Check}>Защита серии готова</Badge>}
+        {profile.streak > 0 && !profile.streakFreezeUsed && <Badge tone="success" icon={Check}>Защита серии готова</Badge>}
       </Card>
 
       <section className="pet-page__collection">

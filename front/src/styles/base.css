@@ -21,7 +21,11 @@ body {
   font-size: var(--text-base);
   line-height: 1.5;
   color: var(--ink);
-  background: var(--bg);
+  /* warm peach canvas with a soft diagonal wash toward the corner light */
+  background:
+    radial-gradient(120% 90% at 100% 0%, var(--bg-2), transparent 55%),
+    var(--bg);
+  background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   min-height: 100dvh;
@@ -39,6 +43,8 @@ h4 {
 
 h1 {
   font-size: var(--text-2xl);
+  font-weight: 900;
+  letter-spacing: -0.025em;
 }
 h2 {
   font-size: var(--text-xl);
@@ -86,7 +92,7 @@ ol {
 }
 
 :focus-visible {
-  outline: 3px solid oklch(0.5 0.19 262 / 0.5);
+  outline: 3px solid oklch(0.5 0.19 275 / 0.5);
   outline-offset: 2px;
   border-radius: var(--r-sm);
 }
@@ -94,6 +100,16 @@ ol {
 .font-display {
   font-family: var(--font-display);
   letter-spacing: -0.01em;
+}
+
+/* Big, ink-black hero heading (name · grade) — the mockup's signature */
+.display-title {
+  font-weight: 900;
+  font-size: clamp(2rem, 8vw, 3rem);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  text-wrap: balance;
 }
 
 /* Utility: visually hidden but accessible */

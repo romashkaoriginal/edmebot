@@ -1,25 +1,15 @@
 import { useEffect, useState } from "react";
-import {
-  Flame,
-  Zap,
-  Target,
-  Clock,
-  CheckCircle2,
-  TrendingUp,
-  Lightbulb,
-  FileText,
-  Trophy,
-} from "lucide-react";
+import { Link } from "react-router-dom";
+import { Flame, Zap, Target, CheckCircle2, Lightbulb, Trophy } from "lucide-react";
 import Card from "../components/ui/Card";
-import Badge from "../components/ui/Badge";
 import ProgressBar from "../components/ui/ProgressBar";
 import SectionTitle from "../components/ui/SectionTitle";
 import PetAvatar from "../components/pet/PetAvatar";
 import KnowledgeMap from "../components/shared/KnowledgeMap";
 import Achievements from "../components/shared/Achievements";
 import { useApp } from "../store/AppStore";
-import { achievements, weekActivity } from "../data/mock";
 import { studentApi } from "../api/student";
+import { plural } from "../utils/format";
 import "./Profile.css";
 
 export default function Profile() {
@@ -28,11 +18,9 @@ export default function Profile() {
   const xpNeeded = profile.xpForNext - profile.xpFromLevel;
   const weak = topics.filter((t) => t.status === "red");
   const strong = topics.filter((t) => t.status === "green");
-  const maxTasks = Math.max(...weekActivity.map((d) => d.tasks));
-  const earned = achievements.filter((a) => a.earned);
 
-  // Real practice stats from the DB (solved/accuracy/topic mastery), fetched
-  // via the admin stats endpoint for the demo student.
+  // All analytics (solved, accuracy, weekly activity, achievements) come from
+  // the backend and reflect real activity — nothing is fabricated.
   const [dbStats, setDbStats] = useState(null);
   useEffect(() => {
     studentApi.analytics()
@@ -40,8 +28,13 @@ export default function Profile() {
       .catch(() => setDbStats(null));
   }, []);
 
-  const solvedTotal = dbStats?.stats.solvedTotal ?? profile.solvedTotal;
-  const accuracy = dbStats?.stats.accuracy ?? profile.accuracy;
+  const solvedTotal = dbStats?.stats?.solvedTotal ?? 0;
+  const accuracy = dbStats?.stats?.accuracy ?? 0;
+  const weekActivity = dbStats?.weekActivity ?? [];
+  const achievements = dbStats?.achievements ?? [];
+  const maxTasks = Math.max(1, ...weekActivity.map((d) => d.tasks));
+  const earned = achievements.filter((a) => a.earned);
+  const hasActivity = weekActivity.some((d) => d.tasks > 0);
 
   return (
     <div className="prof">
@@ -49,16 +42,22 @@ export default function Profile() {
       <Card className="prof__hero" pad="lg">
         <PetAvatar species={profile.pet.species} mood="happy" size={92} />
         <div className="prof__hero-info">
-          <h1>{profile.name}</h1>
-          <p className="prof__hero-sub">
-            {profile.grade} класс · {profile.subject}
-          </p>
+          <h1>{profile.name || "Ученик"}</h1>
+          {(profile.grade || profile.subject) && (
+            <p className="prof__hero-sub">
+              {[profile.grade ? `${profile.grade} класс` : null, profile.subject]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          )}
           <div className="prof__hero-pills">
             <span className="prof__pill">
-              <Flame size={15} strokeWidth={2.6} /> {profile.streak} дней
+              <Flame size={15} strokeWidth={2.6} /> {profile.streak}{" "}
+              {plural(profile.streak, "день", "дня", "дней")}
             </span>
             <span className="prof__pill">
-              <Trophy size={15} strokeWidth={2.6} /> {earned.length} наград
+              <Trophy size={15} strokeWidth={2.6} /> {earned.length}{" "}
+              {plural(earned.length, "награда", "награды", "наград")}
             </span>
           </div>
         </div>
@@ -83,84 +82,79 @@ export default function Profile() {
       <div className="prof__stats">
         <StatTile icon={CheckCircle2} value={solvedTotal} label="решено заданий" tone="primary" />
         <StatTile icon={Target} value={`${accuracy}%`} label="правильных" tone="success" />
-        <StatTile icon={Clock} value={`${profile.avgTimeSec}с`} label="среднее время" tone="accent" />
+        <StatTile icon={Trophy} value={earned.length} label="наград" tone="accent" />
       </div>
 
-      {/* Weekly activity chart */}
-      <section>
-        <SectionTitle>Активность за неделю</SectionTitle>
-        <Card pad="md">
-          <div className="prof__chart">
-            {weekActivity.map((d) => (
-              <div key={d.day} className="prof__bar-col">
-                <div className="prof__bar-wrap">
-                  <div
-                    className="prof__bar"
-                    style={{ height: `${(d.tasks / maxTasks) * 100}%` }}
-                    title={`${d.tasks} заданий`}
-                  >
-                    <span className="prof__bar-val">{d.tasks}</span>
+      {/* Weekly activity — only when there is real activity */}
+      {hasActivity && (
+        <section>
+          <SectionTitle>Активность за неделю</SectionTitle>
+          <Card pad="md">
+            <div className="prof__chart">
+              {weekActivity.map((d) => (
+                <div key={d.day} className="prof__bar-col">
+                  <div className="prof__bar-wrap">
+                    <div
+                      className="prof__bar"
+                      style={{ height: `${(d.tasks / maxTasks) * 100}%` }}
+                      title={`${d.tasks} заданий`}
+                    >
+                      <span className="prof__bar-val">{d.tasks}</span>
+                    </div>
                   </div>
+                  <span className="prof__bar-day">{d.day}</span>
                 </div>
-                <span className="prof__bar-day">{d.day}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </section>
-
-      {/* Knowledge map */}
-      <section>
-        <SectionTitle>Карта знаний</SectionTitle>
-        <KnowledgeMap topics={topics} />
-      </section>
-
-      {/* Recommendations (rule-based) */}
-      <section>
-        <SectionTitle>Рекомендации</SectionTitle>
-        <Card className="prof__rec" pad="md">
-          <Lightbulb size={22} strokeWidth={2.4} className="prof__rec-icon" />
-          <ul className="prof__rec-list">
-            {weak.length > 0 && (
-              <li>
-                Повторить: <b>{weak.map((t) => t.name).join(", ")}</b> — самые слабые темы.
-              </li>
-            )}
-            {strong.length > 0 && (
-              <li>
-                Хорошо освоено: <b>{strong.map((t) => t.name).join(", ")}</b>. Можно усложнить.
-              </li>
-            )}
-            <li>На занятии с репетитором стоит разобрать: <b>{weak[0]?.name ?? topics[0].name}</b>.</li>
-          </ul>
-        </Card>
-      </section>
-
-      {/* Achievements */}
-      <section>
-        <SectionTitle>Достижения</SectionTitle>
-        <Achievements items={achievements} />
-      </section>
-
-      {/* Weekly report */}
-      <section>
-        <Card className="prof__report" pad="md">
-          <div className="prof__report-head">
-            <FileText size={20} strokeWidth={2.4} />
-            <div>
-              <div className="prof__report-title">Еженедельный отчёт</div>
-              <div className="prof__report-sub">для ученика и родителя</div>
+              ))}
             </div>
-            <Badge tone="accent" icon={TrendingUp}>+12% за неделю</Badge>
-          </div>
-          <ul className="prof__report-list">
-            <li>Выполнено <b>46</b> заданий</li>
-            <li>Потрачено на обучение <b>3 ч 20 мин</b></li>
-            <li>Улучшена тема <b>«Проценты»</b> (жёлтая → почти зелёная)</li>
-            <li>На следующей неделе: подтянуть <b>«Дроби»</b> и <b>«Текстовые задачи»</b></li>
-          </ul>
+          </Card>
+        </section>
+      )}
+
+      {/* Knowledge map — only after the diagnostic has assessed topics */}
+      {topics.length > 0 ? (
+        <section>
+          <SectionTitle>Карта знаний</SectionTitle>
+          <KnowledgeMap topics={topics} />
+        </section>
+      ) : (
+        <Card className="prof__nomap" pad="md">
+          <Target size={20} strokeWidth={2.4} className="prof__nomap-icon" />
+          <p>
+            Карта знаний появится после входного теста.{" "}
+            <Link to="/app/diagnostic" className="prof__nomap-link">Пройти диагностику</Link>
+          </p>
         </Card>
-      </section>
+      )}
+
+      {/* Recommendations — only when there is something real to recommend */}
+      {(weak.length > 0 || strong.length > 0) && (
+        <section>
+          <SectionTitle>Рекомендации</SectionTitle>
+          <Card className="prof__rec" pad="md">
+            <Lightbulb size={22} strokeWidth={2.4} className="prof__rec-icon" />
+            <ul className="prof__rec-list">
+              {weak.length > 0 && (
+                <li>
+                  Повторить: <b>{weak.map((t) => t.name).join(", ")}</b> — самые слабые темы.
+                </li>
+              )}
+              {strong.length > 0 && (
+                <li>
+                  Хорошо освоено: <b>{strong.map((t) => t.name).join(", ")}</b>. Можно усложнить.
+                </li>
+              )}
+            </ul>
+          </Card>
+        </section>
+      )}
+
+      {/* Achievements — only earned ones (backend returns real ones) */}
+      {earned.length > 0 && (
+        <section>
+          <SectionTitle>Достижения</SectionTitle>
+          <Achievements items={earned} />
+        </section>
+      )}
     </div>
   );
 }

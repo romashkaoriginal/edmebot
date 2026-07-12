@@ -1,13 +1,30 @@
 import { createContext, useContext, useState, useCallback, useMemo } from "react";
-import { initialProfile, topics as seedTopics, homework as seedHw } from "../data/mock";
 
 const AppContext = createContext(null);
 
+// Neutral starting state — NO fabricated content. Real values arrive via
+// hydrate() from the backend. `topics` stays empty until a diagnostic assesses
+// them, so the knowledge map / weak-topics never show made-up data.
+const EMPTY_PROFILE = {
+  name: "",
+  grade: null,
+  subject: "",
+  pet: { species: "fox", name: "Рыжик" },
+  coins: 0,
+  xp: 0,
+  level: 1,
+  xpForNext: 400,
+  xpFromLevel: 0,
+  streak: 0,
+  streakFreezeUsed: false,
+  diagnosticDone: false,
+};
+
 export function AppProvider({ children }) {
-  const [profile, setProfile] = useState(initialProfile);
-  const [topics, setTopics] = useState(seedTopics);
-  const [homework, setHomework] = useState(seedHw);
-  const [ownedItems, setOwnedItems] = useState(["s3"]); // starts with a scarf
+  const [profile, setProfile] = useState(EMPTY_PROFILE);
+  const [topics, setTopics] = useState([]);
+  const [homework, setHomework] = useState([]);
+  const [ownedItems, setOwnedItems] = useState([]);
   const [reward, setReward] = useState(null); // celebration overlay payload
 
   // Award XP + coins; handle level-up. Returns the level-up flag.

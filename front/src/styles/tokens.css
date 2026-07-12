@@ -1,34 +1,45 @@
-/* EDme design tokens — derived from the logo (royal blue + warm orange).
-   OKLCH throughout. Committed color strategy. */
+/* EDme design tokens — warm "cream + playful multicolor" direction
+   (per director mockup). Soft peach canvas, frosted-glass surfaces,
+   near-black display ink, and a bright candy accent set that matches the
+   dashboard donut (gold · violet · magenta · teal). OKLCH throughout. */
 
 :root {
   /* ---- Surfaces & ink ---- */
-  --bg: oklch(0.985 0.004 250);
-  --surface: oklch(1 0 0);
-  --surface-2: oklch(0.965 0.006 250);
-  --ink: oklch(0.22 0.03 260);
-  --muted: oklch(0.52 0.02 260);
-  --line: oklch(0.91 0.008 255);
+  --bg: oklch(0.955 0.022 70);            /* warm cream / peach canvas */
+  --bg-2: oklch(0.93 0.03 60);            /* deeper peach for gradient wash */
+  --surface: oklch(1 0 0 / 0.72);         /* frosted glass card (translucent) */
+  --surface-solid: oklch(0.995 0.004 80); /* opaque card when blur isn't wanted */
+  --surface-2: oklch(1 0 0 / 0.5);        /* nested glass panel / input */
+  --surface-lav: oklch(0.9 0.04 300 / 0.55); /* lavender-tinted glass (practice card) */
+  --ink: oklch(0.2 0.02 285);             /* near-black display ink */
+  --muted: oklch(0.5 0.02 285);           /* secondary text (~4.6:1) */
+  --line: oklch(0.86 0.02 70 / 0.7);      /* hairline on warm glass */
 
-  /* ---- Brand: blue (primary) ---- */
-  --primary: oklch(0.5 0.19 262);
-  --primary-strong: oklch(0.43 0.19 263);
-  --primary-soft: oklch(0.94 0.03 258);
+  /* ---- Brand: royal blue (primary — actions, structure) ---- */
+  --primary: oklch(0.5 0.19 275);
+  --primary-strong: oklch(0.43 0.19 275);
+  --primary-soft: oklch(0.9 0.05 285 / 0.6);
   --on-primary: oklch(0.99 0.005 250);
 
-  /* ---- Brand: orange (accent — XP, rewards, streak) ---- */
-  --accent: oklch(0.72 0.17 55);
-  --accent-strong: oklch(0.64 0.17 48);
-  --accent-soft: oklch(0.95 0.045 70);
+  /* ---- Brand: warm orange/gold (accent — XP, rewards, streak) ---- */
+  --accent: oklch(0.78 0.16 65);
+  --accent-strong: oklch(0.68 0.17 55);
+  --accent-soft: oklch(0.93 0.06 75 / 0.7);
   --on-accent: oklch(0.99 0.01 60);
+
+  /* ---- Candy accents (donut / playful chips / 3D icon tints) ---- */
+  --candy-gold: oklch(0.82 0.16 75);
+  --candy-violet: oklch(0.62 0.19 300);
+  --candy-magenta: oklch(0.66 0.24 355);
+  --candy-teal: oklch(0.82 0.09 210);
 
   /* ---- Semantic (knowledge map + states) ---- */
   --success: oklch(0.62 0.15 150);
-  --success-soft: oklch(0.95 0.05 150);
-  --warning: oklch(0.76 0.15 75);
-  --warning-soft: oklch(0.96 0.06 85);
-  --danger: oklch(0.58 0.2 25);
-  --danger-soft: oklch(0.95 0.04 25);
+  --success-soft: oklch(0.92 0.06 150 / 0.6);
+  --warning: oklch(0.78 0.16 75);
+  --warning-soft: oklch(0.93 0.07 85 / 0.6);
+  --danger: oklch(0.6 0.21 15);
+  --danger-soft: oklch(0.93 0.06 20 / 0.6);
   --on-solid: oklch(0.99 0 0);
 
   /* ---- Typography ---- */
@@ -44,11 +55,11 @@
   --text-2xl: 2.25rem;
   --text-3xl: 3rem;
 
-  /* ---- Radii ---- */
-  --r-sm: 8px;
-  --r-md: 12px;
-  --r-lg: 16px;
-  --r-xl: 20px;
+  /* ---- Radii (softer, pillowy — matches mockup) ---- */
+  --r-sm: 10px;
+  --r-md: 16px;
+  --r-lg: 20px;
+  --r-xl: 26px;
   --r-pill: 999px;
 
   /* ---- Spacing scale ---- */
@@ -61,12 +72,14 @@
   --sp-7: 48px;
   --sp-8: 64px;
 
-  /* ---- Elevation (defined shadows, <=8px main blur) ---- */
-  --shadow-sm: 0 1px 2px oklch(0.4 0.05 262 / 0.08);
-  --shadow-md: 0 2px 8px oklch(0.4 0.06 262 / 0.1);
-  --shadow-lg: 0 8px 24px oklch(0.4 0.08 262 / 0.14);
-  --shadow-primary: 0 4px 14px oklch(0.5 0.19 262 / 0.3);
-  --shadow-accent: 0 4px 14px oklch(0.72 0.17 55 / 0.32);
+  /* ---- Elevation — soft, warm, pillowy (glass cards float on peach) ---- */
+  --shadow-sm: 0 2px 8px oklch(0.55 0.06 50 / 0.1);
+  --shadow-md: 0 8px 22px oklch(0.55 0.08 50 / 0.14);
+  --shadow-lg: 0 18px 44px oklch(0.5 0.1 45 / 0.18);
+  --shadow-primary: 0 8px 22px oklch(0.5 0.19 275 / 0.32);
+  --shadow-accent: 0 8px 22px oklch(0.78 0.16 65 / 0.34);
+  /* inner top highlight that reads as a glass rim */
+  --glass-rim: inset 0 1px 0 oklch(1 0 0 / 0.55);
 
   /* ---- Motion ---- */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);

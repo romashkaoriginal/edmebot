@@ -45,35 +45,45 @@ function toProfile(row, student) {
 }
 
 async function ensure(student) {
+  // Only the profile row is created up front. Topic mastery is NOT pre-seeded:
+  // a student's knowledge map stays empty until a diagnostic or practice
+  // actually assesses a topic, so nothing fake is ever shown.
   await db.query(
     `INSERT INTO student_profiles (student_id)
      VALUES ($1) ON CONFLICT (student_id) DO NOTHING`,
     [student.id]
   );
-  for (const topic of seed.topics) {
-    await db.query(
-      `INSERT INTO student_topics (student_id, topic_id, mastery, status)
-       VALUES ($1,$2,$3,$4) ON CONFLICT (student_id, topic_id) DO NOTHING`,
-      [student.id, topic.id, topic.mastery, topic.status]
-    );
-  }
 }
+
+// Curriculum taxonomy (topic id → display name) lives in seed; mastery is per-student.
+const TOPIC_NAME = new Map(seed.topics.map((topic) => [topic.id, topic.name]));
 
 async function getState(student) {
   await ensure(student);
   const { rows: profiles } = await db.query("SELECT * FROM student_profiles WHERE student_id = $1", [student.id]);
-  const { rows: topicRows } = await db.query("SELECT * FROM student_topics WHERE student_id = $1", [student.id]);
-  const byId = new Map(topicRows.map((topic) => [topic.topic_id, topic]));
-  const topics = seed.topics.map((topic) => ({ ...topic, ...byId.get(topic.id), id: topic.id }));
+  const { rows: topicRows } = await db.query(
+    "SELECT * FROM student_topics WHERE student_id = $1 ORDER BY mastery ASC",
+    [student.id]
+  );
+  // Return only topics the student has actually been assessed on.
+  const topics = topicRows.map((row) => ({
+    id: row.topic_id,
+    name: TOPIC_NAME.get(row.topic_id) ?? row.topic_id,
+    mastery: row.mastery,
+    status: row.status,
+  }));
   return { profile: toProfile(profiles[0], student), topics };
 }
 
 async function updateTopics(studentId, updates) {
   for (const update of updates) {
     const mastery = Math.max(0, Math.min(100, update.mastery));
+    // UPSERT: the first assessment of a topic creates its row.
     await db.query(
-      `UPDATE student_topics SET mastery = $3, status = $4, updated_at = now()
-       WHERE student_id = $1 AND topic_id = $2`,
+      `INSERT INTO student_topics (student_id, topic_id, mastery, status)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (student_id, topic_id)
+       DO UPDATE SET mastery = EXCLUDED.mastery, status = EXCLUDED.status, updated_at = now()`,
       [studentId, update.topicId, mastery, statusFromMastery(mastery)]
     );
   }

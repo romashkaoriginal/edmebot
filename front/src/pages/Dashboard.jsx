@@ -1,144 +1,185 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Flame, Zap, Play, ChevronRight, BookOpen, Sparkles } from "lucide-react";
+import { Play, ChevronRight, Target, Flame, Zap } from "lucide-react";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
-import ProgressBar from "../components/ui/ProgressBar";
-import Badge from "../components/ui/Badge";
-import SectionTitle from "../components/ui/SectionTitle";
 import PetAvatar from "../components/pet/PetAvatar";
-import KnowledgeMap from "../components/shared/KnowledgeMap";
 import { useApp } from "../store/AppStore";
 import { studentApi } from "../api/student";
+import { plural, formatDue } from "../utils/format";
 import "./Dashboard.css";
+
+const STATUS_META = {
+  red: { glyph: "🔴", color: "var(--danger)", label: "Слабая" },
+  yellow: { glyph: "🟡", color: "var(--warning)", label: "Повторить" },
+  green: { glyph: "🟢", color: "var(--success)", label: "Освоено" },
+};
 
 export default function Dashboard() {
   const { profile, topics } = useApp();
   const xpInLevel = profile.xp - profile.xpFromLevel;
   const xpNeeded = profile.xpForNext - profile.xpFromLevel;
-  const weakest = [...topics].sort((a, b) => a.mastery - b.mastery)[0];
+  const xpLeft = Math.max(0, xpNeeded - xpInLevel);
 
-  // Homework preview comes from the backend (assigned via admin panel).
+  const assessed = topics.length > 0;
+  // Weakest assessed topics first (backend already sorts by mastery asc).
+  const weak = topics.filter((t) => t.status !== "green").slice(0, 5);
+
+  // Homework comes from the backend (assigned via admin panel).
   const [activeHw, setActiveHw] = useState([]);
   useEffect(() => {
     studentApi.homework()
-      .then((d) => setActiveHw((d.homework ?? []).slice(0, 2)))
+      .then((d) => setActiveHw((d.homework ?? []).slice(0, 3)))
       .catch(() => setActiveHw([]));
   }, []);
 
+  // Real donut: distribution of the student's assessed topics by status.
+  const donutSlices = assessed
+    ? ["green", "yellow", "red"]
+        .map((s) => ({ value: topics.filter((t) => t.status === s).length, color: STATUS_META[s].color }))
+        .filter((s) => s.value > 0)
+    : [];
+
   return (
     <div className="dash">
-      {/* Hero: greeting + pet + streak */}
-      <Card className="dash__hero" pad="lg">
-        <div className="dash__hero-text">
-          <p className="dash__greeting">Привет, {profile.name}! 👋</p>
-          <h1>Готов потренироваться сегодня?</h1>
-          <div className="dash__streak">
-            <span className="dash__streak-flame">
-              <Flame size={20} strokeWidth={2.6} />
+      {/* Hero: name · grade + circular pet */}
+      <header className="dash__top">
+        <h1 className="display-title dash__title">
+          {profile.name ? `${profile.name}` : "Привет!"}
+          {profile.grade ? <span className="dash__grade"> · {profile.grade} класс</span> : null}
+        </h1>
+        <div className="dash__pet-ring">
+          <PetAvatar species={profile.pet.species} mood="happy" size={120} />
+        </div>
+      </header>
+
+      {/* Progress hero — real streak / XP, with a real status donut once assessed */}
+      <Card className="dash__practice card--lav" pad="lg">
+        <div className="dash__practice-body">
+          <div className="dash__practice-head">
+            <h2 className="dash__practice-title">Уровень {profile.level}</h2>
+            <p className="dash__practice-sub">
+              До уровня {profile.level + 1} осталось {xpLeft} XP
+            </p>
+          </div>
+          <div className="dash__practice-stats">
+            <span className="dash__stat">
+              <Zap size={16} strokeWidth={2.6} className="dash__stat-icon dash__stat-icon--xp" />
+              <b className="font-display">{profile.xp}</b> XP
             </span>
-            <span>
-              Стрик <b className="font-display">{profile.streak}</b> дней — не потеряй его!
+            <span className="dash__stat">
+              <Flame size={16} strokeWidth={2.6} className="dash__stat-icon dash__stat-icon--streak" />
+              Стрик <b className="font-display">{profile.streak}</b>{" "}
+              {plural(profile.streak, "день", "дня", "дней")}
             </span>
           </div>
-          <div className="dash__cta">
-            <Button as={Link} to="/app/practice/run" size="lg" icon={Play}>
-              Начать практику
-            </Button>
-          </div>
         </div>
-        <div className="dash__pet">
-          <PetAvatar species={profile.pet.species} mood="happy" size={148} />
-          <span className="dash__pet-name">{profile.pet.name}</span>
-        </div>
+        {donutSlices.length > 0 && <Donut slices={donutSlices} size={120} />}
       </Card>
 
-      {/* Level progress */}
-      <Card className="dash__level" pad="md">
-        <div className="dash__level-head">
-          <div className="dash__level-badge">
-            <span className="font-display">{profile.level}</span>
+      {/* Knowledge: real weak topics, or an onboarding nudge to the diagnostic */}
+      {assessed ? (
+        <Card className="dash__weak" pad="md">
+          <div className="dash__weak-head">
+            <h2 className="dash__weak-title">Над чем поработать</h2>
+            <Link to="/app/profile" className="dash__link">
+              Вся карта <ChevronRight size={16} />
+            </Link>
           </div>
-          <div>
-            <div className="dash__level-title">Уровень {profile.level}</div>
-            <div className="dash__level-sub">
-              До уровня {profile.level + 1} осталось{" "}
-              <b>{xpNeeded - xpInLevel} XP</b>
-            </div>
-          </div>
-          <Badge tone="accent" icon={Zap}>
-            {profile.xp} XP
-          </Badge>
-        </div>
-        <ProgressBar value={xpInLevel} max={xpNeeded} tone="xp" />
-      </Card>
-
-      <div className="dash__grid">
-        {/* Knowledge map */}
-        <section className="dash__col">
-          <SectionTitle
-            action={
-              <Link to="/app/diagnostic" className="dash__link">
-                Пройти диагностику <ChevronRight size={16} />
-              </Link>
-            }
-          >
-            Карта знаний
-          </SectionTitle>
-          <KnowledgeMap topics={topics} />
-
-          <Card className="dash__recommend" pad="md">
-            <Sparkles size={20} strokeWidth={2.4} className="dash__recommend-icon" />
-            <div>
-              <div className="dash__recommend-title">Рекомендуем повторить</div>
-              <p className="dash__recommend-text">
-                «{weakest.name}» — самая слабая тема. Несколько заданий помогут закрыть пробел.
-              </p>
-            </div>
-            <Button as={Link} to="/app/practice/run" variant="soft" size="sm">
-              Тренировать
-            </Button>
-          </Card>
-        </section>
-
-        {/* Homework preview */}
-        <section className="dash__col">
-          <SectionTitle
-            action={
-              <Link to="/app/homework" className="dash__link">
-                Все <ChevronRight size={16} />
-              </Link>
-            }
-          >
-            Домашка
-          </SectionTitle>
-          {activeHw.length === 0 ? (
-            <Card pad="md">
-              <p className="dash__empty">Нет активных заданий 🎉</p>
-            </Card>
-          ) : (
-            <div className="dash__hw-list">
-              {activeHw.map((h) => (
-                <Card key={h.id} className="dash__hw" pad="md">
-                  <span className="dash__hw-icon">
-                    <BookOpen size={18} strokeWidth={2.4} />
+          {weak.length > 0 ? (
+            <ul className="dash__weak-list">
+              {weak.map((t) => (
+                <li key={t.id} className="dash__weak-item">
+                  <span className="dash__weak-glyph" aria-hidden="true">
+                    {STATUS_META[t.status].glyph}
                   </span>
-                  <div className="dash__hw-body">
-                    <div className="dash__hw-title">{h.title}</div>
-                    {h.description && <div className="dash__hw-topic">{h.description}</div>}
-                  </div>
-                  {h.due && <Badge tone="warning">до {formatDue(h.due)}</Badge>}
-                </Card>
+                  <span className="dash__weak-name">{t.name}</span>
+                  <span className="dash__weak-bar" aria-hidden="true">
+                    <span className="dash__weak-fill" style={{ width: `${t.mastery}%` }} />
+                  </span>
+                </li>
               ))}
-            </div>
+            </ul>
+          ) : (
+            <p className="dash__weak-empty">Все темы освоены — так держать! 🎉</p>
           )}
-        </section>
-      </div>
+        </Card>
+      ) : (
+        <Card className="dash__onb" pad="lg">
+          <span className="dash__onb-icon" aria-hidden="true">
+            <Target size={26} strokeWidth={2.4} />
+          </span>
+          <h2 className="dash__onb-title">Собери карту знаний</h2>
+          <p className="dash__onb-text">
+            Пройди короткий входной тест — он покажет твои сильные и слабые темы,
+            и практика будет подбираться под тебя.
+          </p>
+          <Button as={Link} to="/app/diagnostic" size="lg" icon={Target}>
+            Пройти диагностику
+          </Button>
+        </Card>
+      )}
+
+      {/* Homework preview (backend-driven) */}
+      {activeHw.length > 0 && (
+        <Card className="dash__weak" pad="md">
+          <div className="dash__weak-head">
+            <h2 className="dash__weak-title">Домашка</h2>
+            <Link to="/app/homework" className="dash__link">
+              Все <ChevronRight size={16} />
+            </Link>
+          </div>
+          <ul className="dash__weak-list">
+            {activeHw.map((h) => (
+              <li key={h.id} className="dash__weak-item">
+                <span className="dash__weak-glyph" aria-hidden="true">📝</span>
+                <span className="dash__weak-name">{h.title}</span>
+                {h.due && <span className="dash__hw-due">до {formatDue(h.due)}</span>}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      <Button as={Link} to="/app/practice/run" size="lg" icon={Play} className="dash__cta">
+        Начать практику
+      </Button>
     </div>
   );
 }
 
-function formatDue(iso) {
-  const d = new Date(iso);
-  return d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+/** Donut built from real status counts. */
+function Donut({ slices, size = 120 }) {
+  const stroke = size * 0.26;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const total = slices.reduce((s, x) => s + x.value, 0) || 1;
+  let offset = 0;
+  return (
+    <svg className="dash__donut" width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
+      <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
+        {slices.map((s, i) => {
+          const len = (s.value / total) * c;
+          const dash = `${len} ${c - len}`;
+          const el = (
+            <circle
+              key={i}
+              cx={size / 2}
+              cy={size / 2}
+              r={r}
+              fill="none"
+              stroke={s.color}
+              strokeWidth={stroke}
+              strokeDasharray={dash}
+              strokeDashoffset={-offset}
+            />
+          );
+          offset += len;
+          return el;
+        })}
+      </g>
+      <circle cx={size / 2} cy={size / 2} r={r - stroke / 2 - 3} fill="oklch(1 0 0 / 0.85)" />
+    </svg>
+  );
 }
+

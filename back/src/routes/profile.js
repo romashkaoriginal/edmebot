@@ -1,11 +1,23 @@
 const express = require("express");
 const db = require("../db");
-const seed = require("../data/seed");
 const state = require("../studentState");
 const { requireStudent } = require("../middleware/auth");
 
 const router = express.Router();
 router.use(requireStudent);
+
+// Achievements are computed from REAL signals — never pre-granted. Each has a
+// predicate over the student's actual profile/stats, so a new student sees an
+// honest (possibly empty) list that fills in as they earn things.
+const ACHIEVEMENTS = [
+  { id: "diagnostic", name: "Первый шаг", desc: "Пройден входной тест", icon: "🎯", when: (p) => p.profile.diagnosticDone },
+  { id: "first_task", name: "Разминка", desc: "Первое решённое задание", icon: "✏️", when: (p) => p.stats.solvedTotal >= 1 },
+  { id: "ten_tasks", name: "Десятка", desc: "10 решённых заданий", icon: "🔟", when: (p) => p.stats.solvedTotal >= 10 },
+  { id: "fifty_tasks", name: "Полусотка", desc: "50 решённых заданий", icon: "💯", when: (p) => p.stats.solvedTotal >= 50 },
+  { id: "streak_7", name: "Неделя в строю", desc: "Стрик 7 дней", icon: "🔥", when: (p) => p.profile.streak >= 7 },
+  { id: "level_5", name: "Пятый уровень", desc: "Достигнут 5 уровень", icon: "⬆️", when: (p) => p.profile.level >= 5 },
+  { id: "green_topic", name: "Знаток", desc: "Тема освоена на зелёный", icon: "🧩", when: (p) => p.topics.some((t) => t.status === "green") },
+];
 
 router.get("/", async (req, res, next) => {
   try {
@@ -31,15 +43,20 @@ router.get("/analytics", async (req, res, next) => {
     const weak = current.topics.filter((topic) => topic.status === "red");
     const strong = current.topics.filter((topic) => topic.status === "green");
     const total = totals[0];
+    const stats = {
+      solvedTotal: total.solved_total,
+      accuracy: total.solved_total ? Math.round((total.correct_total / total.solved_total) * 100) : 0,
+      avgTimeSec: 0,
+    };
+    const forPredicate = { ...current, stats };
+    const achievements = ACHIEVEMENTS
+      .filter((a) => a.when(forPredicate))
+      .map(({ when, ...a }) => ({ ...a, earned: true }));
     res.json({
       ...current,
-      stats: {
-        solvedTotal: total.solved_total,
-        accuracy: total.solved_total ? Math.round((total.correct_total / total.solved_total) * 100) : 0,
-        avgTimeSec: 0,
-      },
+      stats,
       weekActivity: activity.map((item) => ({ day: item.day.trim(), tasks: item.tasks })),
-      achievements: seed.achievements,
+      achievements,
       recommendations: { review: weak.map((topic) => topic.name), strong: strong.map((topic) => topic.name) },
     });
   } catch (e) { next(e); }

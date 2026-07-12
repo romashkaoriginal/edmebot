@@ -150,11 +150,15 @@ function Blush({ cx = [40, 80], cy = 60, uid }) {
 function Defs({ uid, from, to, bodyFrom, bodyTo, blush = "oklch(0.72 0.14 20 / 0.55)" }) {
   return (
     <defs>
-      <radialGradient id={`fur-${uid}`} cx="42%" cy="32%" r="72%">
-        <stop offset="0%" stopColor={from} />
+      {/* Fur: off-axis radial so the light reads as a single top-left source,
+          with a bright rim toward the highlight and a deeper falloff — the
+          core of the "glossy 3D" look. */}
+      <radialGradient id={`fur-${uid}`} cx="38%" cy="26%" r="82%">
+        <stop offset="0%" stopColor="oklch(0.98 0.05 80)" stopOpacity="0.55" />
+        <stop offset="18%" stopColor={from} />
         <stop offset="100%" stopColor={to} />
       </radialGradient>
-      <linearGradient id={`body-${uid}`} x1="0" y1="0" x2="0" y2="1">
+      <linearGradient id={`body-${uid}`} x1="0" y1="0" x2="0.15" y2="1">
         <stop offset="0%" stopColor={bodyFrom ?? from} />
         <stop offset="100%" stopColor={bodyTo ?? to} />
       </linearGradient>
@@ -162,9 +166,15 @@ function Defs({ uid, from, to, bodyFrom, bodyTo, blush = "oklch(0.72 0.14 20 / 0
         <stop offset="0%" stopColor={blush} />
         <stop offset="100%" stopColor="transparent" />
       </radialGradient>
+      {/* Ambient-occlusion bottom shade, painted low on the body for volume */}
+      <radialGradient id={`ao-${uid}`} cx="50%" cy="100%" r="60%">
+        <stop offset="0%" stopColor="oklch(0.25 0.03 60 / 0.28)" />
+        <stop offset="100%" stopColor="transparent" />
+      </radialGradient>
     </defs>
   );
 }
+
 
 /* ---------------- Species (each visually unique, with a torso) ---------------- */
 
@@ -194,6 +204,7 @@ function Fox({ mood, uid, children }) {
       <Eyes mood={mood} />
       <Nose cx={60} cy={60} rx={4.5} ry={3} />
       <Mouth mood={mood} cy={66} />
+      <ellipse cx="60" cy="98" rx="26" ry="12" fill={`url(#ao-${uid})`} />
       {children}
     </g>
   );
@@ -223,6 +234,7 @@ function Raccoon({ mood, uid, children }) {
       <Eyes mood={mood} cy={51} />
       <Nose cx={60} cy={61} rx={4} ry={3} />
       <Mouth mood={mood} cy={67} />
+      <ellipse cx="60" cy="98" rx="26" ry="12" fill={`url(#ao-${uid})`} />
       {children}
     </g>
   );
@@ -252,6 +264,7 @@ function Squirrel({ mood, uid, children }) {
       {/* buck teeth */}
       <rect x="57" y="63" width="6" height="7" rx="1.5" fill="#fff" stroke="oklch(0.85 0 0)" strokeWidth="0.6" />
       <line x1="60" y1="63" x2="60" y2="70" stroke="oklch(0.85 0 0)" strokeWidth="0.6" />
+      <ellipse cx="60" cy="98" rx="24" ry="12" fill={`url(#ao-${uid})`} />
       {children}
     </g>
   );
@@ -295,6 +308,7 @@ function Owl({ mood, uid, children }) {
       {/* beak */}
       <path d="M60 54 L54 62 L66 62 Z" fill="var(--accent)" />
       <path d="M60 62 L57 66 L63 66 Z" fill="var(--accent-strong)" />
+      <ellipse cx="60" cy="90" rx="28" ry="12" fill={`url(#ao-${uid})`} />
       {children}
     </g>
   );
@@ -331,6 +345,7 @@ function Cat({ mood, uid, children }) {
         <path d="M44 60 L28 57 M44 64 L29 66" />
         <path d="M76 60 L92 57 M76 64 L91 66" />
       </g>
+      <ellipse cx="60" cy="98" rx="24" ry="12" fill={`url(#ao-${uid})`} />
       {children}
     </g>
   );

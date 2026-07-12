@@ -233,6 +233,24 @@
   font-weight: 800;
 }
 
+/* No-map nudge (before diagnostic) */
+.prof__nomap {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  color: var(--muted);
+  font-weight: 600;
+}
+.prof__nomap-icon {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+.prof__nomap-link {
+  color: var(--primary-strong);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 @media (max-width: 560px) {
   .prof__hero {
     flex-wrap: wrap;

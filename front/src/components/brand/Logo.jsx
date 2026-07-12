@@ -1,49 +1,33 @@
-/** EDme wordmark — blue "ED" + book with orange pages + orange "me". */
+/** EDme wordmark — the real brand logo (blue "ED" + book/play mark + orange "me"). */
+import logoUrl from "/image-Photoroom.png";
+
+// Intrinsic PNG is 339×157 (≈2.16:1). `withText={false}` crops to the book mark
+// in the middle third so icon-only spots (favicons, tight headers) stay balanced.
 export default function Logo({ height = 32, withText = true }) {
-  const w = withText ? height * 2.6 : height * 1.1;
+  if (!withText) {
+    // Show only the central book mark by scaling up and clipping to a square.
+    return (
+      <span
+        aria-label="EDme"
+        role="img"
+        style={{
+          display: "inline-block",
+          width: height,
+          height,
+          backgroundImage: `url(${logoUrl})`,
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "center",
+          backgroundSize: `${height * 2.16}px auto`,
+        }}
+      />
+    );
+  }
   return (
-    <svg
+    <img
+      src={logoUrl}
+      alt="EDme"
       height={height}
-      width={w}
-      viewBox={withText ? "0 0 130 50" : "0 0 55 50"}
-      fill="none"
-      role="img"
-      aria-label="EDme"
-    >
-      {withText && (
-        <text
-          x="0"
-          y="37"
-          fontFamily="var(--font-display)"
-          fontWeight="800"
-          fontSize="34"
-          letterSpacing="-1"
-          fill="var(--primary)"
-        >
-          ED
-        </text>
-      )}
-      {/* book mark */}
-      <g transform={withText ? "translate(46 8)" : "translate(2 8)"}>
-        <path
-          d="M2 4 C2 2 3 1 5 1 L18 1 C24 1 28 5 28 12 L28 30 C28 33 25 34 23 32 L4 20 C2 19 2 17 2 15 Z"
-          fill="var(--primary)"
-        />
-        <path d="M12 3 L26 12 M13 8 L27 17 M14 13 L28 22" stroke="var(--accent)" strokeWidth="3" strokeLinecap="round" />
-      </g>
-      {withText && (
-        <text
-          x="80"
-          y="37"
-          fontFamily="var(--font-display)"
-          fontWeight="800"
-          fontSize="34"
-          letterSpacing="-1"
-          fill="var(--accent)"
-        >
-          me
-        </text>
-      )}
-    </svg>
+      style={{ height, width: "auto", display: "block" }}
+    />
   );
 }
