@@ -164,4 +164,15 @@ async function buyItem(student, item) {
   return { state: await getState(student) };
 }
 
-module.exports = { ensure, getState, submitDiagnostic, gradePractice, buyItem };
+async function renamePet(student, name) {
+  const trimmed = String(name ?? "").trim().slice(0, 24);
+  if (!trimmed) return { error: "name_required" };
+  await ensure(student);
+  await db.query(
+    "UPDATE student_profiles SET pet_name = $2, updated_at = now() WHERE student_id = $1",
+    [student.id, trimmed]
+  );
+  return { state: await getState(student) };
+}
+
+module.exports = { ensure, getState, submitDiagnostic, gradePractice, buyItem, renamePet };

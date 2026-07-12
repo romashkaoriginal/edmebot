@@ -23,4 +23,12 @@ router.post("/buy", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+router.post("/rename", async (req, res, next) => {
+  try {
+    const result = await state.renamePet(req.student, req.body?.name);
+    if (result.error) return res.status(400).json(result);
+    res.json({ ok: true, profile: result.state.profile });
+  } catch (e) { next(e); }
+});
+
 module.exports = router;

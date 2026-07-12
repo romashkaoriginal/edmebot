@@ -17,6 +17,7 @@ const EMPTY_PROFILE = {
   xpFromLevel: 0,
   streak: 0,
   streakFreezeUsed: false,
+  streakLastDoneOn: null,
   diagnosticDone: false,
 };
 
@@ -92,6 +93,10 @@ export function AppProvider({ children }) {
     setProfile((p) => ({ ...p, pet: { ...p.pet, species } }));
   }, []);
 
+  const setPetName = useCallback((name) => {
+    setProfile((p) => ({ ...p, pet: { ...p.pet, name } }));
+  }, []);
+
   const clearReward = useCallback(() => setReward(null), []);
 
   const hydrate = useCallback((data) => {
@@ -116,10 +121,11 @@ export function AppProvider({ children }) {
       setTopicMastery,
       completeHomework,
       setPetSpecies,
+      setPetName,
       clearReward,
       hydrate,
     }),
-    [profile, topics, homework, ownedItems, reward, awardXp, spendCoins, buyItem, bumpStreak, setTopicMastery, completeHomework, setPetSpecies, clearReward, hydrate]
+    [profile, topics, homework, ownedItems, reward, awardXp, spendCoins, buyItem, bumpStreak, setTopicMastery, completeHomework, setPetSpecies, setPetName, clearReward, hydrate]
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -22,4 +22,5 @@ export const studentApi = {
   submitDiagnostic: (answers) => studentFetch("/api/diagnostic/submit", { method: "POST", body: JSON.stringify({ answers }) }),
   pet: () => studentFetch("/api/pet"),
   buyPetItem: (itemId) => studentFetch("/api/pet/buy", { method: "POST", body: JSON.stringify({ itemId }) }),
+  renamePet: (name) => studentFetch("/api/pet/rename", { method: "POST", body: JSON.stringify({ name }) }),
 };

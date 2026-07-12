@@ -1,15 +1,14 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useEffect } from "react";
-import { Home, Target, Dumbbell, PawPrint, BookOpen, User, Flame, Zap } from "lucide-react";
+import { Target, Dumbbell, PawPrint, BookOpen, User, Zap } from "lucide-react";
 import Logo from "../brand/Logo";
-import StatPill from "../ui/StatPill";
+import StatPill, { StreakPill } from "../ui/StatPill";
 import RewardOverlay from "./RewardOverlay";
 import { useApp } from "../../store/AppStore";
 import { studentApi } from "../../api/student";
 import "./AppLayout.css";
 
 const NAV = [
-  { to: "/app", label: "Главная", icon: Home, end: true },
   { to: "/app/practice", label: "Практика", icon: Dumbbell },
   { to: "/app/diagnostic", label: "Диагностика", icon: Target },
   { to: "/app/homework", label: "Домашка", icon: BookOpen },
@@ -22,6 +21,8 @@ export default function AppLayout() {
   const { pathname } = useLocation();
   // Practice/diagnostic run in a focused mode — hide chrome distractions there.
   const focus = pathname.startsWith("/practice/run") || pathname.startsWith("/diagnostic/run");
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const doneToday = profile.streakLastDoneOn === todayISO;
 
   useEffect(() => {
     studentApi.profile().then(hydrate).catch(() => undefined);
@@ -31,7 +32,7 @@ export default function AppLayout() {
     <div className={`app ${focus ? "app--focus" : ""}`}>
       <aside className="app__sidebar">
         <div className="app__brand">
-          <Logo height={30} />
+          <Logo height={34} />
         </div>
         <nav className="app__nav" aria-label="Основная навигация">
           {NAV.map(({ to, label, icon: Icon, end }) => (
@@ -49,12 +50,13 @@ export default function AppLayout() {
       <div className="app__main">
         <header className="app__header">
           <div className="app__header-brand">
-            <Logo height={26} />
+            <Logo height={34} />
           </div>
           <div className="app__stats">
-            <StatPill icon={Flame} value={profile.streak} tone="accent" label="Стрик" />
-            <StatPill icon={Zap} value={profile.xp} tone="primary" label="XP" />
-            <div className="app__level" title="Уровень">
+            <StreakPill value={profile.streak} doneToday={doneToday} />
+            <StatPill icon={Zap} value={`${profile.xp} XP`} tone="primary" label="Опыт" />
+            <div className="app__level" title={`Уровень ${profile.level}`}>
+              <span className="app__level-tag">ур.</span>
               <span className="app__level-num font-display">{profile.level}</span>
             </div>
           </div>

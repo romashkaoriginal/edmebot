@@ -14,6 +14,7 @@
 html {
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
 }
 
 body {
@@ -29,6 +30,9 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   min-height: 100dvh;
+  overflow-x: hidden;
+  /* Belt-and-suspenders against pinch-zoom on iOS Safari / Telegram in-app browser */
+  touch-action: pan-x pan-y;
 }
 
 h1,

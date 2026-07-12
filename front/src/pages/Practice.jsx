@@ -41,13 +41,14 @@ const LEVELS = [
 export default function Practice() {
   const navigate = useNavigate();
   const { topics } = useApp();
+  const hasTopics = topics.length > 0;
   const [mode, setMode] = useState("weak");
   const [level, setLevel] = useState("auto");
-  const [topic, setTopic] = useState(topics[0].id);
+  const [topic, setTopic] = useState(topics[0]?.id ?? null);
 
   function start() {
     const params = new URLSearchParams({ mode, level });
-    if (mode === "topic") params.set("topic", topic);
+    if (mode === "topic" && topic) params.set("topic", topic);
     navigate(`/app/practice/run?${params}`);
   }
 
@@ -66,23 +67,30 @@ export default function Practice() {
       <section>
         <SectionTitle>Режим</SectionTitle>
         <div className="prac__modes">
-          {MODES.map((m) => (
-            <button
-              key={m.id}
-              className={`prac__mode ${mode === m.id ? "prac__mode--on" : ""}`}
-              onClick={() => setMode(m.id)}
-            >
-              <span className={`prac__mode-icon prac__mode-icon--${m.tone}`}>
-                <m.icon size={20} strokeWidth={2.4} />
-              </span>
-              <span className="prac__mode-title">{m.title}</span>
-              <span className="prac__mode-desc">{m.desc}</span>
-            </button>
-          ))}
+          {MODES.map((m) => {
+            const disabled = m.id === "topic" && !hasTopics;
+            return (
+              <button
+                key={m.id}
+                className={`prac__mode ${mode === m.id ? "prac__mode--on" : ""}`}
+                onClick={() => !disabled && setMode(m.id)}
+                disabled={disabled}
+                title={disabled ? "Сначала пройди диагностику" : undefined}
+              >
+                <span className={`prac__mode-icon prac__mode-icon--${m.tone}`}>
+                  <m.icon size={20} strokeWidth={2.4} />
+                </span>
+                <span className="prac__mode-title">{m.title}</span>
+                <span className="prac__mode-desc">
+                  {disabled ? "Доступно после диагностики" : m.desc}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </section>
 
-      {mode === "topic" && (
+      {mode === "topic" && hasTopics && (
         <section>
           <SectionTitle>Тема</SectionTitle>
           <div className="prac__topics">

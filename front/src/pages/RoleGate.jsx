@@ -121,7 +121,7 @@ export default function RoleGate() {
 
             <div className={`gate__cards${!isStaff ? " gate__cards--single" : ""}`}>
               {isStaff && (
-                <Card className="gate__card" pad="lg">
+                <Card className="gate__card" pad="md">
                   <span className="gate__icon gate__icon--admin">
                     <ShieldCheck size={28} strokeWidth={2.4} />
                   </span>
@@ -135,7 +135,7 @@ export default function RoleGate() {
                 </Card>
               )}
 
-              <Card className="gate__card" pad="lg">
+              <Card className="gate__card" pad="md">
                 <span className="gate__icon gate__icon--student">
                   <GraduationCap size={28} strokeWidth={2.4} />
                 </span>

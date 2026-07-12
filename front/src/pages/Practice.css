@@ -49,6 +49,13 @@
   border-color: var(--primary);
   background: var(--primary-soft);
 }
+.prac__mode:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.prac__mode:disabled:active {
+  transform: none;
+}
 .prac__mode-icon {
   display: grid;
   place-items: center;

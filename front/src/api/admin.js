@@ -15,6 +15,12 @@ export function initTelegramWebApp() {
   if (!webApp) return null;
   webApp.ready();
   webApp.expand();
+  // Prevent an in-app vertical scroll (e.g. a long list) from being read as a
+  // swipe-down-to-close gesture by the Telegram client.
+  webApp.disableVerticalSwipes?.();
+  // Ask for a tap confirmation before the Mini App closes, so an accidental
+  // tap on the client's close button doesn't lose in-progress work.
+  webApp.enableClosingConfirmation?.();
   return webApp;
 }
 

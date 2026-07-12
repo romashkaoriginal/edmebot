@@ -38,32 +38,44 @@ export default function Profile() {
 
   return (
     <div className="prof">
-      {/* Header card */}
+      {/* Header card: student identity is the clear headline; the pet is a
+          labeled companion strip below it, so nothing reads as "the pet's
+          level" or "the pet's name". */}
       <Card className="prof__hero" pad="lg">
-        <PetAvatar species={profile.pet.species} mood="happy" size={92} />
-        <div className="prof__hero-info">
-          <h1>{profile.name || "Ученик"}</h1>
-          {(profile.grade || profile.subject) && (
-            <p className="prof__hero-sub">
-              {[profile.grade ? `${profile.grade} класс` : null, profile.subject]
-                .filter(Boolean)
-                .join(" · ")}
-            </p>
-          )}
-          <div className="prof__hero-pills">
-            <span className="prof__pill">
-              <Flame size={15} strokeWidth={2.6} /> {profile.streak}{" "}
-              {plural(profile.streak, "день", "дня", "дней")}
-            </span>
-            <span className="prof__pill">
-              <Trophy size={15} strokeWidth={2.6} /> {earned.length}{" "}
-              {plural(earned.length, "награда", "награды", "наград")}
-            </span>
+        <div className="prof__hero-top">
+          <div className="prof__hero-info">
+            <p className="prof__hero-eyebrow">Твой профиль</p>
+            <h1>{profile.name || "Ученик"}</h1>
+            {(profile.grade || profile.subject) && (
+              <p className="prof__hero-sub">
+                {[profile.grade ? `${profile.grade} класс` : null, profile.subject]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            )}
+          </div>
+          <div className="prof__level">
+            <div className="prof__level-badge font-display">{profile.level}</div>
+            <span className="prof__level-label">уровень</span>
           </div>
         </div>
-        <div className="prof__level">
-          <div className="prof__level-badge font-display">{profile.level}</div>
-          <span className="prof__level-label">уровень</span>
+
+        <div className="prof__hero-pills">
+          <span className="prof__pill">
+            <Flame size={15} strokeWidth={2.6} /> {profile.streak}{" "}
+            {plural(profile.streak, "день", "дня", "дней")} подряд
+          </span>
+          <span className="prof__pill">
+            <Trophy size={15} strokeWidth={2.6} /> {earned.length}{" "}
+            {plural(earned.length, "награда", "награды", "наград")}
+          </span>
+        </div>
+
+        <div className="prof__companion">
+          <PetAvatar species={profile.pet.species} mood="happy" size={48} />
+          <span className="prof__companion-text">
+            Твой питомец — <b>{profile.pet.name}</b>
+          </span>
         </div>
       </Card>
 

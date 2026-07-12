@@ -1,11 +1,12 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { Coins, Check, Flame, Info, Cookie, Shirt, Heart, Sparkles, Store } from "lucide-react";
+import { Coins, Check, Flame, Info, Cookie, Shirt, Heart, Store, Pencil, X } from "lucide-react";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
 import SectionTitle from "../components/ui/SectionTitle";
 import PetAvatar, { AccessoryPreview } from "../components/pet/PetAvatar";
 import { useApp } from "../store/AppStore";
+import { studentApi } from "../api/student";
 import { shopItems, petSpecies } from "../data/mock";
 import { plural } from "../utils/format";
 import "./Pet.css";
@@ -18,14 +19,40 @@ const CATEGORIES = [
 ];
 
 export default function Pet() {
-  const { profile, ownedItems, buyItem, setPetSpecies } = useApp();
+  const { profile, ownedItems, buyItem, setPetSpecies, setPetName } = useApp();
   const [cat, setCat] = useState("food");
   const [feedback, setFeedback] = useState(null);
   const [worn, setWorn] = useState({});
   const [reaction, setReaction] = useState(null);
   const [eating, setEating] = useState(null);
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState(profile.pet.name);
+  const [savingName, setSavingName] = useState(false);
   const timers = useRef([]);
   const shopRef = useRef(null);
+
+  function startEditName() {
+    setNameDraft(profile.pet.name);
+    setEditingName(true);
+  }
+
+  async function saveName() {
+    const trimmed = nameDraft.trim();
+    if (!trimmed || trimmed === profile.pet.name) {
+      setEditingName(false);
+      return;
+    }
+    setSavingName(true);
+    try {
+      await studentApi.renamePet(trimmed);
+      setPetName(trimmed);
+    } catch {
+      // Keep the old name visible if the save failed; nothing local to roll back.
+    } finally {
+      setSavingName(false);
+      setEditingName(false);
+    }
+  }
 
   const wornAccessories = Object.values(worn).filter(Boolean);
   const items = shopItems.filter((item) => item.category === cat);
@@ -102,9 +129,36 @@ export default function Pet() {
     <div className="pet-page">
       <Card className="pet-page__hero" pad="none">
         <div className="pet-page__hero-top">
-          <div>
+          <div className="pet-page__identity">
             <p className="pet-page__eyebrow">Твой компаньон</p>
-            <h1 className="pet-page__name font-display">{profile.pet.name}</h1>
+            {editingName ? (
+              <div className="pet-page__name-edit">
+                <input
+                  className="pet-page__name-input font-display"
+                  value={nameDraft}
+                  maxLength={24}
+                  autoFocus
+                  onChange={(e) => setNameDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") saveName();
+                    if (e.key === "Escape") setEditingName(false);
+                  }}
+                  disabled={savingName}
+                  aria-label="Имя питомца"
+                />
+                <button className="pet-page__name-btn" onClick={saveName} disabled={savingName} aria-label="Сохранить имя">
+                  <Check size={16} strokeWidth={3} />
+                </button>
+                <button className="pet-page__name-btn" onClick={() => setEditingName(false)} aria-label="Отменить">
+                  <X size={16} strokeWidth={3} />
+                </button>
+              </div>
+            ) : (
+              <button className="pet-page__name-btn-wrap" onClick={startEditName} aria-label="Изменить имя питомца">
+                <h1 className="pet-page__name font-display">{profile.pet.name}</h1>
+                <Pencil size={14} strokeWidth={2.6} className="pet-page__name-pencil" />
+              </button>
+            )}
           </div>
           <div className="pet-page__coins" aria-label={`${profile.coins} баллов`}>
             <Coins size={18} strokeWidth={2.6} />
@@ -116,7 +170,6 @@ export default function Pet() {
           <span className="pet-page__sun" aria-hidden="true" />
           <span className="pet-page__cloud pet-page__cloud--one" aria-hidden="true" />
           <span className="pet-page__cloud pet-page__cloud--two" aria-hidden="true" />
-          <div className="pet-page__speech"><Sparkles size={15} aria-hidden="true" /><span>Мне нравится, когда ты учишься!</span></div>
           <div className="pet-page__plant" aria-hidden="true"><i /><i /><i /></div>
           <div className="pet-page__rug" aria-hidden="true" />
           <PetAvatar className="pet-page__avatar" species={profile.pet.species} mood="happy" accessories={wornAccessories} reaction={reaction} eating={eating} size={220} />

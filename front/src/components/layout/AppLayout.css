@@ -93,14 +93,20 @@
   margin-left: auto;
 }
 .app__level {
-  display: grid;
-  place-items: center;
-  width: 34px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
   height: 34px;
+  padding: 0 12px;
   border-radius: var(--r-pill);
   background: var(--primary);
   color: var(--on-primary);
   box-shadow: var(--shadow-primary);
+}
+.app__level-tag {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  opacity: 0.85;
 }
 .app__level-num {
   font-size: var(--text-base);
@@ -146,7 +152,7 @@
   }
   .app__tabbar {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     position: fixed;
     bottom: 0;
     left: 0;
