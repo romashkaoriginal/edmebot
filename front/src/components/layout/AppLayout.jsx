@@ -44,7 +44,7 @@ export default function AppLayout() {
   }
 
   return (
-    <div className={`app ${focus ? "app--focus" : ""}`}>
+    <div className={`app ${focus ? "app--focus" : ""} ${!isActive ? "app--pending" : ""}`}>
       <aside className="app__sidebar">
         <div className="app__brand">
           <Logo height={34} />
@@ -67,14 +67,14 @@ export default function AppLayout() {
           <div className="app__header-brand">
             <Logo height={34} />
           </div>
-          <div className="app__stats">
+          {isActive && <div className="app__stats">
             <StreakPill value={profile.streak} doneToday={doneToday} />
             <div className="app__level" title={`Уровень ${profile.level}`}>
               <span className="app__level-tag">ур. {profile.level}</span>
               <span className="app__level-sep">·</span>
               <span className="app__level-num font-display">{profile.xp} XP</span>
             </div>
-          </div>
+          </div>}
         </header>
 
         <main className="app__content">
@@ -82,14 +82,14 @@ export default function AppLayout() {
         </main>
       </div>
 
-      <nav className="app__tabbar" aria-label="Мобильная навигация">
+      {isActive && <nav className="app__tabbar" aria-label="Мобильная навигация">
         {NAV.map(({ to, label, icon: Icon, end }) => (
           <NavLink key={to} to={to} end={end} className="tabitem" aria-label={label}>
             <Icon size={22} strokeWidth={2.2} aria-hidden="true" />
             <span>{label}</span>
           </NavLink>
         ))}
-      </nav>
+      </nav>}
 
       <RewardOverlay />
     </div>

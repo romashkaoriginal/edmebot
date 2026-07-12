@@ -163,6 +163,9 @@
     padding: var(--sp-5) var(--sp-4);
     padding-bottom: calc(var(--tabbar-h) + var(--sp-6));
   }
+  .app--pending .app__content {
+    padding-bottom: var(--sp-5);
+  }
   .app__tabbar {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
