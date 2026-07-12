@@ -14,6 +14,7 @@ export default function HomeworkAdmin() {
   const [tasks, setTasks] = useState([]);
   const [homework, setHomework] = useState([]);
   const [form, setForm] = useState(EMPTY);
+  const [formOpen, setFormOpen] = useState(false);
   const [error, setError] = useState("");
 
   // Load students once.
@@ -67,6 +68,7 @@ export default function HomeworkAdmin() {
         taskIds: form.taskIds,
       });
       await loadForStudent();
+      setFormOpen(false);
     } catch (e) {
       setError(e.message);
     }
@@ -92,6 +94,7 @@ export default function HomeworkAdmin() {
           <h1>Домашка</h1>
           <p className="apage__sub">Выдавайте домашние задания конкретному ученику</p>
         </div>
+        <Button type="button" icon={Plus} disabled={!student} onClick={() => setFormOpen(true)}>Добавить</Button>
       </header>
 
       <Card pad="md">
@@ -114,6 +117,7 @@ export default function HomeworkAdmin() {
 
       {student && (
         <>
+          {formOpen && <div className="contact-picker" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setFormOpen(false)}>
           <Card className="asection" pad="md">
             <SectionTitle>Новая домашка</SectionTitle>
             <form className="aform" onSubmit={submit}>
@@ -180,6 +184,7 @@ export default function HomeworkAdmin() {
               </div>
             </form>
           </Card>
+          </div>}
 
           <div className="asection">
             <SectionTitle>Выданная домашка ({homework.length})</SectionTitle>

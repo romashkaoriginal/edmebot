@@ -17,9 +17,11 @@ export default function Users() {
   const [selectedContact, setSelectedContact] = useState(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
   const [notice, setNotice] = useState("");
   const [form, setForm] = useState(EMPTY);
   const [editingId, setEditingId] = useState(null);
+  const [formOpen, setFormOpen] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -47,6 +49,7 @@ export default function Users() {
     setSelectedContact(null);
     setPickerOpen(false);
     setEditingId(null);
+    setFormOpen(false);
     setError("");
   }
 
@@ -70,10 +73,13 @@ export default function Users() {
   function edit(u) {
     setEditingId(u.id);
     setForm({ name: u.name, tgId: u.tg_id, role: u.role });
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setFormOpen(true);
   }
 
-  const visibleUsers = users.filter((user) => `${user.name} ${user.role} ${user.tg_id}`.toLowerCase().includes(search.trim().toLowerCase()));
+  const visibleUsers = users.filter((user) => (
+    (roleFilter === "all" || user.role === roleFilter)
+    && `${user.name} ${user.role} ${user.tg_id}`.toLowerCase().includes(search.trim().toLowerCase())
+  ));
 
   async function remove(id) {
     if (!confirm("Удалить пользователя? Он потеряет доступ к админ-панели.")) return;
@@ -96,8 +102,10 @@ export default function Users() {
           <h1>Пользователи</h1>
           <p className="apage__sub">Назначайте доступ тем, кто уже написал боту</p>
         </div>
+        <Button type="button" icon={Plus} onClick={() => { reset(); setFormOpen(true); }}>Добавить</Button>
       </header>
 
+      {formOpen && <div className="contact-picker" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && reset()}>
       <Card pad="md">
         <SectionTitle>{editingId ? "Редактирование пользователя" : "Новый пользователь"}</SectionTitle>
         <form className="aform" onSubmit={submit}>
@@ -164,6 +172,7 @@ export default function Users() {
           </div>
         </form>
       </Card>
+      </div>}
       <ContactPickerModal
         contacts={contacts}
         isOpen={pickerOpen}
@@ -179,7 +188,14 @@ export default function Users() {
       <div className="asection">
         <div className="asection__head">
           <SectionTitle>Список ({visibleUsers.length})</SectionTitle>
-          <label className="asearch"><Search size={16} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Поиск по имени или Telegram ID" /></label>
+          <div className="alist__filters">
+            <label className="asearch"><Search size={16} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Поиск по имени или Telegram ID" /></label>
+            <select className="aselect afilter" value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)} aria-label="Роль пользователя">
+              <option value="all">Все роли</option>
+              <option value="admin">Админы</option>
+              <option value="tutor">Репетиторы</option>
+            </select>
+          </div>
         </div>
         {loading ? (
           <p className="aempty">Загрузка…</p>

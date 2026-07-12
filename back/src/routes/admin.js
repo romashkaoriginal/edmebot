@@ -23,10 +23,14 @@ router.get("/telegram-contacts", requireRole("admin"), async (req, res, next) =>
   try {
     const kind = req.query.kind === "user" ? "user" : "student";
     const targetTable = kind === "user" ? "users" : "students";
+    const excludeStaff = kind === "student"
+      ? "AND NOT EXISTS (SELECT 1 FROM users u WHERE u.tg_id = c.tg_id)"
+      : "";
     const { rows } = await db.query(
       `SELECT c.tg_id, c.name, c.username, c.last_seen_at
          FROM telegram_contacts c
         WHERE NOT EXISTS (SELECT 1 FROM ${targetTable} t WHERE t.tg_id = c.tg_id)
+          ${excludeStaff}
         ORDER BY c.last_seen_at DESC`,
     );
     res.json({ contacts: rows });
@@ -98,7 +102,11 @@ router.delete("/users/:id", requireRole("admin"), async (req, res, next) => {
 
 router.get("/students", requireRole("admin", "tutor"), async (_req, res, next) => {
   try {
-    const { rows } = await db.query("SELECT * FROM students ORDER BY id ASC");
+    const { rows } = await db.query(
+      `SELECT s.* FROM students s
+       WHERE NOT EXISTS (SELECT 1 FROM users u WHERE u.tg_id = s.tg_id)
+       ORDER BY s.id ASC`
+    );
     res.json({ students: rows });
   } catch (e) {
     next(e);
@@ -110,6 +118,8 @@ router.post("/students", requireRole("admin"), async (req, res, next) => {
     const { name, grade, subject, tgId } = req.body ?? {};
     if (!tgId) return bad(res, "tg_id_required");
     if (!name || !grade || !subject) return bad(res, "name_grade_subject_required");
+    const { rows: staffRows } = await db.query("SELECT 1 FROM users WHERE tg_id = $1", [tgId]);
+    if (staffRows.length) return bad(res, "staff_account_cannot_be_student", 409);
     // status defaults to 'active' — a student created here already has a
     // subject, so they're fully provisioned from the start (no diagnostic-only gate).
     const { rows } = await db.query(

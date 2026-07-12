@@ -134,8 +134,11 @@
     padding-bottom: calc(var(--tabbar-h) + var(--sp-6));
   }
   .admin__tabbar {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    display: flex;
+    align-items: stretch;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
     position: fixed;
     bottom: 0;
     left: 0;
@@ -148,6 +151,9 @@
     border-top: 1px solid var(--line);
     padding-bottom: env(safe-area-inset-bottom, 0);
   }
+  .admin__tabbar::-webkit-scrollbar {
+    display: none;
+  }
   .admin__tabitem {
     display: flex;
     flex-direction: column;
@@ -158,6 +164,7 @@
     font-size: 10px;
     font-weight: 700;
     transition: color var(--dur-pop) var(--ease-out);
+    flex: 0 0 82px;
   }
   .admin__tabitem span {
     line-height: 1;

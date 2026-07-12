@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS students (
   grade       INTEGER,
   subject     TEXT,
   status      TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('pending', 'active')),
+  access_until TIMESTAMPTZ,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -32,6 +33,7 @@ CREATE TABLE IF NOT EXISTS students (
 ALTER TABLE students ALTER COLUMN grade DROP NOT NULL;
 ALTER TABLE students ALTER COLUMN subject DROP NOT NULL;
 ALTER TABLE students ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active';
+ALTER TABLE students ADD COLUMN IF NOT EXISTS access_until TIMESTAMPTZ;
 ALTER TABLE students DROP CONSTRAINT IF EXISTS students_status_check;
 ALTER TABLE students ADD CONSTRAINT students_status_check CHECK (status IN ('pending', 'active'));
 

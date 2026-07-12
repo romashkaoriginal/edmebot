@@ -1,9 +1,13 @@
 .gate {
+  position: fixed;
+  inset: 0;
   height: 100dvh;
+  width: 100vw;
   display: grid;
   place-items: center;
   padding: var(--sp-4);
   overflow: hidden;
+  overscroll-behavior: none;
   background:
     radial-gradient(120% 80% at 50% -10%, var(--primary-soft), transparent 60%),
     var(--bg);
@@ -13,7 +17,7 @@
   width: 100%;
   max-width: 760px;
   max-height: 100%;
-  overflow-y: auto;
+  overflow: hidden;
   text-align: center;
 }
 

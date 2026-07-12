@@ -187,7 +187,7 @@
   display: grid;
   place-items: center;
   padding: var(--sp-4);
-  background: oklch(0.22 0.03 260 / 0.38);
+  background: var(--bg);
 }
 .contact-picker__dialog {
   display: grid;
@@ -200,6 +200,15 @@
   background: var(--surface);
   box-shadow: var(--shadow-lg);
   animation: contact-picker-in var(--dur-modal) var(--ease-out);
+}
+.contact-picker > .card {
+  width: min(100%, 680px);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+.contact-picker > .card.asection {
+  margin-top: 0;
 }
 .contact-picker__head {
   display: flex;
@@ -434,6 +443,16 @@
 .asearch input::placeholder {
   color: var(--muted);
 }
+.alist__filters {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.afilter {
+  width: auto;
+  min-width: 130px;
+  padding-block: 9px;
+}
 
 /* ---- Bonus panel ---- */
 .arow__bonus {
@@ -496,6 +515,13 @@
     flex-direction: column;
   }
   .asearch {
+    width: 100%;
+  }
+  .alist__filters {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .afilter {
     width: 100%;
   }
   .acontact-field__selection,

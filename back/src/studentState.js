@@ -30,6 +30,7 @@ function toProfile(row, student) {
     grade: student.grade,
     subject: student.subject,
     status: student.status,
+    accessUntil: student.access_until ? student.access_until.toISOString?.() ?? String(student.access_until) : null,
     xp: row.xp,
     coins: row.coins,
     level: row.level,
@@ -98,11 +99,12 @@ async function updateTopics(studentId, subject, updates) {
   }
 }
 
-async function submitDiagnostic(student, answers, subject) {
+async function submitDiagnostic(student, answers, subject, questions = null) {
   const activeSubject = subject || student.subject || "Математика";
   const byTopic = new Map();
+  const source = questions ?? seed.diagnostic;
   for (const answer of answers) {
-    const question = seed.diagnostic.find((item) => item.id === answer.id);
+    const question = source.find((item) => String(item.id) === String(answer.id));
     if (!question || question.subject !== activeSubject) continue;
     const stat = byTopic.get(question.topic) ?? { correct: 0, total: 0 };
     stat.total += 1;

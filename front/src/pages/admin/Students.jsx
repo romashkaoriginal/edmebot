@@ -15,9 +15,11 @@ export default function Students() {
   const [selectedContact, setSelectedContact] = useState(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [notice, setNotice] = useState("");
   const [form, setForm] = useState(EMPTY);
   const [editingId, setEditingId] = useState(null);
+  const [formOpen, setFormOpen] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [bonusOpenId, setBonusOpenId] = useState(null);
@@ -47,6 +49,7 @@ export default function Students() {
     setSelectedContact(null);
     setPickerOpen(false);
     setEditingId(null);
+    setFormOpen(false);
     setError("");
   }
 
@@ -70,10 +73,11 @@ export default function Students() {
   function edit(s) {
     setEditingId(s.id);
     setForm({ name: s.name, grade: s.grade, subject: s.subject, tgId: s.tg_id || "" });
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setFormOpen(true);
   }
 
   const visibleStudents = students.filter((student) => {
+    if (statusFilter !== "all" && student.status !== statusFilter) return false;
     const value = `${student.name} ${student.subject} ${student.tg_id ?? ""}`.toLowerCase();
     return value.includes(search.trim().toLowerCase());
   });
@@ -107,8 +111,10 @@ export default function Students() {
           <h1>Ученики</h1>
           <p className="apage__sub">Сначала ученик пишет боту, затем вы привязываете его к классу и предмету</p>
         </div>
+        <Button type="button" icon={Plus} onClick={() => { reset(); setFormOpen(true); }}>Добавить</Button>
       </header>
 
+      {formOpen && <div className="contact-picker" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && reset()}>
       <Card pad="md">
         <SectionTitle>{editingId ? "Редактирование ученика" : "Новый ученик"}</SectionTitle>
         <form className="aform" onSubmit={submit}>
@@ -187,6 +193,7 @@ export default function Students() {
           </div>
         </form>
       </Card>
+      </div>}
       <ContactPickerModal
         contacts={contacts}
         isOpen={pickerOpen}
@@ -202,7 +209,14 @@ export default function Students() {
       <div className="asection">
         <div className="asection__head">
           <SectionTitle>Список ({visibleStudents.length})</SectionTitle>
-          <label className="asearch"><Search size={16} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Поиск по имени или Telegram ID" /></label>
+          <div className="alist__filters">
+            <label className="asearch"><Search size={16} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Поиск по имени или Telegram ID" /></label>
+            <select className="aselect afilter" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label="Статус ученика">
+              <option value="all">Все статусы</option>
+              <option value="active">Активные</option>
+              <option value="pending">Ожидают</option>
+            </select>
+          </div>
         </div>
         {loading ? (
           <p className="aempty">Загрузка…</p>

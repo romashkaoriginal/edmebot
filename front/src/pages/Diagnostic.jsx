@@ -5,7 +5,6 @@ import Button from "../components/ui/Button";
 import KnowledgeMap from "../components/shared/KnowledgeMap";
 import SectionTitle from "../components/ui/SectionTitle";
 import { useApp } from "../store/AppStore";
-import { diagnostic } from "../data/mock";
 import "./Diagnostic.css";
 
 export default function Diagnostic() {
@@ -25,7 +24,7 @@ export default function Diagnostic() {
         <ul className="diag__facts">
           <li>
             <ListChecks size={18} strokeWidth={2.4} />
-            <span>{diagnostic.length} вопросов</span>
+            <span>До 10 вопросов</span>
           </li>
           <li>
             <Clock size={18} strokeWidth={2.4} />

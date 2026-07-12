@@ -35,6 +35,7 @@ export default function Tasks() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [importOpen, setImportOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -108,6 +109,7 @@ export default function Tasks() {
       const hints = form.hints.map((h) => h.trim()).filter(Boolean);
       await adminApi.createTask({ ...form, options, hints });
       setForm(emptyForm(grade, subject));
+      setFormOpen(false);
       await load();
     } catch (e) {
       setError(e.message);
@@ -134,6 +136,7 @@ export default function Tasks() {
           <h1>Задания</h1>
           <p className="apage__sub">Создавайте задания с вариантами ответа для класса и предмета</p>
         </div>
+        <Button type="button" icon={Plus} onClick={() => setFormOpen(true)}>Добавить</Button>
       </header>
 
       <Card pad="md">
@@ -156,6 +159,7 @@ export default function Tasks() {
         </div>
       </Card>
 
+      {formOpen && <div className="contact-picker" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setFormOpen(false)}>
       <Card className="asection" pad="md">
         <div className="asection__head">
           <SectionTitle>Новое задание</SectionTitle>
@@ -273,6 +277,7 @@ export default function Tasks() {
           </div>
         </form>
       </Card>
+      </div>}
 
       {importOpen && <ImportTasksModal onClose={() => setImportOpen(false)} onImported={load} />}
 

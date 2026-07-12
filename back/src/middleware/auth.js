@@ -68,6 +68,12 @@ async function requireStudent(req, res, next) {
     if (!telegramUser) return res.status(401).json({ error: "telegram_auth_invalid" });
 
     const tgId = String(telegramUser.id);
+    const { rows: staffRows } = await db.query("SELECT 1 FROM users WHERE tg_id = $1", [tgId]);
+    if (staffRows.length) return res.status(403).json({ error: "staff_account" });
+    await db.query(
+      "UPDATE students SET status = 'pending' WHERE tg_id = $1 AND access_until IS NOT NULL AND access_until <= now()",
+      [tgId]
+    );
     let { rows } = await db.query("SELECT * FROM students WHERE tg_id = $1", [tgId]);
     if (!rows.length) {
       // First-ever open with no admin-created record: auto-provision a
@@ -95,7 +101,7 @@ async function requireStudent(req, res, next) {
 // Chain after requireStudent on routes that a "pending" (self-serve,
 // not-yet-assigned) student must not reach — practice and homework.
 function requireActiveStudent(req, res, next) {
-  if (req.student.status !== "active") {
+  if (req.student.status !== "active" || (req.student.access_until && new Date(req.student.access_until) <= new Date())) {
     return res.status(403).json({ error: "onboarding_incomplete" });
   }
   next();
