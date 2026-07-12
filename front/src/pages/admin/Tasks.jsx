@@ -198,6 +198,23 @@ export default function Tasks() {
     }
   }
 
+  async function removeTaskBank() {
+    const scope = `${subject}, ${grade} класс`;
+    if (!confirm(`Удалить все задания и темы: ${scope}?\n\nЭто действие нельзя отменить.`)) return;
+    setLoading(true);
+    setError("");
+    try {
+      const { deleted } = await adminApi.deleteTaskBank({ grade, subject });
+      setNotice(`Удалено заданий: ${deleted}`);
+      setTopic(null);
+      await loadTopics();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   function toggleExpand(id) {
     setExpanded((cur) => {
       const next = new Set(cur);
@@ -278,6 +295,9 @@ export default function Tasks() {
             <Button type="button" variant="soft" size="sm" icon={Download} onClick={() => adminApi.downloadTaskTemplate().catch((e) => setError(e.message))}>Шаблон</Button>
             <Button type="button" variant="soft" size="sm" icon={Upload} onClick={() => setImportOpen(true)}>Импорт</Button>
             <Button type="button" size="sm" icon={Plus} onClick={() => { setNewTopic(""); setTopicModalOpen(true); }}>Тема</Button>
+            <Button type="button" variant="danger" size="sm" icon={Trash2} onClick={removeTaskBank} disabled={loading || topics.length === 0}>
+              Очистить класс
+            </Button>
           </div>
         </div>
 

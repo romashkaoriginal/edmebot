@@ -409,6 +409,25 @@ router.delete("/tasks/:id", requireRole("admin", "tutor"), async (req, res, next
   }
 });
 
+// Topics are derived from tasks, therefore deleting the task bank for a
+// grade+subject also clears every topic in that scope.
+router.delete("/tasks", requireRole("admin", "tutor"), async (req, res, next) => {
+  try {
+    const { grade, subject } = req.query;
+    if (!grade || !subject) return bad(res, "grade_and_subject_required");
+    const parsedGrade = Number(grade);
+    if (!Number.isInteger(parsedGrade) || parsedGrade < 5 || parsedGrade > 11)
+      return bad(res, "invalid_grade");
+    const { rowCount } = await db.query(
+      "DELETE FROM tasks WHERE grade = $1 AND subject = $2",
+      [parsedGrade, subject]
+    );
+    res.json({ deleted: rowCount });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ---------- Homework (admin + tutor) ----------
 
 router.get("/homework", requireRole("admin", "tutor"), async (req, res, next) => {

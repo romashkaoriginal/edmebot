@@ -104,6 +104,8 @@ export const adminApi = {
   createTask: (t) => req("/tasks", { method: "POST", body: t }),
   updateTask: (id, t) => req(`/tasks/${id}`, { method: "PUT", body: t }),
   deleteTask: (id) => req(`/tasks/${id}`, { method: "DELETE" }),
+  deleteTaskBank: ({ grade, subject }) =>
+    req(`/tasks?grade=${encodeURIComponent(grade)}&subject=${encodeURIComponent(subject)}`, { method: "DELETE" }),
   importTasks: (file) => {
     const form = new FormData();
     form.append("file", file);
