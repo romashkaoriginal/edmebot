@@ -28,6 +28,23 @@ CREATE TABLE IF NOT EXISTS students (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- The first deployed version used full_name and did not store Telegram ids.
+-- CREATE TABLE IF NOT EXISTS leaves an existing table untouched, therefore
+-- upgrade that schema before any query below refers to the current columns.
+ALTER TABLE students ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS tg_id TEXT UNIQUE;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'students' AND column_name = 'full_name'
+  ) THEN
+    UPDATE students SET name = full_name WHERE name IS NULL;
+  END IF;
+END $$;
+UPDATE students SET name = 'Без имени' WHERE name IS NULL;
+ALTER TABLE students ALTER COLUMN name SET NOT NULL;
+
 -- Legacy columns were NOT NULL; self-serve onboarding creates a student
 -- before a subject/grade is chosen, so both must be nullable.
 ALTER TABLE students ALTER COLUMN grade DROP NOT NULL;
