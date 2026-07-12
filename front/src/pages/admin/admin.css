@@ -341,6 +341,41 @@
 .admin-import {
   padding: 0 var(--sp-5) var(--sp-5);
 }
+.import-format {
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+  font-size: var(--text-sm);
+}
+.import-format__title {
+  display: block;
+  margin-bottom: var(--sp-2);
+  color: var(--ink);
+}
+.import-format__list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  line-height: 1.4;
+}
+.import-format__key {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.85em;
+  color: var(--primary-strong);
+  background: var(--primary-soft);
+  padding: 1px 6px;
+  border-radius: var(--r-sm);
+}
+.import-errors {
+  margin-top: var(--sp-2);
+  display: grid;
+  gap: 2px;
+  font-size: var(--text-xs);
+  color: var(--danger);
+}
 @keyframes contact-picker-in {
   from { opacity: 0; transform: translateY(8px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }

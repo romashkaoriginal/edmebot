@@ -51,6 +51,21 @@ async function reqForm(path, formData) {
   return data;
 }
 
+// Fetch an .xlsx template as a blob and trigger a browser download. Used by
+// every import flow so each one offers a downloadable, self-documenting sample.
+async function downloadTemplate(fullPath, filename) {
+  const response = await fetch(apiUrl(fullPath), {
+    headers: { "x-telegram-init-data": initData() },
+  });
+  if (!response.ok) throw new Error("template_download_failed");
+  const url = URL.createObjectURL(await response.blob());
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 export const adminApi = {
   // Current user (role check)
   me: () => req("/me"),
@@ -91,24 +106,19 @@ export const adminApi = {
     form.append("file", file);
     return reqForm("/tasks/import", form);
   },
-  downloadTaskTemplate: async () => {
-    const response = await fetch(apiUrl("/api/admin/tasks/import-template"), {
-      headers: { "x-telegram-init-data": initData() },
-    });
-    if (!response.ok) throw new Error("template_download_failed");
-    const url = URL.createObjectURL(await response.blob());
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "tasks_template.xlsx";
-    link.click();
-    URL.revokeObjectURL(url);
-  },
+  downloadTaskTemplate: () => downloadTemplate("/api/admin/tasks/import-template", "tasks_template.xlsx"),
 
   // Homework
   listHomework: (studentId) =>
     req(`/homework${studentId ? `?studentId=${studentId}` : ""}`),
   createHomework: (h) => req("/homework", { method: "POST", body: h }),
   deleteHomework: (id) => req(`/homework/${id}`, { method: "DELETE" }),
+  importHomework: (file) => {
+    const form = new FormData();
+    form.append("file", file);
+    return reqForm("/homework/import", form);
+  },
+  downloadHomeworkTemplate: () => downloadTemplate("/api/admin/homework/import-template", "homework_template.xlsx"),
 
   // Stats
   stats: () => req("/stats"),

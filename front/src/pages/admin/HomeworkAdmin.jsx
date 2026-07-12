@@ -1,12 +1,21 @@
 import { useEffect, useState, useCallback } from "react";
-import { BookOpen, Plus, Trash2 } from "lucide-react";
+import { BookOpen, Plus, Trash2, Upload } from "lucide-react";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import SectionTitle from "../../components/ui/SectionTitle";
+import ImportModal from "../../components/admin/ImportModal";
 import { adminApi } from "../../api/admin";
 import "./admin.css";
 
 const EMPTY = { title: "", description: "", due: "", taskIds: [] };
+
+const HW_IMPORT_FIELDS = [
+  { key: "student_tg_id", desc: "Telegram ID ученика (обязательно)" },
+  { key: "title", desc: "заголовок домашки (обязательно)" },
+  { key: "description", desc: "необязательно: что нужно сделать" },
+  { key: "due", desc: "необязательно: срок, ГГГГ-ММ-ДД или ГГГГ-ММ-ДД ЧЧ:ММ" },
+  { key: "task_ids", desc: "необязательно: ID заданий через запятую, напр. 12, 15, 18" },
+];
 
 export default function HomeworkAdmin() {
   const [students, setStudents] = useState([]);
@@ -15,6 +24,7 @@ export default function HomeworkAdmin() {
   const [homework, setHomework] = useState([]);
   const [form, setForm] = useState(EMPTY);
   const [formOpen, setFormOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [error, setError] = useState("");
 
   // Load students once.
@@ -94,8 +104,21 @@ export default function HomeworkAdmin() {
           <h1>Домашка</h1>
           <p className="apage__sub">Выдавайте домашние задания конкретному ученику</p>
         </div>
+        <Button type="button" variant="soft" icon={Upload} onClick={() => setImportOpen(true)}>Импорт</Button>
         <Button type="button" icon={Plus} disabled={!student} onClick={() => setFormOpen(true)}>Добавить</Button>
       </header>
+
+      {importOpen && (
+        <ImportModal
+          title="Импорт домашки"
+          eyebrow="Домашка"
+          fields={HW_IMPORT_FIELDS}
+          onDownload={adminApi.downloadHomeworkTemplate}
+          onImport={adminApi.importHomework}
+          onClose={() => setImportOpen(false)}
+          onImported={loadForStudent}
+        />
+      )}
 
       <Card pad="md">
         <SectionTitle>Ученик</SectionTitle>
@@ -144,7 +167,7 @@ export default function HomeworkAdmin() {
                 <span>Срок сдачи</span>
                 <input
                   className="ainput"
-                  type="datetime-local"
+                  type="date"
                   value={form.due}
                   onChange={(e) => setForm({ ...form, due: e.target.value })}
                 />
