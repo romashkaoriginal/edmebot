@@ -19,6 +19,7 @@ const COLUMNS = [
 ];
 const LETTER_TO_INDEX = { a: 0, b: 1, c: 2, d: 3, e: 4, f: 5 };
 const OPTION_KEYS = ["option_a", "option_b", "option_c", "option_d", "option_e", "option_f"];
+const DIFFICULTIES = new Set(["easy", "medium", "hard"]);
 
 router.get("/tasks/import-template", requireRole("admin", "tutor"), async (_req, res, next) => {
   try {
@@ -104,6 +105,12 @@ router.post("/tasks/import", requireRole("admin", "tutor"), upload.single("file"
         results.skipped++;
         continue;
       }
+      const difficulty = String(obj.difficulty ?? "medium").trim().toLowerCase() || "medium";
+      if (!DIFFICULTIES.has(difficulty)) {
+        results.errors.push({ row: rowNumber, reason: "invalid_difficulty" });
+        results.skipped++;
+        continue;
+      }
 
       const hints = [obj.hint_1, obj.hint_2].map((h) => String(h ?? "").trim()).filter(Boolean);
       await db.query(
@@ -117,7 +124,7 @@ router.post("/tasks/import", requireRole("admin", "tutor"), upload.single("file"
           JSON.stringify(options),
           correct,
           String(obj.explanation ?? "").trim() || null,
-          String(obj.difficulty ?? "medium").trim() || "medium",
+          difficulty,
           JSON.stringify(hints),
         ]
       );

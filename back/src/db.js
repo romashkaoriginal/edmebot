@@ -73,6 +73,10 @@ CREATE TABLE IF NOT EXISTS tasks (
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Existing deployments may have been created before difficulty and hints
+-- were added to the task model. CREATE TABLE IF NOT EXISTS does not add
+-- missing columns, so keep these migrations explicit and idempotent.
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS difficulty TEXT NOT NULL DEFAULT 'medium';
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS hints JSONB NOT NULL DEFAULT '[]';
 
 CREATE TABLE IF NOT EXISTS homework (
