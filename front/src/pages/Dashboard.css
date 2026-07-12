@@ -6,36 +6,6 @@
 
 /* Subtle staggered entrance — occasional view, so a little polish is earned.
    transform + opacity only; capped stagger so it never feels slow. */
-.dash > * {
-  animation: dash-in 460ms var(--ease-out) both;
-}
-.dash > *:nth-child(1) { animation-delay: 0ms; }
-.dash > *:nth-child(2) { animation-delay: 55ms; }
-.dash > *:nth-child(3) { animation-delay: 110ms; }
-.dash > *:nth-child(4) { animation-delay: 165ms; }
-.dash > *:nth-child(n + 5) { animation-delay: 200ms; }
-
-@keyframes dash-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .dash > * {
-    animation: dash-fade 200ms ease both;
-  }
-  @keyframes dash-fade {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-}
-
 /* ---- Hero: name · grade + circular pet ---- */
 .dash__top {
   display: flex;
@@ -58,9 +28,8 @@
   width: 108px;
   height: 108px;
   border-radius: var(--r-pill);
-  background:
-    radial-gradient(120% 120% at 30% 20%, oklch(0.86 0.13 60), oklch(0.78 0.16 45));
-  box-shadow: var(--shadow-md), var(--glass-rim);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 8px color-mix(in oklch, var(--accent) 12%, transparent);
   overflow: hidden;
 }
 .dash__pet-ring .pet {
@@ -73,6 +42,14 @@
   align-items: center;
   gap: var(--sp-4);
   color: var(--ink);
+}
+.dash__practice::before {
+  content: "";
+  width: 5px;
+  align-self: stretch;
+  flex-shrink: 0;
+  border-radius: var(--r-pill);
+  background: var(--primary);
 }
 .dash__practice-body {
   flex: 1;
@@ -192,8 +169,7 @@
   height: 40px;
   font-size: 22px;
   border-radius: var(--r-md);
-  background: oklch(1 0 0 / 0.6);
-  box-shadow: var(--shadow-sm), var(--glass-rim);
+  background: var(--surface-2);
 }
 .dash__weak-name {
   flex: 1;
@@ -206,14 +182,14 @@
   width: 68px;
   height: 8px;
   border-radius: var(--r-pill);
-  background: oklch(0.85 0.03 60 / 0.6);
+  background: var(--surface-2);
   overflow: hidden;
 }
 .dash__weak-fill {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--candy-magenta), var(--candy-gold));
+  background: var(--accent);
 }
 .dash__hw-due {
   flex-shrink: 0;

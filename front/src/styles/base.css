@@ -1,5 +1,5 @@
-/* Fonts: Nunito (UI/body) + Baloo 2 (display / game numbers) */
-@import url("https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800;900&display=swap");
+/* One friendly family keeps product UI cohesive without becoming childish. */
+@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap");
 
 *,
 *::before,
@@ -22,9 +22,8 @@ body {
   font-size: var(--text-base);
   line-height: 1.5;
   color: var(--ink);
-  /* warm peach canvas with a soft diagonal wash toward the corner light */
   background:
-    radial-gradient(120% 90% at 100% 0%, var(--bg-2), transparent 55%),
+    radial-gradient(90% 65% at 50% 0%, var(--bg-2), transparent 68%),
     var(--bg);
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
@@ -96,7 +95,7 @@ ol {
 }
 
 :focus-visible {
-  outline: 3px solid oklch(0.5 0.19 275 / 0.5);
+  outline: 3px solid oklch(0.47 0.16 292 / 0.42);
   outline-offset: 2px;
   border-radius: var(--r-sm);
 }
@@ -104,6 +103,11 @@ ol {
 .font-display {
   font-family: var(--font-display);
   letter-spacing: -0.01em;
+}
+
+::selection {
+  color: var(--on-primary);
+  background: var(--primary);
 }
 
 /* Big, ink-black hero heading (name · grade) — the mockup's signature */

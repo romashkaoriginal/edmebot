@@ -45,7 +45,7 @@
   font-family: var(--font-display);
   font-size: var(--text-sm);
   flex-shrink: 0;
-  transition: all var(--dur-pop) var(--ease-out);
+  transition: color var(--dur-pop) var(--ease-out), background-color var(--dur-pop) var(--ease-out), transform var(--dur-press) var(--ease-out);
 }
 .opt__text {
   flex: 1;

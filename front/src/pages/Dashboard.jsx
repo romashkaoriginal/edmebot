@@ -141,7 +141,7 @@ export default function Dashboard() {
         </Card>
       )}
 
-      <Button as={Link} to="/app/practice/run" size="lg" icon={Play} className="dash__cta">
+      <Button as={Link} to="/app/practice/run" size="lg" variant="accent" icon={Play} className="dash__cta">
         Начать практику
       </Button>
     </div>
@@ -182,4 +182,3 @@ function Donut({ slices, size = 120 }) {
     </svg>
   );
 }
-

@@ -9,7 +9,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
-  background: linear-gradient(135deg, var(--surface), var(--primary-soft));
+  background: var(--primary-soft);
 }
 .prof__hero-top {
   display: flex;
@@ -39,7 +39,7 @@
   font-size: var(--text-sm);
   font-weight: 800;
   color: var(--accent-strong);
-  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--line);
 }
 .prof__level {
   display: flex;
@@ -197,7 +197,7 @@
 .prof__rec {
   display: flex;
   gap: var(--sp-3);
-  background: linear-gradient(120deg, var(--surface), var(--accent-soft));
+  background: var(--accent-soft);
 }
 .prof__rec-icon {
   color: var(--accent-strong);
@@ -213,8 +213,14 @@
 
 /* Weekly report */
 .prof__report {
-  background: linear-gradient(135deg, var(--surface), var(--surface-2));
+  background: var(--primary-strong);
+  color: var(--on-primary);
 }
+.prof__report .prof__report-title,
+.prof__report .prof__report-sub,
+.prof__report .prof__report-list,
+.prof__report .prof__report-head { color: var(--on-primary); }
+.prof__report .prof__report-sub { opacity: 0.76; }
 .prof__report-head {
   display: flex;
   align-items: center;

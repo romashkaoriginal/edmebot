@@ -1258,3 +1258,37 @@
   line-height: 1.4;
 }
 .aq__explain b { color: var(--ink); }
+
+/* Visual-system consolidation: compact admin density, shared with student UI. */
+.arow--card {
+  border: 0;
+  background: var(--surface-solid);
+  box-shadow: var(--shadow-sm);
+}
+.arow--card.is-open {
+  border: 0;
+  box-shadow: 0 0 0 2px var(--primary-soft), var(--shadow-md);
+}
+.apick,
+.agrade,
+.atopic {
+  box-shadow: none;
+}
+.apick:hover,
+.agrade:hover,
+.atopic:hover {
+  box-shadow: var(--shadow-sm);
+}
+.aavatar,
+.astudent-banner {
+  background: var(--primary-soft);
+}
+.ainput,
+.aselect,
+.atextarea,
+.asearch {
+  background: var(--surface-solid);
+}
+.apage__head-icon {
+  box-shadow: none;
+}
