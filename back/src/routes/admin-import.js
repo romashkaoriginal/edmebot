@@ -26,7 +26,7 @@ router.get("/tasks/import-template", requireRole("admin", "tutor"), async (_req,
     const sheet = wb.addWorksheet("Задания");
     sheet.addRow(COLUMNS);
     sheet.addRow([
-      7, "Математика", "fractions", "Сложи дроби: 1/4 + 1/4",
+      7, "Математика", "Дроби", "Сложи дроби: 1/4 + 1/4",
       "1/2", "2/8", "1/8", "2/4", "", "",
       "a", "easy", "Знаменатели одинаковые, складываем числители.", "", "",
     ]);
@@ -36,7 +36,7 @@ router.get("/tasks/import-template", requireRole("admin", "tutor"), async (_req,
       ["Колонка", "Описание"],
       ["grade", "Класс, число 5-11"],
       ["subject", "Русский или Математика"],
-      ["topic", "Ключ темы (латиницей, напр. fractions)"],
+      ["topic", "Название темы (напр. Дроби)"],
       ["prompt", "Текст задания"],
       ["option_a..option_f", "Варианты ответа (минимум 2: a и b)"],
       ["correct", "Буква правильного варианта (a-f)"],

@@ -5,10 +5,28 @@
   align-items: center;
   gap: var(--sp-3);
   margin-bottom: var(--sp-5);
+  flex-wrap: wrap;
 }
 .apage__head-text {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
+}
+.apage__head-text h1 {
+  overflow-wrap: anywhere;
+}
+/* On narrow viewports the add button drops to its own full row instead of
+   crowding (and clipping) the title. */
+@media (max-width: 460px) {
+  .apage__head > .btn,
+  .apage__head-actions {
+    flex: 1 0 100%;
+  }
+  .apage__head-actions {
+    justify-content: stretch;
+  }
+  .apage__head-actions .btn {
+    flex: 1;
+  }
 }
 .apage__head-icon {
   display: grid;
@@ -127,6 +145,20 @@
   display: flex;
   gap: var(--sp-2);
   flex-wrap: wrap;
+}
+
+/* Repeatable subject+grade rows in the student form. */
+.asubject-rows {
+  display: grid;
+  gap: var(--sp-2);
+}
+.asubject-row {
+  display: flex;
+  gap: var(--sp-2);
+}
+.asubject-row .aselect {
+  flex: 1;
+  min-width: 0;
 }
 
 /* ---- Option editor (tasks) ---- */
@@ -849,6 +881,90 @@
   color: var(--muted);
   margin-top: 6px;
 }
+/* Gamification snapshot tiles. */
+.agame-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+}
+@media (max-width: 520px) {
+  .agame-row { grid-template-columns: repeat(2, 1fr); }
+}
+.agame {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: var(--sp-3) var(--sp-2);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  text-align: center;
+}
+.agame__ic--level { color: var(--candy-gold); }
+.agame__ic--streak { color: var(--accent-strong); }
+.agame__ic--coins { color: var(--candy-gold); }
+.agame__ic--pet { color: var(--candy-violet); }
+.agame__num {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.1;
+}
+.agame__num--sm {
+  font-size: var(--text-base);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agame__cap {
+  font-size: var(--text-xs);
+  color: var(--muted);
+  font-weight: 700;
+}
+.axp {
+  margin-bottom: var(--sp-5);
+}
+.axp__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-bottom: 6px;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* Homework rollup chips. */
+.ahw-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-5);
+}
+.ahw-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--muted);
+}
+.ahw-chip b { color: var(--ink); }
+.ahw-chip--done { background: var(--success-soft); color: var(--success); border-color: color-mix(in oklch, var(--success) 26%, var(--line)); }
+.ahw-chip--done b { color: var(--success); }
+.ahw-chip--active { background: var(--primary-soft); color: var(--primary-strong); border-color: color-mix(in oklch, var(--primary) 26%, var(--line)); }
+.ahw-chip--active b { color: var(--primary-strong); }
+.ahw-chip--overdue { background: var(--danger-soft); color: var(--danger); border-color: color-mix(in oklch, var(--danger) 26%, var(--line)); }
+.ahw-chip--overdue b { color: var(--danger); }
+
 .atopic-stats {
   display: grid;
   gap: var(--sp-3);
@@ -862,6 +978,23 @@
 }
 .atopic-stat__row b {
   color: var(--ink);
+}
+
+/* ---- Selected-student banner (homework) ---- */
+.astudent-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+  background: linear-gradient(135deg, var(--primary-soft), var(--accent-soft));
+  border: 1px solid var(--line);
+}
+.astudent-banner__name {
+  font-weight: 800;
+  color: var(--ink);
+  font-size: var(--text-md);
 }
 
 /* ---- Rich empty state ---- */
@@ -889,12 +1022,6 @@
   align-items: center;
   gap: var(--sp-3);
   margin-bottom: var(--sp-4);
-}
-.awizard__lead {
-  margin: 0 0 var(--sp-4);
-  color: var(--muted);
-  font-size: var(--text-md);
-  font-weight: 600;
 }
 .awizard__steps {
   display: flex;

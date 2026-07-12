@@ -146,6 +146,48 @@
 }
 .app--focus.app {
   grid-template-columns: 1fr;
+  /* Lock the run screen to the viewport — no page scroll during a test. */
+  height: 100dvh;
+  overflow: hidden;
+}
+.app--focus .app__main {
+  height: 100dvh;
+  min-height: 0;
+}
+.app--focus .app__content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+/* ---------- Pending student (diagnostic-only): fixed, unscrolled screen ---------- */
+.app--pending.app {
+  height: 100dvh;
+  overflow: hidden;
+}
+.app--pending .app__main {
+  height: 100dvh;
+  min-height: 0;
+}
+.app--pending .app__content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+.app--pending .app__content > * {
+  width: 100%;
+  max-width: 560px;
+}
+/* If a very small screen can't fit the intro card, let it scroll rather than
+   clip — but the default is a fixed, centered, unscrolled screen. */
+@media (max-height: 640px) {
+  .app--pending .app__content {
+    overflow-y: auto;
+    align-content: start;
+  }
 }
 
 /* ---------- Responsive ---------- */

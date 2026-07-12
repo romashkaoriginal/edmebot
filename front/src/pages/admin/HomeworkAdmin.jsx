@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { BookOpen, Plus, Trash2, Upload, CheckCircle2 } from "lucide-react";
-import Card from "../../components/ui/Card";
+import { BookOpen, Plus, Trash2, Upload, CheckCircle2, Search, ChevronRight, ChevronLeft } from "lucide-react";
 import Button from "../../components/ui/Button";
 import SectionTitle from "../../components/ui/SectionTitle";
 import ImportModal from "../../components/admin/ImportModal";
@@ -8,6 +7,8 @@ import FormModal from "../../components/admin/FormModal";
 import { adminApi } from "../../api/admin";
 import "./admin.css";
 
+const SUBJECTS = ["Математика", "Русский"];
+const GRADES = [6, 7, 8, 9, 10, 11];
 const EMPTY = { title: "", description: "", due: "", taskIds: [] };
 
 const HW_IMPORT_FIELDS = [
@@ -27,19 +28,30 @@ export default function HomeworkAdmin() {
   const [formOpen, setFormOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  // Load students once.
+  const [search, setSearch] = useState("");
+  const [subjectFilter, setSubjectFilter] = useState("all");
+  const [gradeFilter, setGradeFilter] = useState("all");
+
+  // Load students once. The tutor picks one from the list below (no auto-select
+  // so the list stays the entry point).
   useEffect(() => {
     adminApi
       .listStudents()
-      .then(({ students }) => {
-        setStudents(students);
-        if (students[0]) setStudentId(String(students[0].id));
-      })
-      .catch((e) => setError(e.message));
+      .then(({ students }) => setStudents(students))
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
   }, []);
 
   const student = students.find((s) => String(s.id) === String(studentId));
+
+  const visibleStudents = students.filter((s) => {
+    if (s.status !== "active") return false;
+    if (subjectFilter !== "all" && s.subject !== subjectFilter) return false;
+    if (gradeFilter !== "all" && String(s.grade) !== gradeFilter) return false;
+    return `${s.name} ${s.subject ?? ""} ${s.tg_id ?? ""}`.toLowerCase().includes(search.trim().toLowerCase());
+  });
 
   const loadForStudent = useCallback(async () => {
     if (!student) return;
@@ -105,8 +117,15 @@ export default function HomeworkAdmin() {
           <h1>Домашка</h1>
         </div>
         <div className="apage__head-actions">
-          <Button type="button" variant="soft" icon={Upload} onClick={() => setImportOpen(true)}>Импорт</Button>
-          <Button type="button" icon={Plus} disabled={!student} onClick={() => setFormOpen(true)}>Добавить</Button>
+          {!student && (
+            <Button type="button" variant="soft" icon={Upload} onClick={() => setImportOpen(true)}>Импорт</Button>
+          )}
+          {student && (
+            <>
+              <Button type="button" variant="soft" icon={ChevronLeft} onClick={() => setStudentId("")}>К списку</Button>
+              <Button type="button" icon={Plus} onClick={() => setFormOpen(true)}>Добавить</Button>
+            </>
+          )}
         </div>
       </header>
 
@@ -118,30 +137,61 @@ export default function HomeworkAdmin() {
           onDownload={adminApi.downloadHomeworkTemplate}
           onImport={adminApi.importHomework}
           onClose={() => setImportOpen(false)}
-          onImported={loadForStudent}
+          onImported={() => { if (student) loadForStudent(); }}
         />
       )}
 
-      <Card pad="md">
-        <SectionTitle>Ученик</SectionTitle>
-        {students.length === 0 ? (
-          <p className="aempty">Сначала добавьте учеников в разделе «Ученики».</p>
-        ) : (
-          <label className="afield">
-            <span>Кому выдаём</span>
-            <select className="aselect" value={studentId} onChange={(e) => setStudentId(e.target.value)}>
-              {students.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} — {s.grade} класс · {s.subject}
-                </option>
-              ))}
+      {/* Student picker — filtered list, shown until one is chosen. */}
+      {!student && (
+        <div className="asection">
+          <div className="afilters">
+            <label className="asearch">
+              <Search size={16} />
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Поиск ученика" />
+            </label>
+            <select className="aselect afilter" value={subjectFilter} onChange={(e) => setSubjectFilter(e.target.value)} aria-label="Предмет">
+              <option value="all">Все предметы</option>
+              {SUBJECTS.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
-          </label>
-        )}
-      </Card>
+            <select className="aselect afilter" value={gradeFilter} onChange={(e) => setGradeFilter(e.target.value)} aria-label="Класс">
+              <option value="all">Все классы</option>
+              {GRADES.map((g) => <option key={g} value={g}>{g} класс</option>)}
+            </select>
+          </div>
+
+          {loading ? (
+            <p className="aempty">Загрузка…</p>
+          ) : students.length === 0 ? (
+            <p className="aempty">Сначала добавьте учеников в разделе «Ученики».</p>
+          ) : visibleStudents.length === 0 ? (
+            <p className="aempty">По этому запросу учеников нет.</p>
+          ) : (
+            <div className="alist">
+              {visibleStudents.map((s) => (
+                <button key={s.id} className="arow arow--card arow--pick" onClick={() => setStudentId(String(s.id))}>
+                  <span className="aavatar" aria-hidden="true">{initials(s.name)}</span>
+                  <div className="arow__main">
+                    <div className="arow__title">{s.name}</div>
+                    <div className="arow__meta">{s.grade} класс · {s.subject}</div>
+                  </div>
+                  <ChevronRight size={18} strokeWidth={2.6} className="atopic__go" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {student && (
         <>
+          <div className="astudent-banner">
+            <span className="aavatar aavatar--lg" aria-hidden="true">{initials(student.name)}</span>
+            <div>
+              <div className="astudent-banner__name">{student.name}</div>
+              <div className="arow__meta">{student.grade} класс · {student.subject}</div>
+            </div>
+          </div>
+
           {formOpen && (
           <FormModal
             title="Новая домашка"
@@ -252,4 +302,13 @@ export default function HomeworkAdmin() {
       )}
     </div>
   );
+}
+
+function initials(name) {
+  return (name || "?")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
 }

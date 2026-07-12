@@ -12,7 +12,12 @@ import "./admin.css";
 
 const SUBJECTS = ["Математика", "Русский"];
 const GRADES = [5, 6, 7, 8, 9, 10, 11];
-const EMPTY = { name: "", grade: 7, subject: "Математика", tgId: "" };
+const EMPTY = {
+  firstName: "",
+  lastName: "",
+  tgId: "",
+  subjects: [{ subject: "Математика", grade: 7 }],
+};
 
 export default function Students() {
   const [students, setStudents] = useState([]);
@@ -69,11 +74,29 @@ export default function Students() {
   async function submit(e) {
     e.preventDefault();
     setError("");
+    const subjects = form.subjects.filter((s) => s.subject && s.grade);
+    if (!editingId && subjects.length === 0) {
+      setError("Добавьте хотя бы один предмет");
+      return;
+    }
     try {
       if (editingId) {
-        await adminApi.updateStudent(editingId, form);
+        // On edit we only touch name/tg/primary subject; per-subject changes
+        // happen in the expandable "Предметы" panel of the row.
+        await adminApi.updateStudent(editingId, {
+          firstName: form.firstName,
+          lastName: form.lastName,
+          tgId: form.tgId,
+          subject: subjects[0]?.subject,
+          grade: subjects[0]?.grade,
+        });
       } else {
-        await adminApi.createStudent(form);
+        await adminApi.createStudent({
+          firstName: form.firstName,
+          lastName: form.lastName,
+          tgId: form.tgId,
+          subjects,
+        });
       }
       reset();
       setNotice(editingId ? "Данные ученика сохранены" : "Ученик добавлен и привязан к Telegram");
@@ -85,8 +108,31 @@ export default function Students() {
 
   function edit(s) {
     setEditingId(s.id);
-    setForm({ name: s.name, grade: s.grade, subject: s.subject, tgId: s.tg_id || "" });
+    setForm({
+      firstName: s.first_name || s.name || "",
+      lastName: s.last_name || "",
+      tgId: s.tg_id || "",
+      subjects: [{ subject: s.subject || "Математика", grade: s.grade || 7 }],
+    });
     setFormOpen(true);
+  }
+
+  function setSubjectRow(i, patch) {
+    setForm((f) => {
+      const subjects = f.subjects.map((row, idx) => (idx === i ? { ...row, ...patch } : row));
+      return { ...f, subjects };
+    });
+  }
+  function addSubjectRow() {
+    setForm((f) => {
+      const used = new Set(f.subjects.map((s) => s.subject));
+      const next = SUBJECTS.find((s) => !used.has(s));
+      if (!next) return f; // all subjects already added
+      return { ...f, subjects: [...f.subjects, { subject: next, grade: 7 }] };
+    });
+  }
+  function removeSubjectRow(i) {
+    setForm((f) => (f.subjects.length <= 1 ? f : { ...f, subjects: f.subjects.filter((_, idx) => idx !== i) }));
   }
 
   const visibleStudents = students.filter((student) => {
@@ -161,35 +207,20 @@ export default function Students() {
               <span>Имя</span>
               <input
                 className="ainput"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                value={form.firstName}
+                onChange={(e) => setForm({ ...form, firstName: e.target.value })}
                 placeholder="Артём"
                 required
               />
             </label>
             <label className="afield">
-              <span>Класс</span>
-              <select
-                className="aselect"
-                value={form.grade}
-                onChange={(e) => setForm({ ...form, grade: Number(e.target.value) })}
-              >
-                {GRADES.map((g) => (
-                  <option key={g} value={g}>{g} класс</option>
-                ))}
-              </select>
-            </label>
-            <label className="afield">
-              <span>Предмет</span>
-              <select
-                className="aselect"
-                value={form.subject}
-                onChange={(e) => setForm({ ...form, subject: e.target.value })}
-              >
-                {SUBJECTS.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
+              <span>Фамилия</span>
+              <input
+                className="ainput"
+                value={form.lastName}
+                onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                placeholder="Иванов"
+              />
             </label>
             <label className="afield">
               <span>Telegram ID</span>
@@ -202,12 +233,75 @@ export default function Students() {
               />
             </label>
           </div>
+
           {!editingId && (
-            <p className="ahint">
-              Основной предмет можно дополнить другими после создания — кнопкой
-              «Предметы» в карточке ученика.
-            </p>
+            <div className="afield">
+              <span>Предметы и классы</span>
+              <div className="asubject-rows">
+                {form.subjects.map((row, i) => (
+                  <div className="asubject-row" key={i}>
+                    <select
+                      className="aselect"
+                      value={row.subject}
+                      onChange={(e) => setSubjectRow(i, { subject: e.target.value })}
+                    >
+                      {SUBJECTS.map((s) => (
+                        <option
+                          key={s}
+                          value={s}
+                          disabled={s !== row.subject && form.subjects.some((r) => r.subject === s)}
+                        >
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      className="aselect"
+                      value={row.grade}
+                      onChange={(e) => setSubjectRow(i, { grade: Number(e.target.value) })}
+                    >
+                      {GRADES.map((g) => (
+                        <option key={g} value={g}>{g} класс</option>
+                      ))}
+                    </select>
+                    {form.subjects.length > 1 && (
+                      <button type="button" className="aopt__del" onClick={() => removeSubjectRow(i)} aria-label="Убрать предмет">
+                        <X size={16} strokeWidth={2.6} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {form.subjects.length < SUBJECTS.length && (
+                <Button type="button" variant="soft" size="sm" icon={Plus} onClick={addSubjectRow}>
+                  Ещё предмет
+                </Button>
+              )}
+            </div>
           )}
+
+          {editingId && (
+            <label className="afield">
+              <span>Основной предмет и класс</span>
+              <div className="asubject-row">
+                <select
+                  className="aselect"
+                  value={form.subjects[0].subject}
+                  onChange={(e) => setSubjectRow(0, { subject: e.target.value })}
+                >
+                  {SUBJECTS.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+                <select
+                  className="aselect"
+                  value={form.subjects[0].grade}
+                  onChange={(e) => setSubjectRow(0, { grade: Number(e.target.value) })}
+                >
+                  {GRADES.map((g) => <option key={g} value={g}>{g} класс</option>)}
+                </select>
+              </div>
+            </label>
+          )}
+
           {error && <p className="aerror">{error}</p>}
           <div className="aform__actions">
             <Button type="submit" icon={editingId ? Pencil : Plus}>
@@ -226,7 +320,8 @@ export default function Students() {
         onClose={() => setPickerOpen(false)}
         onSelect={(contact) => {
           setSelectedContact(contact);
-          setForm({ ...form, name: contact.name, tgId: contact.tg_id });
+          const [first, ...rest] = String(contact.name || "").split(/\s+/);
+          setForm({ ...form, firstName: first || contact.name, lastName: rest.join(" "), tgId: contact.tg_id });
           setPickerOpen(false);
         }}
         title="Выберите ученика из чата бота"
@@ -253,8 +348,8 @@ export default function Students() {
           </select>
           <select className="aselect afilter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Статус">
             <option value="all">Любой статус</option>
-            <option value="active">Занимаются</option>
-            <option value="pending">Ждут привязки</option>
+            <option value="active">Активные</option>
+            <option value="pending">Без предмета</option>
           </select>
         </div>
 
@@ -286,7 +381,11 @@ export default function Students() {
                     <div className="arow__main">
                       <div className="arow__title">
                         {s.name}
-                        {s.status === "pending" && <span className="atag atag--pending">ждёт привязки</span>}
+                        {s.status === "pending" && (
+                          <span className="atag atag--pending" title="Ученик написал боту, но ему ещё не назначен предмет — назначьте его кнопкой «Предметы»">
+                            без предмета
+                          </span>
+                        )}
                         {isDemo && <span className="atag atag--demo">демо</span>}
                       </div>
                       <div className="arow__meta">

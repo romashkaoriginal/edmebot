@@ -82,9 +82,10 @@ async function requireStudent(req, res, next) {
       // and stay diagnostic-only until staff grants full access.
       const name = [telegramUser.first_name, telegramUser.last_name].filter(Boolean).join(" ") || "Ученик";
       const inserted = await db.query(
-        `INSERT INTO students (tg_id, name, status) VALUES ($1, $2, 'pending')
+        `INSERT INTO students (tg_id, name, first_name, last_name, status)
+         VALUES ($1, $2, $3, $4, 'pending')
          ON CONFLICT (tg_id) DO NOTHING RETURNING *`,
-        [tgId, name]
+        [tgId, name, telegramUser.first_name || name, telegramUser.last_name || null]
       );
       rows = inserted.rows.length
         ? inserted.rows

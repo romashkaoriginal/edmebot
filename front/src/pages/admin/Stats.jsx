@@ -1,12 +1,16 @@
 import { useEffect, useState, useMemo } from "react";
-import { BarChart3, Search, Target, CheckCircle2, Percent, ChevronRight } from "lucide-react";
+import {
+  BarChart3, Search, Target, CheckCircle2, Percent, ChevronRight,
+  Flame, Trophy, Coins, BookOpen, PawPrint,
+} from "lucide-react";
 import Card from "../../components/ui/Card";
 import SectionTitle from "../../components/ui/SectionTitle";
 import ProgressBar from "../../components/ui/ProgressBar";
 import { adminApi } from "../../api/admin";
 import "./admin.css";
 
-const GRADES = [5, 6, 7, 8, 9, 10, 11];
+const GRADES = [6, 7, 8, 9, 10, 11];
+const PET_NAMES = { fox: "Лиса", cat: "Кот", owl: "Сова", dragon: "Дракон" };
 
 export default function Stats() {
   const [summary, setSummary] = useState([]);
@@ -131,6 +135,47 @@ export default function Stats() {
 
               {detail && (
                 <>
+                  {/* Gamification snapshot — level, streak, coins, pet. */}
+                  {detail.profile && (
+                    <div className="agame-row">
+                      <div className="agame">
+                        <Trophy size={16} strokeWidth={2.4} className="agame__ic agame__ic--level" />
+                        <span className="agame__num">{detail.profile.level}</span>
+                        <span className="agame__cap">уровень</span>
+                      </div>
+                      <div className="agame">
+                        <Flame size={16} strokeWidth={2.4} className="agame__ic agame__ic--streak" />
+                        <span className="agame__num">{detail.profile.streak}</span>
+                        <span className="agame__cap">стрик</span>
+                      </div>
+                      <div className="agame">
+                        <Coins size={16} strokeWidth={2.4} className="agame__ic agame__ic--coins" />
+                        <span className="agame__num">{detail.bonusBalance ?? detail.profile.coins}</span>
+                        <span className="agame__cap">баллы</span>
+                      </div>
+                      <div className="agame">
+                        <PawPrint size={16} strokeWidth={2.4} className="agame__ic agame__ic--pet" />
+                        <span className="agame__num agame__num--sm">{detail.profile.pet_name}</span>
+                        <span className="agame__cap">{PET_NAMES[detail.profile.pet_species] || "питомец"}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {detail.profile && (
+                    <div className="axp">
+                      <div className="axp__row">
+                        <span>Опыт до след. уровня</span>
+                        <span className="arow__meta">{detail.profile.xp_from_level} / {detail.profile.xp_for_next} XP</span>
+                      </div>
+                      <ProgressBar
+                        value={detail.profile.xp_from_level}
+                        max={detail.profile.xp_for_next || 1}
+                        tone="accent"
+                      />
+                    </div>
+                  )}
+
+                  <SectionTitle>Практика</SectionTitle>
                   <div className="astat-grid">
                     <div className="astat astat--a">
                       <Target className="astat__ic" size={18} strokeWidth={2.4} />
@@ -148,6 +193,30 @@ export default function Stats() {
                       <div className="astat__label">Точность</div>
                     </div>
                   </div>
+
+                  {detail.homework && (
+                    <>
+                      <SectionTitle>Домашка</SectionTitle>
+                      <div className="ahw-row">
+                        <div className="ahw-chip">
+                          <BookOpen size={15} strokeWidth={2.4} />
+                          <b>{detail.homework.total}</b> всего
+                        </div>
+                        <div className="ahw-chip ahw-chip--done">
+                          <CheckCircle2 size={15} strokeWidth={2.4} />
+                          <b>{detail.homework.done}</b> сдано
+                        </div>
+                        <div className="ahw-chip ahw-chip--active">
+                          <b>{detail.homework.active}</b> активно
+                        </div>
+                        {detail.homework.overdue > 0 && (
+                          <div className="ahw-chip ahw-chip--overdue">
+                            <b>{detail.homework.overdue}</b> просрочено
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
 
                   <SectionTitle>По темам</SectionTitle>
                   {detail.byTopic.length === 0 ? (

@@ -105,13 +105,12 @@
 
 @media (max-width: 620px) {
   .fmodal {
-    padding: 0;
-    place-items: end stretch;
+    padding: var(--sp-3);
+    place-items: center;
   }
   .fmodal__dialog,
   .fmodal__dialog--lg {
     width: 100%;
-    max-height: 92dvh;
-    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    max-height: calc(100dvh - 2 * var(--sp-3));
   }
 }

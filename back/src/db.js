@@ -32,6 +32,17 @@ CREATE TABLE IF NOT EXISTS students (
 -- before a subject/grade is chosen, so both must be nullable.
 ALTER TABLE students ALTER COLUMN grade DROP NOT NULL;
 ALTER TABLE students ALTER COLUMN subject DROP NOT NULL;
+
+-- First/last name split. The name column stays populated ("Имя Фамилия") for
+-- back-compat with everything that reads students.name (pet, homework joins,
+-- student app), while these columns are the source of truth for the form.
+ALTER TABLE students ADD COLUMN IF NOT EXISTS first_name TEXT;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS last_name TEXT;
+-- Backfill: split the existing single name on the first space.
+UPDATE students
+   SET first_name = split_part(name, ' ', 1),
+       last_name  = NULLIF(trim(substring(name from position(' ' in name))), '')
+ WHERE first_name IS NULL AND name IS NOT NULL;
 ALTER TABLE students ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active';
 ALTER TABLE students ADD COLUMN IF NOT EXISTS access_until TIMESTAMPTZ;
 ALTER TABLE students DROP CONSTRAINT IF EXISTS students_status_check;

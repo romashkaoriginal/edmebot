@@ -113,24 +113,58 @@ router.get("/students", requireRole("admin", "tutor"), async (_req, res, next) =
   }
 });
 
+// Normalise the subject list a form can submit. Accepts either the new
+// `subjects: [{subject, grade}]` array or the legacy single `subject`/`grade`.
+function readSubjects(body) {
+  const out = [];
+  const seen = new Set();
+  const push = (subject, grade) => {
+    const s = String(subject ?? "").trim();
+    const g = Number(grade);
+    if (!s || !Number.isInteger(g) || g < 5 || g > 11 || seen.has(s)) return;
+    seen.add(s);
+    out.push({ subject: s, grade: g });
+  };
+  if (Array.isArray(body?.subjects)) {
+    for (const item of body.subjects) push(item?.subject, item?.grade);
+  } else if (body?.subject) {
+    push(body.subject, body.grade);
+  }
+  return out;
+}
+
+function fullName(firstName, lastName) {
+  return [String(firstName ?? "").trim(), String(lastName ?? "").trim()]
+    .filter(Boolean)
+    .join(" ");
+}
+
 router.post("/students", requireRole("admin"), async (req, res, next) => {
   try {
-    const { name, grade, subject, tgId } = req.body ?? {};
+    const { tgId, firstName, lastName } = req.body ?? {};
     if (!tgId) return bad(res, "tg_id_required");
-    if (!name || !grade || !subject) return bad(res, "name_grade_subject_required");
+    const name = fullName(firstName, lastName);
+    if (!name) return bad(res, "name_required");
+    const subjects = readSubjects(req.body);
+    if (!subjects.length) return bad(res, "at_least_one_subject_required");
     const { rows: staffRows } = await db.query("SELECT 1 FROM users WHERE tg_id = $1", [tgId]);
     if (staffRows.length) return bad(res, "staff_account_cannot_be_student", 409);
-    // status defaults to 'active' — a student created here already has a
-    // subject, so they're fully provisioned from the start (no diagnostic-only gate).
+    // The first subject is the "primary" one (kept on students for display/
+    // back-compat); the rest go into student_subjects. status defaults to
+    // 'active' — a student created here already has a subject.
+    const primary = subjects[0];
     const { rows } = await db.query(
-      `INSERT INTO students (tg_id, name, grade, subject) VALUES ($1,$2,$3,$4) RETURNING *`,
-      [tgId, name, Number(grade), subject]
+      `INSERT INTO students (tg_id, name, first_name, last_name, grade, subject)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+      [tgId, name, String(firstName ?? "").trim() || null, String(lastName ?? "").trim() || null, primary.grade, primary.subject]
     );
-    await db.query(
-      `INSERT INTO student_subjects (student_id, subject, grade) VALUES ($1,$2,$3)
-       ON CONFLICT (student_id, subject) DO UPDATE SET grade = EXCLUDED.grade`,
-      [rows[0].id, subject, Number(grade)]
-    );
+    for (const s of subjects) {
+      await db.query(
+        `INSERT INTO student_subjects (student_id, subject, grade) VALUES ($1,$2,$3)
+         ON CONFLICT (student_id, subject) DO UPDATE SET grade = EXCLUDED.grade`,
+        [rows[0].id, s.subject, s.grade]
+      );
+    }
     res.status(201).json({ student: rows[0] });
   } catch (e) {
     if (e.code === "23505") return bad(res, "tg_id_already_exists", 409);
@@ -140,16 +174,29 @@ router.post("/students", requireRole("admin"), async (req, res, next) => {
 
 router.put("/students/:id", requireRole("admin"), async (req, res, next) => {
   try {
-    const { name, grade, subject, tgId } = req.body ?? {};
+    const { firstName, lastName, grade, subject, tgId } = req.body ?? {};
     if (tgId === "") return bad(res, "tg_id_required");
+    const hasName = firstName != null || lastName != null;
+    const name = hasName ? fullName(firstName, lastName) : null;
+    if (hasName && !name) return bad(res, "name_required");
     const { rows } = await db.query(
       `UPDATE students
          SET name = COALESCE($2, name),
+             first_name = COALESCE($6, first_name),
+             last_name = COALESCE($7, last_name),
              grade = COALESCE($3, grade),
              subject = COALESCE($4, subject),
              tg_id = COALESCE($5, tg_id)
        WHERE id = $1 RETURNING *`,
-      [req.params.id, name ?? null, grade ? Number(grade) : null, subject ?? null, tgId ?? null]
+      [
+        req.params.id,
+        name,
+        grade ? Number(grade) : null,
+        subject ?? null,
+        tgId ?? null,
+        firstName != null ? String(firstName).trim() || null : null,
+        lastName != null ? String(lastName).trim() || null : null,
+      ]
     );
     if (!rows.length) return bad(res, "not_found", 404);
     res.json({ student: rows[0] });
@@ -466,9 +513,45 @@ router.get("/stats/:studentId", requireRole("admin", "tutor"), async (req, res, 
         ORDER BY t.topic`,
       [id]
     );
+    // Gamification profile (level, xp, streak, pet), if the student has ever
+    // opened the app. Absent for a just-created student — the frontend copes.
+    const { rows: profileRows } = await db.query(
+      `SELECT level, xp, xp_from_level, xp_for_next, coins, streak,
+              streak_freeze_used, pet_species, pet_name, diagnostic_done
+         FROM student_profiles WHERE student_id = $1`,
+      [id]
+    );
+
+    // Homework rollup: how many issued / done / overdue right now.
+    const { rows: hwRows } = await db.query(
+      `SELECT
+          COUNT(*)::int AS total,
+          COUNT(*) FILTER (WHERE status = 'done')::int AS done,
+          COUNT(*) FILTER (WHERE status <> 'done' AND due IS NOT NULL AND due < now())::int AS overdue
+         FROM homework WHERE student_id = $1`,
+      [id]
+    );
+
+    // Bonus balance.
+    const { rows: bonusRows } = await db.query(
+      `SELECT COALESCE(SUM(amount), 0)::int AS balance FROM bonus_transactions WHERE student_id = $1`,
+      [id]
+    );
+
+    // Enrolled subjects (for the header).
+    const { rows: subjectRows } = await db.query(
+      "SELECT subject, grade FROM student_subjects WHERE student_id = $1 ORDER BY created_at ASC",
+      [id]
+    );
+
     const total = totals[0];
+    const hw = hwRows[0];
     res.json({
       student: srows[0],
+      subjects: subjectRows,
+      profile: profileRows[0] || null,
+      bonusBalance: bonusRows[0].balance,
+      homework: { total: hw.total, done: hw.done, overdue: hw.overdue, active: hw.total - hw.done },
       stats: {
         attempts: total.attempts,
         correct: total.correct,

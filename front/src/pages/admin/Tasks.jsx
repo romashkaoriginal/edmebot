@@ -13,7 +13,7 @@ import "./admin.css";
 const TASK_IMPORT_FIELDS = [
   { key: "grade", desc: "класс, число 5–11" },
   { key: "subject", desc: "Русский или Математика" },
-  { key: "topic", desc: "ключ темы латиницей, напр. fractions" },
+  { key: "topic", desc: "название темы, напр. Дроби" },
   { key: "prompt", desc: "текст задания" },
   { key: "option_a … option_f", desc: "варианты ответа (минимум a и b)" },
   { key: "correct", desc: "буква правильного варианта: a–f" },
@@ -26,7 +26,7 @@ const SUBJECTS = [
   { name: "Математика", icon: Calculator, tone: "primary" },
   { name: "Русский", icon: PenLine, tone: "accent" },
 ];
-const GRADES = [5, 6, 7, 8, 9, 10, 11];
+const GRADES = [6, 7, 8, 9, 10, 11];
 const DIFFICULTIES = [
   { id: "easy", label: "Лёгкое" },
   { id: "medium", label: "Среднее" },
@@ -214,15 +214,13 @@ export default function Tasks() {
 
   function createTopic(e) {
     e.preventDefault();
-    const key = newTopic.trim();
-    if (!key) return;
+    const name = newTopic.trim();
+    if (!name) return;
     setTopicModalOpen(false);
     setNewTopic("");
-    openTopic(key);
-    // Nudge straight into adding the first question for the new topic.
-    setEditingId(null);
-    setForm(emptyForm(grade, subject, key));
-    setFormOpen(true);
+    // Open the (empty) question list for the new topic — the tutor adds
+    // questions when they choose to, via the "Вопрос" button.
+    openTopic(name);
   }
 
   // ---------- Step 1: subject ----------
@@ -230,7 +228,6 @@ export default function Tasks() {
     return (
       <div className="apage">
         <WizardHeader step={1} />
-        <p className="awizard__lead">Выберите предмет, с которым будете работать.</p>
         <div className="apick-grid">
           {SUBJECTS.map(({ name, icon: Icon, tone }) => (
             <button
@@ -253,7 +250,6 @@ export default function Tasks() {
     return (
       <div className="apage">
         <WizardHeader step={2} subject={subject} onBack={() => setSubject(null)} />
-        <p className="awizard__lead">Для какого класса задания?</p>
         <div className="agrade-grid">
           {GRADES.map((g) => (
             <button key={g} className="agrade" onClick={() => { setGrade(g); setTopic(null); }}>
@@ -315,19 +311,18 @@ export default function Tasks() {
           <FormModal title="Новая тема" eyebrow={{ icon: Folder, text: `${subject} · ${grade} класс` }} onClose={() => setTopicModalOpen(false)}>
             <form className="aform" onSubmit={createTopic}>
               <label className="afield">
-                <span>Ключ темы (латиницей)</span>
+                <span>Название темы</span>
                 <input
                   className="ainput"
                   value={newTopic}
                   onChange={(e) => setNewTopic(e.target.value)}
-                  placeholder="fractions"
+                  placeholder="Дроби"
                   autoFocus
                   required
                 />
               </label>
-              <p className="ahint">Дальше вы сразу добавите первый вопрос в эту тему.</p>
               <div className="aform__actions">
-                <Button type="submit" icon={ChevronRight}>Продолжить</Button>
+                <Button type="submit" icon={ChevronRight}>Создать</Button>
                 <Button type="button" variant="soft" onClick={() => setTopicModalOpen(false)}>Отмена</Button>
               </div>
             </form>
@@ -436,7 +431,7 @@ export default function Tasks() {
           <form className="aform" onSubmit={submit}>
             <div className="aform__row">
               <label className="afield">
-                <span>Тема (ключ)</span>
+                <span>Тема</span>
                 <input
                   className="ainput"
                   value={form.topic}
