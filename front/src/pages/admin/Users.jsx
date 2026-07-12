@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { UserCog, Plus, Pencil, Trash2, X, Search, MessageCircle } from "lucide-react";
-import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import SectionTitle from "../../components/ui/SectionTitle";
 import ContactPickerModal from "../../components/admin/ContactPickerModal";
+import FormModal from "../../components/admin/FormModal";
 import { adminApi } from "../../api/admin";
 import { useAdminAuth } from "../../context/AdminAuth";
 import "./admin.css";
@@ -43,6 +43,12 @@ export default function Users() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (!notice) return;
+    const t = setTimeout(() => setNotice(""), 3200);
+    return () => clearTimeout(t);
+  }, [notice]);
 
   function reset() {
     setForm(EMPTY);
@@ -95,19 +101,21 @@ export default function Users() {
   return (
     <div className="apage">
       <header className="apage__head">
-        <span className="apage__head-icon">
+        <span className="apage__head-icon apage__head-icon--users">
           <UserCog size={24} strokeWidth={2.4} />
         </span>
-        <div>
+        <div className="apage__head-text">
           <h1>Пользователи</h1>
-          <p className="apage__sub">Назначайте доступ тем, кто уже написал боту</p>
         </div>
         <Button type="button" icon={Plus} onClick={() => { reset(); setFormOpen(true); }}>Добавить</Button>
       </header>
 
-      {formOpen && <div className="contact-picker" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && reset()}>
-      <Card pad="md">
-        <SectionTitle>{editingId ? "Редактирование пользователя" : "Новый пользователь"}</SectionTitle>
+      {formOpen && (
+      <FormModal
+        title={editingId ? "Редактирование пользователя" : "Новый пользователь"}
+        eyebrow={{ icon: UserCog, text: "Доступ к панели" }}
+        onClose={reset}
+      >
         <form className="aform" onSubmit={submit}>
           {!editingId && (
             <div className="afield acontact-field">
@@ -164,15 +172,13 @@ export default function Users() {
             <Button type="submit" icon={editingId ? Pencil : Plus}>
               {editingId ? "Сохранить" : "Добавить пользователя"}
             </Button>
-            {editingId && (
-              <Button type="button" variant="soft" icon={X} onClick={reset}>
-                Отмена
-              </Button>
-            )}
+            <Button type="button" variant="soft" icon={X} onClick={reset}>
+              Отмена
+            </Button>
           </div>
         </form>
-      </Card>
-      </div>}
+      </FormModal>
+      )}
       <ContactPickerModal
         contacts={contacts}
         isOpen={pickerOpen}
@@ -184,6 +190,8 @@ export default function Users() {
         }}
         title="Выберите сотрудника из чата бота"
       />
+
+      {notice && <div className="atoast" role="status">{notice}</div>}
 
       <div className="asection">
         <div className="asection__head">

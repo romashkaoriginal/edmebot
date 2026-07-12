@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
-import { BookOpen, Plus, Trash2, Upload } from "lucide-react";
+import { BookOpen, Plus, Trash2, Upload, CheckCircle2 } from "lucide-react";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import SectionTitle from "../../components/ui/SectionTitle";
 import ImportModal from "../../components/admin/ImportModal";
+import FormModal from "../../components/admin/FormModal";
 import { adminApi } from "../../api/admin";
 import "./admin.css";
 
@@ -97,15 +98,16 @@ export default function HomeworkAdmin() {
   return (
     <div className="apage">
       <header className="apage__head">
-        <span className="apage__head-icon">
+        <span className="apage__head-icon apage__head-icon--homework">
           <BookOpen size={24} strokeWidth={2.4} />
         </span>
-        <div>
+        <div className="apage__head-text">
           <h1>Домашка</h1>
-          <p className="apage__sub">Выдавайте домашние задания конкретному ученику</p>
         </div>
-        <Button type="button" variant="soft" icon={Upload} onClick={() => setImportOpen(true)}>Импорт</Button>
-        <Button type="button" icon={Plus} disabled={!student} onClick={() => setFormOpen(true)}>Добавить</Button>
+        <div className="apage__head-actions">
+          <Button type="button" variant="soft" icon={Upload} onClick={() => setImportOpen(true)}>Импорт</Button>
+          <Button type="button" icon={Plus} disabled={!student} onClick={() => setFormOpen(true)}>Добавить</Button>
+        </div>
       </header>
 
       {importOpen && (
@@ -140,9 +142,13 @@ export default function HomeworkAdmin() {
 
       {student && (
         <>
-          {formOpen && <div className="contact-picker" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setFormOpen(false)}>
-          <Card className="asection" pad="md">
-            <SectionTitle>Новая домашка</SectionTitle>
+          {formOpen && (
+          <FormModal
+            title="Новая домашка"
+            eyebrow={{ icon: BookOpen, text: `${student.name} · ${student.grade} класс` }}
+            onClose={() => setFormOpen(false)}
+            size="lg"
+          >
             <form className="aform" onSubmit={submit}>
               <label className="afield">
                 <span>Заголовок</span>
@@ -204,10 +210,13 @@ export default function HomeworkAdmin() {
                 <Button type="submit" icon={Plus}>
                   Выдать домашку
                 </Button>
+                <Button type="button" variant="soft" onClick={() => setFormOpen(false)}>
+                  Отмена
+                </Button>
               </div>
             </form>
-          </Card>
-          </div>}
+          </FormModal>
+          )}
 
           <div className="asection">
             <SectionTitle>Выданная домашка ({homework.length})</SectionTitle>
@@ -216,17 +225,21 @@ export default function HomeworkAdmin() {
             ) : (
               <div className="alist">
                 {homework.map((h) => (
-                  <div className="arow" key={h.id}>
+                  <div className="arow arow--card" key={h.id}>
                     <div className="arow__main">
-                      <div className="arow__title">{h.title}</div>
+                      <div className="arow__title">
+                        {h.title}
+                        {h.status === "done"
+                          ? <span className="atag atag--done"><CheckCircle2 size={13} strokeWidth={2.6} /> сдано</span>
+                          : <span className="atag atag--active">активно</span>}
+                      </div>
                       <div className="arow__meta">
-                        {h.status === "done" ? "✓ сдано" : "активно"}
-                        {h.due ? ` · до ${new Date(h.due).toLocaleString("ru-RU")}` : ""}
+                        {h.due ? `до ${new Date(h.due).toLocaleString("ru-RU")}` : "без срока"}
                         {Array.isArray(h.task_ids) && h.task_ids.length ? ` · ${h.task_ids.length} заданий` : ""}
                       </div>
                     </div>
                     <div className="arow__actions">
-                      <button className="aicon-btn" onClick={() => remove(h.id)} aria-label="Удалить">
+                      <button className="aicon-btn aicon-btn--delete" onClick={() => remove(h.id)} aria-label="Удалить">
                         <Trash2 size={17} strokeWidth={2.4} />
                       </button>
                     </div>

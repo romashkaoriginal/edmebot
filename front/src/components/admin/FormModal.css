@@ -1,0 +1,117 @@
+.fmodal {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal-backdrop);
+  display: grid;
+  place-items: center;
+  padding: var(--sp-4);
+  background: oklch(0.35 0.04 60 / 0.42);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  animation: fmodal-fade var(--dur-pop) var(--ease-out);
+}
+
+.fmodal__dialog {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(100%, 560px);
+  max-height: min(760px, calc(100dvh - 32px));
+  overflow: hidden;
+  background: var(--surface-solid);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg), var(--glass-rim);
+  animation: fmodal-in var(--dur-modal) var(--ease-out);
+}
+.fmodal__dialog--lg {
+  width: min(100%, 680px);
+}
+
+.fmodal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+  border-bottom: 1px solid var(--line);
+  /* Warm brand wash so the header reads as a header, not just padding. */
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklch, var(--primary-soft) 60%, transparent),
+    transparent
+  );
+}
+.fmodal__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 2px;
+  color: var(--primary-strong);
+  font-size: var(--text-sm);
+  font-weight: 800;
+}
+.fmodal__title {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--text-lg);
+  font-weight: 800;
+}
+
+.fmodal__close {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-solid);
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    background var(--dur-pop) var(--ease-out),
+    color var(--dur-pop) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+.fmodal__close:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.fmodal__close:active {
+  transform: scale(0.94);
+}
+
+.fmodal__body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--sp-5);
+}
+
+@keyframes fmodal-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes fmodal-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fmodal,
+  .fmodal__dialog {
+    animation: none;
+  }
+}
+
+@media (max-width: 620px) {
+  .fmodal {
+    padding: 0;
+    place-items: end stretch;
+  }
+  .fmodal__dialog,
+  .fmodal__dialog--lg {
+    width: 100%;
+    max-height: 92dvh;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+  }
+}

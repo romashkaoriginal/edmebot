@@ -1,12 +1,17 @@
 import { useEffect, useState, useCallback } from "react";
-import { Users, Plus, Pencil, Trash2, X, Coins, ChevronDown, ChevronUp, Search, MessageCircle, BookMarked } from "lucide-react";
-import Card from "../../components/ui/Card";
+import {
+  Users, Plus, Pencil, Trash2, X, Coins, Search, MessageCircle,
+  BookMarked, ChevronDown,
+} from "lucide-react";
 import Button from "../../components/ui/Button";
 import SectionTitle from "../../components/ui/SectionTitle";
 import ContactPickerModal from "../../components/admin/ContactPickerModal";
+import FormModal from "../../components/admin/FormModal";
 import { adminApi } from "../../api/admin";
 import "./admin.css";
 
+const SUBJECTS = ["Математика", "Русский"];
+const GRADES = [5, 6, 7, 8, 9, 10, 11];
 const EMPTY = { name: "", grade: 7, subject: "Математика", tgId: "" };
 
 export default function Students() {
@@ -16,14 +21,16 @@ export default function Students() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [gradeFilter, setGradeFilter] = useState("all");
+  const [subjectFilter, setSubjectFilter] = useState("all");
   const [notice, setNotice] = useState("");
   const [form, setForm] = useState(EMPTY);
   const [editingId, setEditingId] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [bonusOpenId, setBonusOpenId] = useState(null);
-  const [subjectsOpenId, setSubjectsOpenId] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
+  const [panel, setPanel] = useState(null); // 'bonus' | 'subjects'
 
   const load = useCallback(async () => {
     try {
@@ -43,6 +50,12 @@ export default function Students() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (!notice) return;
+    const t = setTimeout(() => setNotice(""), 3200);
+    return () => clearTimeout(t);
+  }, [notice]);
 
   function reset() {
     setForm(EMPTY);
@@ -78,6 +91,8 @@ export default function Students() {
 
   const visibleStudents = students.filter((student) => {
     if (statusFilter !== "all" && student.status !== statusFilter) return false;
+    if (gradeFilter !== "all" && String(student.grade) !== gradeFilter) return false;
+    if (subjectFilter !== "all" && student.subject !== subjectFilter) return false;
     const value = `${student.name} ${student.subject} ${student.tg_id ?? ""}`.toLowerCase();
     return value.includes(search.trim().toLowerCase());
   });
@@ -93,34 +108,42 @@ export default function Students() {
     }
   }
 
-  function toggleBonus(id) {
-    setBonusOpenId((cur) => (cur === id ? null : id));
+  function togglePanel(id, which) {
+    setExpandedId((curId) => {
+      if (curId === id && panel === which) {
+        setPanel(null);
+        return null;
+      }
+      setPanel(which);
+      return id;
+    });
   }
 
-  function toggleSubjects(id) {
-    setSubjectsOpenId((cur) => (cur === id ? null : id));
-  }
+  const filtersActive =
+    statusFilter !== "all" || gradeFilter !== "all" || subjectFilter !== "all" || search.trim();
 
   return (
     <div className="apage">
       <header className="apage__head">
-        <span className="apage__head-icon">
+        <span className="apage__head-icon apage__head-icon--students">
           <Users size={24} strokeWidth={2.4} />
         </span>
-        <div>
+        <div className="apage__head-text">
           <h1>Ученики</h1>
-          <p className="apage__sub">Сначала ученик пишет боту, затем вы привязываете его к классу и предмету</p>
         </div>
         <Button type="button" icon={Plus} onClick={() => { reset(); setFormOpen(true); }}>Добавить</Button>
       </header>
 
-      {formOpen && <div className="contact-picker" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && reset()}>
-      <Card pad="md">
-        <SectionTitle>{editingId ? "Редактирование ученика" : "Новый ученик"}</SectionTitle>
+      {formOpen && (
+      <FormModal
+        title={editingId ? "Редактирование ученика" : "Новый ученик"}
+        eyebrow={{ icon: Users, text: editingId ? "Профиль ученика" : "Привязка к Telegram" }}
+        onClose={reset}
+      >
         <form className="aform" onSubmit={submit}>
           {!editingId && (
             <div className="afield acontact-field">
-              <span><MessageCircle size={15} /> 1. Выберите человека из чата бота</span>
+              <span><MessageCircle size={15} /> Выберите человека из чата бота</span>
               <div className="acontact-field__selection">
                 <div>
                   <strong>{selectedContact ? selectedContact.name : "Контакт ещё не выбран"}</strong>
@@ -151,22 +174,22 @@ export default function Students() {
                 value={form.grade}
                 onChange={(e) => setForm({ ...form, grade: Number(e.target.value) })}
               >
-                {[5, 6, 7, 8, 9, 10, 11].map((g) => (
-                  <option key={g} value={g}>
-                    {g} класс
-                  </option>
+                {GRADES.map((g) => (
+                  <option key={g} value={g}>{g} класс</option>
                 ))}
               </select>
             </label>
             <label className="afield">
               <span>Предмет</span>
-              <input
-                className="ainput"
+              <select
+                className="aselect"
                 value={form.subject}
                 onChange={(e) => setForm({ ...form, subject: e.target.value })}
-                placeholder="Математика"
-                required
-              />
+              >
+                {SUBJECTS.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
             </label>
             <label className="afield">
               <span>Telegram ID</span>
@@ -179,21 +202,24 @@ export default function Students() {
               />
             </label>
           </div>
+          {!editingId && (
+            <p className="ahint">
+              Основной предмет можно дополнить другими после создания — кнопкой
+              «Предметы» в карточке ученика.
+            </p>
+          )}
           {error && <p className="aerror">{error}</p>}
-          {notice && <p className="anotice">{notice}</p>}
           <div className="aform__actions">
             <Button type="submit" icon={editingId ? Pencil : Plus}>
               {editingId ? "Сохранить" : "Добавить ученика"}
             </Button>
-            {editingId && (
-              <Button type="button" variant="soft" icon={X} onClick={reset}>
-                Отмена
-              </Button>
-            )}
+            <Button type="button" variant="soft" icon={X} onClick={reset}>
+              Отмена
+            </Button>
           </div>
         </form>
-      </Card>
-      </div>}
+      </FormModal>
+      )}
       <ContactPickerModal
         contacts={contacts}
         isOpen={pickerOpen}
@@ -206,74 +232,113 @@ export default function Students() {
         title="Выберите ученика из чата бота"
       />
 
+      {notice && <div className="atoast" role="status">{notice}</div>}
+
       <div className="asection">
         <div className="asection__head">
           <SectionTitle>Список ({visibleStudents.length})</SectionTitle>
-          <div className="alist__filters">
-            <label className="asearch"><Search size={16} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Поиск по имени или Telegram ID" /></label>
-            <select className="aselect afilter" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label="Статус ученика">
-              <option value="all">Все статусы</option>
-              <option value="active">Активные</option>
-              <option value="pending">Ожидают</option>
-            </select>
-          </div>
         </div>
+        <div className="afilters">
+          <label className="asearch">
+            <Search size={16} />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Поиск по имени или Telegram ID" />
+          </label>
+          <select className="aselect afilter" value={subjectFilter} onChange={(e) => setSubjectFilter(e.target.value)} aria-label="Предмет">
+            <option value="all">Все предметы</option>
+            {SUBJECTS.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <select className="aselect afilter" value={gradeFilter} onChange={(e) => setGradeFilter(e.target.value)} aria-label="Класс">
+            <option value="all">Все классы</option>
+            {GRADES.map((g) => <option key={g} value={g}>{g} класс</option>)}
+          </select>
+          <select className="aselect afilter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Статус">
+            <option value="all">Любой статус</option>
+            <option value="active">Занимаются</option>
+            <option value="pending">Ждут привязки</option>
+          </select>
+        </div>
+
         {loading ? (
           <p className="aempty">Загрузка…</p>
         ) : students.length === 0 ? (
-          <p className="aempty">Пока нет учеников. Добавьте первого выше.</p>
+          <p className="aempty">Пока нет учеников. Добавьте первого кнопкой «Добавить».</p>
         ) : visibleStudents.length === 0 ? (
-          <p className="aempty">По этому запросу учеников нет.</p>
+          <p className="aempty">
+            По этому запросу учеников нет.{" "}
+            {filtersActive && (
+              <button
+                className="alink"
+                onClick={() => { setSearch(""); setStatusFilter("all"); setGradeFilter("all"); setSubjectFilter("all"); }}
+              >
+                Сбросить фильтры
+              </button>
+            )}
+          </p>
         ) : (
           <div className="alist">
-            {visibleStudents.map((s) => (
-              <div className="arow" key={s.id}>
-                <div className="arow__main">
-                  <div className="arow__title">{s.name}</div>
-                  <div className="arow__meta">
-                    {s.grade} класс · {s.subject}
-                    {s.tg_id && s.tg_id !== "demo" ? ` · TG ${s.tg_id}` : ""}
-                    {s.tg_id === "demo" ? " · демо" : ""}
+            {visibleStudents.map((s) => {
+              const open = expandedId === s.id;
+              const isDemo = s.tg_id === "demo";
+              return (
+                <div className={`arow arow--card${open ? " is-open" : ""}`} key={s.id}>
+                  <div className="arow__lead">
+                    <span className="aavatar" aria-hidden="true">{initials(s.name)}</span>
+                    <div className="arow__main">
+                      <div className="arow__title">
+                        {s.name}
+                        {s.status === "pending" && <span className="atag atag--pending">ждёт привязки</span>}
+                        {isDemo && <span className="atag atag--demo">демо</span>}
+                      </div>
+                      <div className="arow__meta">
+                        {s.grade ? `${s.grade} класс` : "класс не задан"} · {s.subject || "без предмета"}
+                        {s.tg_id && !isDemo ? ` · TG ${s.tg_id}` : ""}
+                      </div>
+                    </div>
                   </div>
+                  <div className="arow__actions">
+                    <button
+                      className={`aicon-btn aicon-btn--bonus${open && panel === "bonus" ? " is-active" : ""}`}
+                      onClick={() => togglePanel(s.id, "bonus")}
+                      aria-label="Бонусы"
+                      aria-expanded={open && panel === "bonus"}
+                    >
+                      <Coins size={17} strokeWidth={2.4} />
+                    </button>
+                    <button
+                      className={`aicon-btn aicon-btn--subjects${open && panel === "subjects" ? " is-active" : ""}`}
+                      onClick={() => togglePanel(s.id, "subjects")}
+                      aria-label="Предметы"
+                      aria-expanded={open && panel === "subjects"}
+                    >
+                      <BookMarked size={17} strokeWidth={2.4} />
+                      <ChevronDown size={13} strokeWidth={2.6} className="aicon-btn__chev" />
+                    </button>
+                    <button className="aicon-btn aicon-btn--edit" onClick={() => edit(s)} aria-label="Редактировать">
+                      <Pencil size={17} strokeWidth={2.4} />
+                    </button>
+                    <button className="aicon-btn aicon-btn--delete" onClick={() => remove(s.id)} aria-label="Удалить">
+                      <Trash2 size={17} strokeWidth={2.4} />
+                    </button>
+                  </div>
+                  {open && panel === "bonus" && <BonusPanel studentId={s.id} />}
+                  {open && panel === "subjects" && <SubjectsPanel studentId={s.id} onAssigned={load} />}
                 </div>
-                <div className="arow__actions">
-                  <button
-                    className="aicon-btn aicon-btn--bonus"
-                    onClick={() => toggleBonus(s.id)}
-                    aria-label="Бонусы"
-                    aria-expanded={bonusOpenId === s.id}
-                  >
-                    <Coins size={17} strokeWidth={2.4} />
-                    {bonusOpenId === s.id ? (
-                      <ChevronUp size={14} strokeWidth={2.4} />
-                    ) : (
-                      <ChevronDown size={14} strokeWidth={2.4} />
-                    )}
-                  </button>
-                  <button className="aicon-btn aicon-btn--edit" onClick={() => edit(s)} aria-label="Редактировать">
-                    <Pencil size={17} strokeWidth={2.4} />
-                  </button>
-                  <button
-                    className="aicon-btn aicon-btn--edit"
-                    onClick={() => toggleSubjects(s.id)}
-                    aria-label="Предметы"
-                    aria-expanded={subjectsOpenId === s.id}
-                  >
-                    <BookMarked size={17} strokeWidth={2.4} />
-                  </button>
-                  <button className="aicon-btn aicon-btn--delete" onClick={() => remove(s.id)} aria-label="Удалить">
-                    <Trash2 size={17} strokeWidth={2.4} />
-                  </button>
-                </div>
-                {bonusOpenId === s.id && <BonusPanel studentId={s.id} />}
-                {subjectsOpenId === s.id && <SubjectsPanel studentId={s.id} onAssigned={load} />}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
     </div>
   );
+}
+
+function initials(name) {
+  return (name || "?")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
 }
 
 function SubjectsPanel({ studentId, onAssigned }) {
@@ -309,22 +374,30 @@ function SubjectsPanel({ studentId, onAssigned }) {
     }
   }
 
+  const has = (name) => subjects.some((item) => item.subject === name);
+
   return (
-    <div className="arow__bonus">
+    <div className="arow__panel">
+      <div className="arow__panel-title">Предметы ученика</div>
       <div className="asubjects">
         {subjects.length ? subjects.map((item) => (
-          <span className="achip" key={item.subject}>{item.subject} · {item.grade} класс</span>
-        )) : <span className="arow__meta">Предметы ещё не назначены. После сохранения ученик получит полный доступ.</span>}
+          <span className="achip achip--subject" key={item.subject}>
+            {item.subject} · {item.grade} класс
+          </span>
+        )) : <span className="arow__meta">Пока ни одного предмета. Назначьте первый ниже.</span>}
       </div>
       <form className="aform aform--inline" onSubmit={submit}>
         <select className="aselect" value={subject} onChange={(event) => setSubject(event.target.value)}>
-          <option value="Математика">Математика</option>
-          <option value="Русский">Русский</option>
+          {SUBJECTS.map((s) => (
+            <option key={s} value={s}>{s}{has(s) ? " (уже есть)" : ""}</option>
+          ))}
         </select>
         <select className="aselect" value={grade} onChange={(event) => setGrade(Number(event.target.value))}>
-          {[5, 6, 7, 8, 9, 10, 11].map((value) => <option key={value} value={value}>{value} класс</option>)}
+          {GRADES.map((value) => <option key={value} value={value}>{value} класс</option>)}
         </select>
-        <Button type="submit" icon={Plus} disabled={busy}>Назначить</Button>
+        <Button type="submit" icon={Plus} disabled={busy}>
+          {has(subject) ? "Обновить класс" : "Назначить"}
+        </Button>
       </form>
       {error && <p className="aerror">{error}</p>}
     </div>
@@ -356,7 +429,7 @@ function BonusPanel({ studentId }) {
     setError("");
     const amt = Number(amount);
     if (!amount || Number.isNaN(amt) || amt === 0) {
-      setError("amount_required");
+      setError("Введите ненулевую сумму");
       return;
     }
     setBusy(true);
@@ -373,9 +446,9 @@ function BonusPanel({ studentId }) {
   }
 
   return (
-    <div className="arow__bonus">
-      <div className="arow__bonus-balance">
-        Баланс: <strong>{data ? data.balance : "…"}</strong>
+    <div className="arow__panel">
+      <div className="arow__panel-title">
+        Баллы · баланс <strong className="abalance">{data ? data.balance : "…"}</strong>
       </div>
 
       <form className="aform aform--inline" onSubmit={award}>
@@ -384,7 +457,7 @@ function BonusPanel({ studentId }) {
           type="number"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          placeholder="Сумма (можно отрицательную)"
+          placeholder="Сумма (можно −)"
         />
         <input
           className="ainput"

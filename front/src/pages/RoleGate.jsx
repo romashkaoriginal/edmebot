@@ -217,7 +217,7 @@ export default function RoleGate() {
                 </Card>
               )}
 
-              {!isStaff && <Card className="gate__card" pad="md">
+              <Card className="gate__card" pad="md">
                 <div className="gate__card-head">
                   <span className="gate__icon gate__icon--student">
                     <GraduationCap size={24} strokeWidth={2.4} />
@@ -244,7 +244,7 @@ export default function RoleGate() {
                     ? studentsLoading ? "Загрузка…" : "Выбрать ученика"
                     : "Открыть приложение"}
                 </Button>
-              </Card>}
+              </Card>
             </div>
           </>
         )}

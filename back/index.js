@@ -25,7 +25,10 @@ app.get('/api/students/list', async (_req, res, next) => {
   try {
     const db = require('./src/db');
     const { rows } = await db.query(
-      "SELECT id, name, grade, subject FROM students WHERE status = 'active' ORDER BY id ASC"
+      `SELECT s.id, s.name, s.grade, s.subject FROM students s
+        WHERE s.status = 'active'
+          AND NOT EXISTS (SELECT 1 FROM users u WHERE u.tg_id = s.tg_id)
+        ORDER BY s.id ASC`
     );
     res.json({ students: rows });
   } catch (e) { next(e); }

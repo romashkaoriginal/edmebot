@@ -244,9 +244,27 @@ router.post("/students/:id/bonus", requireRole("admin"), async (req, res, next) 
 
 // ---------- Tasks (admin + tutor) ----------
 
-router.get("/tasks", requireRole("admin", "tutor"), async (req, res, next) => {
+// Distinct topics for a grade+subject, each with how many questions it holds.
+// Powers the topic step of the tasks wizard (subject → class → topic → questions).
+router.get("/tasks/topics", requireRole("admin", "tutor"), async (req, res, next) => {
   try {
     const { grade, subject } = req.query;
+    if (!grade || !subject) return bad(res, "grade_and_subject_required");
+    const { rows } = await db.query(
+      `SELECT topic, COUNT(*)::int AS count
+         FROM tasks WHERE grade = $1 AND subject = $2
+        GROUP BY topic ORDER BY topic ASC`,
+      [Number(grade), subject]
+    );
+    res.json({ topics: rows });
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.get("/tasks", requireRole("admin", "tutor"), async (req, res, next) => {
+  try {
+    const { grade, subject, topic } = req.query;
     const clauses = [];
     const params = [];
     if (grade) {
@@ -256,6 +274,10 @@ router.get("/tasks", requireRole("admin", "tutor"), async (req, res, next) => {
     if (subject) {
       params.push(subject);
       clauses.push(`subject = $${params.length}`);
+    }
+    if (topic) {
+      params.push(topic);
+      clauses.push(`topic = $${params.length}`);
     }
     const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
     const { rows } = await db.query(
@@ -292,6 +314,39 @@ router.post("/tasks", requireRole("admin", "tutor"), async (req, res, next) => {
       ]
     );
     res.status(201).json({ task: rows[0] });
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.put("/tasks/:id", requireRole("admin", "tutor"), async (req, res, next) => {
+  try {
+    const { grade, subject, topic, prompt, options, correct, explanation, difficulty, hints } =
+      req.body ?? {};
+    if (!grade || !subject || !topic || !prompt) return bad(res, "grade_subject_topic_prompt_required");
+    if (!Array.isArray(options) || options.length < 2) return bad(res, "at_least_two_options");
+    if (typeof correct !== "number" || correct < 0 || correct >= options.length)
+      return bad(res, "correct_index_out_of_range");
+    const { rows } = await db.query(
+      `UPDATE tasks
+          SET grade = $2, subject = $3, topic = $4, prompt = $5, options = $6,
+              correct = $7, explanation = $8, difficulty = $9, hints = $10
+        WHERE id = $1 RETURNING *`,
+      [
+        req.params.id,
+        Number(grade),
+        subject,
+        topic,
+        prompt,
+        JSON.stringify(options),
+        correct,
+        explanation || null,
+        difficulty || "medium",
+        JSON.stringify(Array.isArray(hints) ? hints.filter(Boolean) : []),
+      ]
+    );
+    if (!rows.length) return bad(res, "not_found", 404);
+    res.json({ task: rows[0] });
   } catch (e) {
     next(e);
   }
@@ -359,7 +414,8 @@ router.delete("/homework/:id", requireRole("admin", "tutor"), async (req, res, n
 
 // ---------- Stats (admin + tutor) ----------
 
-// Summary across all students.
+// Summary across all students. Staff members (who may also have a student
+// row bound to the same tg_id) are excluded — statistics is about learners.
 router.get("/stats", requireRole("admin", "tutor"), async (_req, res, next) => {
   try {
     const { rows } = await db.query(
@@ -368,6 +424,7 @@ router.get("/stats", requireRole("admin", "tutor"), async (_req, res, next) => {
               COUNT(a.id) FILTER (WHERE a.correct)::int AS correct
          FROM students s
          LEFT JOIN attempts a ON a.student_id = s.id
+        WHERE NOT EXISTS (SELECT 1 FROM users u WHERE u.tg_id = s.tg_id)
          GROUP BY s.id
          ORDER BY s.id ASC`
     );
@@ -385,7 +442,12 @@ router.get("/stats", requireRole("admin", "tutor"), async (_req, res, next) => {
 router.get("/stats/:studentId", requireRole("admin", "tutor"), async (req, res, next) => {
   try {
     const id = req.params.studentId;
-    const { rows: srows } = await db.query("SELECT * FROM students WHERE id = $1", [id]);
+    const { rows: srows } = await db.query(
+      `SELECT s.* FROM students s
+        WHERE s.id = $1
+          AND NOT EXISTS (SELECT 1 FROM users u WHERE u.tg_id = s.tg_id)`,
+      [id]
+    );
     if (!srows.length) return bad(res, "not_found", 404);
 
     const { rows: totals } = await db.query(

@@ -99,7 +99,10 @@ export const adminApi = {
     ).toString();
     return req(`/tasks${q ? `?${q}` : ""}`);
   },
+  taskTopics: ({ grade, subject }) =>
+    req(`/tasks/topics?grade=${encodeURIComponent(grade)}&subject=${encodeURIComponent(subject)}`),
   createTask: (t) => req("/tasks", { method: "POST", body: t }),
+  updateTask: (id, t) => req(`/tasks/${id}`, { method: "PUT", body: t }),
   deleteTask: (id) => req(`/tasks/${id}`, { method: "DELETE" }),
   importTasks: (file) => {
     const form = new FormData();
