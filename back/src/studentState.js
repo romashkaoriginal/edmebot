@@ -29,6 +29,7 @@ function toProfile(row, student) {
     name: student.name,
     grade: student.grade,
     subject: student.subject,
+    status: student.status,
     xp: row.xp,
     coins: row.coins,
     level: row.level,
@@ -55,57 +56,66 @@ async function ensure(student) {
   );
 }
 
-// Curriculum taxonomy (topic id → display name) lives in seed; mastery is per-student.
-const TOPIC_NAME = new Map(seed.topics.map((topic) => [topic.id, topic.name]));
+// Curriculum taxonomy ("subject:topicId" → display name) lives in seed;
+// mastery is per-student. Keyed by subject too since two subjects could
+// reuse the same topic id.
+const TOPIC_NAME = new Map(seed.topics.map((topic) => [`${topic.subject}:${topic.id}`, topic.name]));
 
-async function getState(student) {
+// `subject` filters the knowledge map to one subject's topics (used by
+// Practice/Diagnostic, which need to know which task bank they're in).
+// Omitted = topics across every subject the student has been assessed on
+// (used by Profile/Dashboard's combined view).
+async function getState(student, subject = null) {
   await ensure(student);
   const { rows: profiles } = await db.query("SELECT * FROM student_profiles WHERE student_id = $1", [student.id]);
+  const params = subject ? [student.id, subject] : [student.id];
   const { rows: topicRows } = await db.query(
-    "SELECT * FROM student_topics WHERE student_id = $1 ORDER BY mastery ASC",
-    [student.id]
+    `SELECT * FROM student_topics WHERE student_id = $1 ${subject ? "AND subject = $2" : ""} ORDER BY mastery ASC`,
+    params
   );
   // Return only topics the student has actually been assessed on.
   const topics = topicRows.map((row) => ({
     id: row.topic_id,
-    name: TOPIC_NAME.get(row.topic_id) ?? row.topic_id,
+    name: TOPIC_NAME.get(`${row.subject}:${row.topic_id}`) ?? row.topic_id,
+    subject: row.subject,
     mastery: row.mastery,
     status: row.status,
   }));
   return { profile: toProfile(profiles[0], student), topics };
 }
 
-async function updateTopics(studentId, updates) {
+async function updateTopics(studentId, subject, updates) {
   for (const update of updates) {
     const mastery = Math.max(0, Math.min(100, update.mastery));
     // UPSERT: the first assessment of a topic creates its row.
     await db.query(
-      `INSERT INTO student_topics (student_id, topic_id, mastery, status)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (student_id, topic_id)
+      `INSERT INTO student_topics (student_id, subject, topic_id, mastery, status)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (student_id, subject, topic_id)
        DO UPDATE SET mastery = EXCLUDED.mastery, status = EXCLUDED.status, updated_at = now()`,
-      [studentId, update.topicId, mastery, statusFromMastery(mastery)]
+      [studentId, subject, update.topicId, mastery, statusFromMastery(mastery)]
     );
   }
 }
 
-async function submitDiagnostic(student, answers) {
+async function submitDiagnostic(student, answers, subject) {
+  const activeSubject = subject || student.subject || "Математика";
   const byTopic = new Map();
   for (const answer of answers) {
     const question = seed.diagnostic.find((item) => item.id === answer.id);
-    if (!question) continue;
+    if (!question || question.subject !== activeSubject) continue;
     const stat = byTopic.get(question.topic) ?? { correct: 0, total: 0 };
     stat.total += 1;
     if (answer.selected === question.correct) stat.correct += 1;
     byTopic.set(question.topic, stat);
   }
   await ensure(student);
-  await updateTopics(student.id, [...byTopic].map(([topicId, stat]) => ({
+  await updateTopics(student.id, activeSubject, [...byTopic].map(([topicId, stat]) => ({
     topicId,
     mastery: Math.round((stat.correct / stat.total) * 100),
   })));
   await db.query("UPDATE student_profiles SET diagnostic_done = TRUE, updated_at = now() WHERE student_id = $1", [student.id]);
-  return getState(student);
+  return getState(student, activeSubject);
 }
 
 async function gradePractice(student, task, selected, hintsUsed, attempts) {
@@ -115,10 +125,10 @@ async function gradePractice(student, task, selected, hintsUsed, attempts) {
     "INSERT INTO attempts (student_id, task_id, selected, correct) VALUES ($1,$2,$3,$4)",
     [student.id, task.id, selected, correct]
   );
-  const state = await getState(student);
+  const state = await getState(student, task.subject);
   const topic = state.topics.find((item) => item.id === task.topic);
   const nextMastery = Math.max(0, Math.min(100, (topic?.mastery ?? 0) + (correct ? 6 - hintsUsed : -4)));
-  await updateTopics(student.id, [{ topicId: task.topic, mastery: nextMastery }]);
+  await updateTopics(student.id, task.subject, [{ topicId: task.topic, mastery: nextMastery }]);
 
   let award = { gained: 0, coins: 0, leveledUp: false };
   if (correct) {
@@ -149,7 +159,7 @@ async function gradePractice(student, task, selected, hintsUsed, attempts) {
     );
     award = { gained, coins, leveledUp };
   }
-  return { correct, award, state: await getState(student) };
+  return { correct, award, state: await getState(student, task.subject) };
 }
 
 async function buyItem(student, item) {

@@ -67,14 +67,38 @@ async function requireStudent(req, res, next) {
     const telegramUser = verifyTelegramInitData(initData);
     if (!telegramUser) return res.status(401).json({ error: "telegram_auth_invalid" });
 
-    const { rows } = await db.query("SELECT * FROM students WHERE tg_id = $1", [String(telegramUser.id)]);
-    if (!rows.length) return res.status(403).json({ error: "student_not_linked" });
+    const tgId = String(telegramUser.id);
+    let { rows } = await db.query("SELECT * FROM students WHERE tg_id = $1", [tgId]);
+    if (!rows.length) {
+      // First-ever open with no admin-created record: auto-provision a
+      // minimal "pending" student instead of rejecting them. They pick a
+      // subject/grade via the self-serve onboarding flow right after this,
+      // and stay diagnostic-only until staff grants full access.
+      const name = [telegramUser.first_name, telegramUser.last_name].filter(Boolean).join(" ") || "Ученик";
+      const inserted = await db.query(
+        `INSERT INTO students (tg_id, name, status) VALUES ($1, $2, 'pending')
+         ON CONFLICT (tg_id) DO NOTHING RETURNING *`,
+        [tgId, name]
+      );
+      rows = inserted.rows.length
+        ? inserted.rows
+        : (await db.query("SELECT * FROM students WHERE tg_id = $1", [tgId])).rows;
+    }
     req.telegramUser = telegramUser;
     req.student = rows[0];
     next();
   } catch (e) {
     next(e);
   }
+}
+
+// Chain after requireStudent on routes that a "pending" (self-serve,
+// not-yet-assigned) student must not reach — practice and homework.
+function requireActiveStudent(req, res, next) {
+  if (req.student.status !== "active") {
+    return res.status(403).json({ error: "onboarding_incomplete" });
+  }
+  next();
 }
 
 function requireRole(...roles) {
@@ -86,4 +110,4 @@ function requireRole(...roles) {
   };
 }
 
-module.exports = { requireAuth, requireRole, requireStudent };
+module.exports = { requireAuth, requireRole, requireStudent, requireActiveStudent };

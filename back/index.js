@@ -19,11 +19,13 @@ app.get('/api/health', (req, res) => {
 });
 
 // Public: student list for the student-picker in RoleGate (no tg_id exposed).
+// Only "active" (fully provisioned) students are offered here — a
+// self-serve "pending" student has nothing meaningful to view yet.
 app.get('/api/students/list', async (_req, res, next) => {
   try {
     const db = require('./src/db');
     const { rows } = await db.query(
-      'SELECT id, name, grade, subject FROM students ORDER BY id ASC'
+      "SELECT id, name, grade, subject FROM students WHERE status = 'active' ORDER BY id ASC"
     );
     res.json({ students: rows });
   } catch (e) { next(e); }
@@ -36,6 +38,7 @@ app.use('/api/practice', require('./src/routes/practice'));
 app.use('/api/pet', require('./src/routes/pet'));
 app.use('/api/homework', require('./src/routes/homework'));
 app.use('/api/admin', require('./src/routes/admin'));
+app.use('/api/admin', require('./src/routes/admin-import'));
 
 // 404 for unknown API routes
 app.use('/api', (req, res) => {

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Users, Plus, Pencil, Trash2, X, Coins, ChevronDown, ChevronUp, Search, MessageCircle } from "lucide-react";
+import { Users, Plus, Pencil, Trash2, X, Coins, ChevronDown, ChevronUp, Search, MessageCircle, BookMarked } from "lucide-react";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import SectionTitle from "../../components/ui/SectionTitle";
@@ -21,6 +21,7 @@ export default function Students() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [bonusOpenId, setBonusOpenId] = useState(null);
+  const [subjectsOpenId, setSubjectsOpenId] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -90,6 +91,10 @@ export default function Students() {
 
   function toggleBonus(id) {
     setBonusOpenId((cur) => (cur === id ? null : id));
+  }
+
+  function toggleSubjects(id) {
+    setSubjectsOpenId((cur) => (cur === id ? null : id));
   }
 
   return (
@@ -234,16 +239,80 @@ export default function Students() {
                   <button className="aicon-btn aicon-btn--edit" onClick={() => edit(s)} aria-label="Редактировать">
                     <Pencil size={17} strokeWidth={2.4} />
                   </button>
+                  <button
+                    className="aicon-btn aicon-btn--edit"
+                    onClick={() => toggleSubjects(s.id)}
+                    aria-label="Предметы"
+                    aria-expanded={subjectsOpenId === s.id}
+                  >
+                    <BookMarked size={17} strokeWidth={2.4} />
+                  </button>
                   <button className="aicon-btn aicon-btn--delete" onClick={() => remove(s.id)} aria-label="Удалить">
                     <Trash2 size={17} strokeWidth={2.4} />
                   </button>
                 </div>
                 {bonusOpenId === s.id && <BonusPanel studentId={s.id} />}
+                {subjectsOpenId === s.id && <SubjectsPanel studentId={s.id} onAssigned={load} />}
               </div>
             ))}
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function SubjectsPanel({ studentId, onAssigned }) {
+  const [subjects, setSubjects] = useState([]);
+  const [subject, setSubject] = useState("Математика");
+  const [grade, setGrade] = useState(7);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const data = await adminApi.studentSubjects(studentId);
+      setSubjects(data.subjects ?? []);
+    } catch (e) {
+      setError(e.message);
+    }
+  }, [studentId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function submit(event) {
+    event.preventDefault();
+    setError("");
+    setBusy(true);
+    try {
+      await adminApi.assignSubject(studentId, { subject, grade });
+      await load();
+      await onAssigned();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="arow__bonus">
+      <div className="asubjects">
+        {subjects.length ? subjects.map((item) => (
+          <span className="achip" key={item.subject}>{item.subject} · {item.grade} класс</span>
+        )) : <span className="arow__meta">Предметы ещё не назначены. После сохранения ученик получит полный доступ.</span>}
+      </div>
+      <form className="aform aform--inline" onSubmit={submit}>
+        <select className="aselect" value={subject} onChange={(event) => setSubject(event.target.value)}>
+          <option value="Математика">Математика</option>
+          <option value="Русский">Русский</option>
+        </select>
+        <select className="aselect" value={grade} onChange={(event) => setGrade(Number(event.target.value))}>
+          {[5, 6, 7, 8, 9, 10, 11].map((value) => <option key={value} value={value}>{value} класс</option>)}
+        </select>
+        <Button type="submit" icon={Plus} disabled={busy}>Назначить</Button>
+      </form>
+      {error && <p className="aerror">{error}</p>}
     </div>
   );
 }

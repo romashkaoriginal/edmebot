@@ -3,6 +3,13 @@
   display: grid;
   grid-template-columns: var(--sidebar-w) 1fr;
 }
+.app__loading {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  color: var(--muted);
+  font-weight: 700;
+}
 
 /* ---------- Sidebar (desktop) ---------- */
 .app__sidebar {
@@ -107,10 +114,16 @@
   font-size: var(--text-xs);
   font-weight: 700;
   opacity: 0.85;
+  white-space: nowrap;
+}
+.app__level-sep {
+  opacity: 0.6;
 }
 .app__level-num {
-  font-size: var(--text-base);
+  font-size: var(--text-sm);
+  font-weight: 800;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .app__content {

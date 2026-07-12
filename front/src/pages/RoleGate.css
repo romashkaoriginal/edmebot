@@ -36,32 +36,37 @@
   font-size: var(--text-sm);
 }
 
+/* One role choice under the other, not side by side — a two-column grid
+   squeezed on a phone is what caused text to get cut off. */
 .gate__cards {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: var(--sp-3);
-}
-
-.gate__cards--single {
-  grid-template-columns: minmax(0, 380px);
-  justify-content: center;
+  max-width: 420px;
+  margin: 0 auto;
 }
 
 .gate__card {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--sp-2);
-  text-align: center;
+  gap: var(--sp-3);
+  text-align: left;
+}
+
+.gate__card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
 }
 
 .gate__icon {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: var(--r-md);
   color: var(--on-solid);
+  flex-shrink: 0;
 }
 
 .gate__icon--admin {
@@ -75,16 +80,16 @@
 }
 
 .gate__card-title {
-  font-size: var(--text-md);
+  font-size: var(--text-sm);
   color: var(--ink);
-  margin: 0;
+  margin: 0 0 2px;
 }
 
 .gate__card-desc {
   color: var(--muted);
-  font-size: var(--text-sm);
-  margin: 0 0 var(--sp-2);
-  flex: 1;
+  font-size: var(--text-xs);
+  margin: 0;
+  line-height: 1.35;
 }
 
 .gate__id-warn {
@@ -180,27 +185,42 @@
   color: var(--ink);
 }
 
-@media (max-width: 620px) {
-  /* Keep the two role cards side by side on phones — stacking them is what
-     pushes the screen past one viewport and forces a scroll. */
-  .gate__card-desc {
-    display: none;
-  }
-  .gate__card {
-    padding: var(--sp-3) !important;
-    min-width: 0;
-  }
-  .gate__card-title {
-    font-size: var(--text-sm);
-    word-break: break-word;
-  }
-  .gate__icon {
-    width: 36px;
-    height: 36px;
-  }
-  .gate__card .btn {
-    padding-inline: var(--sp-2);
-    font-size: var(--text-xs);
-    white-space: normal;
-  }
+/* Onboarding form (self-serve subject + grade pick) */
+.gate__onboard-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  max-width: 360px;
+  margin: 0 auto;
+  text-align: left;
+}
+.gate__onboard-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.gate__onboard-field span {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--ink);
+}
+.gate__onboard-select {
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-family: inherit;
+}
+.gate__onboard-select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+.gate__onboard-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-align: center;
 }

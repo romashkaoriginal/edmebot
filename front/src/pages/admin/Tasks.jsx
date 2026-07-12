@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { ListChecks, Plus, Trash2, X } from "lucide-react";
+import { ListChecks, Plus, Trash2, X, Upload, Download } from "lucide-react";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import SectionTitle from "../../components/ui/SectionTitle";
@@ -34,6 +34,7 @@ export default function Tasks() {
   const [form, setForm] = useState(() => emptyForm(7, "Математика"));
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [importOpen, setImportOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -156,7 +157,10 @@ export default function Tasks() {
       </Card>
 
       <Card className="asection" pad="md">
-        <SectionTitle>Новое задание</SectionTitle>
+        <div className="asection__head">
+          <SectionTitle>Новое задание</SectionTitle>
+          <Button type="button" variant="soft" size="sm" icon={Upload} onClick={() => setImportOpen(true)}>Импорт из Excel</Button>
+        </div>
         <form className="aform" onSubmit={submit}>
           <div className="aform__row">
             <label className="afield">
@@ -270,6 +274,8 @@ export default function Tasks() {
         </form>
       </Card>
 
+      {importOpen && <ImportTasksModal onClose={() => setImportOpen(false)} onImported={load} />}
+
       <div className="asection">
         <SectionTitle>
           Задания: {grade} класс · {subject} ({tasks.length})
@@ -299,6 +305,65 @@ export default function Tasks() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function ImportTasksModal({ onClose, onImported }) {
+  const [file, setFile] = useState(null);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function downloadTemplate() {
+    setError("");
+    try {
+      await adminApi.downloadTaskTemplate();
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
+  async function submit(event) {
+    event.preventDefault();
+    if (!file) return setError("Выберите файл .xlsx");
+    setBusy(true);
+    setError("");
+    try {
+      const imported = await adminApi.importTasks(file);
+      setResult(imported);
+      await onImported();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="contact-picker" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <section className="contact-picker__dialog" role="dialog" aria-modal="true" aria-labelledby="import-title">
+        <header className="contact-picker__head">
+          <div>
+            <p className="contact-picker__eyebrow"><Upload size={15} /> Задания</p>
+            <h2 id="import-title">Импорт из Excel</h2>
+          </div>
+          <button className="aicon-btn aicon-btn--close" type="button" onClick={onClose} aria-label="Закрыть"><X size={18} /></button>
+        </header>
+        <form className="aform admin-import" onSubmit={submit}>
+          <Button type="button" variant="soft" icon={Download} onClick={downloadTemplate}>Скачать шаблон</Button>
+          <label className="afield">
+            <span>Файл Excel</span>
+            <input className="ainput" type="file" accept=".xlsx" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
+          </label>
+          {error && <p className="aerror">{error}</p>}
+          {result && <div className="anotice">Добавлено: {result.imported}. Пропущено: {result.skipped}.{result.errors?.length ? ` Ошибки в строках: ${result.errors.map((item) => item.row).join(", ")}.` : ""}</div>}
+          <div className="aform__actions">
+            <Button type="button" variant="soft" onClick={onClose}>Закрыть</Button>
+            <Button type="submit" icon={Upload} disabled={busy || !file}>{busy ? "Загрузка…" : "Загрузить"}</Button>
+          </div>
+        </form>
+      </section>
     </div>
   );
 }

@@ -1,9 +1,9 @@
 const express = require("express");
 const db = require("../db");
-const { requireStudent } = require("../middleware/auth");
+const { requireStudent, requireActiveStudent } = require("../middleware/auth");
 
 const router = express.Router();
-router.use(requireStudent);
+router.use(requireStudent, requireActiveStudent);
 
 // Rule-based deadline notice (module 8): 24h / today / overdue.
 function deadlineNotice(hw) {

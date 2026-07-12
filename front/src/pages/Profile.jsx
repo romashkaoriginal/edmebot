@@ -44,7 +44,6 @@ export default function Profile() {
       <Card className="prof__hero" pad="lg">
         <div className="prof__hero-top">
           <div className="prof__hero-info">
-            <p className="prof__hero-eyebrow">Твой профиль</p>
             <h1>{profile.name || "Ученик"}</h1>
             {(profile.grade || profile.subject) && (
               <p className="prof__hero-sub">

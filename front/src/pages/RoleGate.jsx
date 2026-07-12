@@ -6,7 +6,11 @@ import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import { adminApi, initData, initTelegramWebApp } from "../api/admin";
 import { apiUrl } from "../api/base";
+import { studentApi } from "../api/student";
 import "./RoleGate.css";
+
+const ONBOARD_SUBJECTS = ["Математика", "Русский"];
+const ONBOARD_GRADES = [5, 6, 7, 8, 9, 10, 11];
 
 async function fetchStudentList() {
   const res = await fetch(apiUrl("/api/students/list"));
@@ -23,6 +27,10 @@ export default function RoleGate() {
   const [students, setStudents] = useState([]);
   const [studentsLoading, setStudentsLoading] = useState(false);
   const [hasInitData, setHasInitData] = useState(() => Boolean(initData()));
+  const [onboardSubject, setOnboardSubject] = useState(ONBOARD_SUBJECTS[0]);
+  const [onboardGrade, setOnboardGrade] = useState(7);
+  const [onboardSubmitting, setOnboardSubmitting] = useState(false);
+  const [onboardError, setOnboardError] = useState("");
 
   useEffect(() => {
     const webApp = initTelegramWebApp();
@@ -34,14 +42,42 @@ export default function RoleGate() {
       return;
     }
 
-    adminApi
-      .me()
-      .then(({ user }) => setRole(user.role))
-      .catch(() => setRole(false))
-      .finally(() => setLoading(false));
+    async function resolveRole() {
+      try {
+        const { user } = await adminApi.me();
+        setRole(user.role);
+      } catch {
+        // Normal students are not present in `users`. This call also
+        // auto-provisions a first-time Telegram user server-side.
+        setRole(false);
+        try {
+          const { profile } = await studentApi.profile();
+          if (profile?.status === "pending") setView("onboarding");
+        } catch {
+          // Keep the Telegram-only entry card when student auth also fails.
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+    resolveRole();
   }, []);
 
   const isStaff = role === "admin" || role === "tutor";
+
+  async function submitOnboarding(e) {
+    e.preventDefault();
+    setOnboardError("");
+    setOnboardSubmitting(true);
+    try {
+      await studentApi.onboard({ subject: onboardSubject, grade: onboardGrade });
+      navigate("/app");
+    } catch {
+      setOnboardError("Не удалось сохранить данные. Попробуйте ещё раз.");
+    } finally {
+      setOnboardSubmitting(false);
+    }
+  }
 
   async function openStudentPick() {
     setStudentsLoading(true);
@@ -59,6 +95,48 @@ export default function RoleGate() {
   function pickStudent(s) {
     localStorage.setItem("edme_student_id", String(s.id));
     navigate("/app");
+  }
+
+  if (view === "onboarding") {
+    return (
+      <div className="gate">
+        <div className="gate__inner">
+          <div className="gate__brand"><Logo height={40} /></div>
+          <h1 className="gate__title font-display">Расскажи о себе</h1>
+          <p className="gate__sub">Выбери предмет и класс — мы подберём входной тест.</p>
+          <form className="gate__onboard-form" onSubmit={submitOnboarding}>
+            <label className="gate__onboard-field">
+              <span>Предмет</span>
+              <select
+                className="gate__onboard-select"
+                value={onboardSubject}
+                onChange={(e) => setOnboardSubject(e.target.value)}
+              >
+                {ONBOARD_SUBJECTS.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </label>
+            <label className="gate__onboard-field">
+              <span>Класс</span>
+              <select
+                className="gate__onboard-select"
+                value={onboardGrade}
+                onChange={(e) => setOnboardGrade(Number(e.target.value))}
+              >
+                {ONBOARD_GRADES.map((g) => (
+                  <option key={g} value={g}>{g} класс</option>
+                ))}
+              </select>
+            </label>
+            <Button type="submit" full iconRight={ArrowRight} disabled={onboardSubmitting}>
+              {onboardSubmitting ? "Секунду…" : "Продолжить"}
+            </Button>
+            {onboardError && <p className="gate__onboard-error">{onboardError}</p>}
+          </form>
+        </div>
+      </div>
+    );
   }
 
   if (view === "student-pick") {
@@ -119,16 +197,20 @@ export default function RoleGate() {
                 : "Откройте приложение ученика."}
             </p>
 
-            <div className={`gate__cards${!isStaff ? " gate__cards--single" : ""}`}>
+            <div className="gate__cards">
               {isStaff && (
                 <Card className="gate__card" pad="md">
-                  <span className="gate__icon gate__icon--admin">
-                    <ShieldCheck size={28} strokeWidth={2.4} />
-                  </span>
-                  <h2 className="gate__card-title">Панель управления</h2>
-                  <p className="gate__card-desc">
-                    Управление учениками, заданиями, домашкой и статистикой.
-                  </p>
+                  <div className="gate__card-head">
+                    <span className="gate__icon gate__icon--admin">
+                      <ShieldCheck size={24} strokeWidth={2.4} />
+                    </span>
+                    <div>
+                      <h2 className="gate__card-title">Панель управления</h2>
+                      <p className="gate__card-desc">
+                        Управление учениками, заданиями, домашкой и статистикой.
+                      </p>
+                    </div>
+                  </div>
                   <Button full iconRight={ArrowRight} onClick={() => navigate("/admin")}>
                     Открыть панель
                   </Button>
@@ -136,17 +218,21 @@ export default function RoleGate() {
               )}
 
               <Card className="gate__card" pad="md">
-                <span className="gate__icon gate__icon--student">
-                  <GraduationCap size={28} strokeWidth={2.4} />
-                </span>
-                <h2 className="gate__card-title">
-                  {isStaff ? "Просмотр как ученик" : "Приложение ученика"}
-                </h2>
-                <p className="gate__card-desc">
-                  {isStaff
-                    ? "Выберите ученика и откройте приложение от его имени."
-                    : "Практика, домашка, питомец и прогресс."}
-                </p>
+                <div className="gate__card-head">
+                  <span className="gate__icon gate__icon--student">
+                    <GraduationCap size={24} strokeWidth={2.4} />
+                  </span>
+                  <div>
+                    <h2 className="gate__card-title">
+                      {isStaff ? "Просмотр как ученик" : "Приложение ученика"}
+                    </h2>
+                    <p className="gate__card-desc">
+                      {isStaff
+                        ? "Выберите ученика и откройте приложение от его имени."
+                        : "Практика, домашка, питомец и прогресс."}
+                    </p>
+                  </div>
+                </div>
                 <Button
                   full
                   variant="accent"

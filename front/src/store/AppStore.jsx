@@ -9,6 +9,9 @@ const EMPTY_PROFILE = {
   name: "",
   grade: null,
   subject: "",
+  // Safe default: treat an unhydrated profile as not-yet-active so nothing
+  // flashes the full nav before the real status is known.
+  status: "pending",
   pet: { species: "fox", name: "Рыжик" },
   coins: 0,
   xp: 0,
@@ -27,6 +30,7 @@ export function AppProvider({ children }) {
   const [homework, setHomework] = useState([]);
   const [ownedItems, setOwnedItems] = useState([]);
   const [reward, setReward] = useState(null); // celebration overlay payload
+  const [hydrated, setHydrated] = useState(false);
 
   // Award XP + coins; handle level-up. Returns the level-up flag.
   const awardXp = useCallback((amount, coins = 0) => {
@@ -105,6 +109,7 @@ export function AppProvider({ children }) {
       setOwnedItems(data.profile.ownedItems ?? []);
     }
     if (data.topics) setTopics(data.topics);
+    setHydrated(true);
   }, []);
 
   const value = useMemo(
@@ -114,6 +119,7 @@ export function AppProvider({ children }) {
       homework,
       ownedItems,
       reward,
+      hydrated,
       awardXp,
       spendCoins,
       buyItem,
@@ -125,7 +131,7 @@ export function AppProvider({ children }) {
       clearReward,
       hydrate,
     }),
-    [profile, topics, homework, ownedItems, reward, awardXp, spendCoins, buyItem, bumpStreak, setTopicMastery, completeHomework, setPetSpecies, setPetName, clearReward, hydrate]
+    [profile, topics, homework, ownedItems, reward, hydrated, awardXp, spendCoins, buyItem, bumpStreak, setTopicMastery, completeHomework, setPetSpecies, setPetName, clearReward, hydrate]
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -25,6 +25,35 @@ router.get("/", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+const ONBOARD_SUBJECTS = ["Русский", "Математика"];
+
+// Self-serve onboarding: a brand-new (auto-provisioned "pending") student
+// picks a subject + grade so they can take that subject's diagnostic. This
+// does NOT grant full access — status stays "pending" until staff assigns
+// them a subject via the admin panel, which is the actual promotion step.
+router.post("/onboard", async (req, res, next) => {
+  try {
+    const { subject, grade } = req.body ?? {};
+    if (!ONBOARD_SUBJECTS.includes(subject)) return res.status(400).json({ error: "invalid_subject" });
+    const g = Number(grade);
+    if (!Number.isInteger(g) || g < 5 || g > 11) return res.status(400).json({ error: "invalid_grade" });
+
+    await db.query(
+      `INSERT INTO student_subjects (student_id, subject, grade) VALUES ($1,$2,$3)
+       ON CONFLICT (student_id, subject) DO UPDATE SET grade = EXCLUDED.grade`,
+      [req.student.id, subject, g]
+    );
+    // Keep the legacy single subject/grade columns as "primary" = first chosen.
+    await db.query(
+      `UPDATE students SET subject = COALESCE(subject, $2), grade = COALESCE(grade, $3) WHERE id = $1`,
+      [req.student.id, subject, g]
+    );
+    const refreshed = await db.query("SELECT * FROM students WHERE id = $1", [req.student.id]);
+    const { profile } = await state.getState(refreshed.rows[0], subject);
+    res.json({ ok: true, profile });
+  } catch (e) { next(e); }
+});
+
 router.get("/analytics", async (req, res, next) => {
   try {
     const current = await state.getState(req.student);

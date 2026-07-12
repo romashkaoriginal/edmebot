@@ -329,6 +329,9 @@
   display: flex;
   gap: var(--sp-2);
 }
+.admin-import {
+  padding: 0 var(--sp-5) var(--sp-5);
+}
 @keyframes contact-picker-in {
   from { opacity: 0; transform: translateY(8px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
@@ -457,6 +460,16 @@
   width: auto;
   flex: 1;
   min-width: 140px;
+}
+.aform--inline .aselect {
+  width: auto;
+  min-width: 130px;
+  flex: 1;
+}
+.asubjects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
 }
 .arow__bonus-history {
   display: grid;

@@ -110,9 +110,16 @@ router.post("/students", requireRole("admin"), async (req, res, next) => {
     const { name, grade, subject, tgId } = req.body ?? {};
     if (!tgId) return bad(res, "tg_id_required");
     if (!name || !grade || !subject) return bad(res, "name_grade_subject_required");
+    // status defaults to 'active' — a student created here already has a
+    // subject, so they're fully provisioned from the start (no diagnostic-only gate).
     const { rows } = await db.query(
       `INSERT INTO students (tg_id, name, grade, subject) VALUES ($1,$2,$3,$4) RETURNING *`,
       [tgId, name, Number(grade), subject]
+    );
+    await db.query(
+      `INSERT INTO student_subjects (student_id, subject, grade) VALUES ($1,$2,$3)
+       ON CONFLICT (student_id, subject) DO UPDATE SET grade = EXCLUDED.grade`,
+      [rows[0].id, subject, Number(grade)]
     );
     res.status(201).json({ student: rows[0] });
   } catch (e) {
@@ -148,6 +155,44 @@ router.delete("/students/:id", requireRole("admin"), async (req, res, next) => {
     if (!rowCount) return bad(res, "not_found", 404);
     res.json({ ok: true });
   } catch (e) {
+    next(e);
+  }
+});
+
+// ---------- Subject enrollments (how a self-serve "pending" student gets
+// promoted to full access, and how any student gains a second subject) ----------
+
+router.get("/students/:id/subjects", requireRole("admin", "tutor"), async (req, res, next) => {
+  try {
+    const { rows } = await db.query(
+      "SELECT subject, grade FROM student_subjects WHERE student_id = $1 ORDER BY created_at ASC",
+      [req.params.id]
+    );
+    res.json({ subjects: rows });
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.post("/students/:id/subjects", requireRole("admin", "tutor"), async (req, res, next) => {
+  try {
+    const { subject, grade } = req.body ?? {};
+    if (!subject || !grade) return bad(res, "subject_and_grade_required");
+    await db.query(
+      `INSERT INTO student_subjects (student_id, subject, grade) VALUES ($1,$2,$3)
+       ON CONFLICT (student_id, subject) DO UPDATE SET grade = EXCLUDED.grade`,
+      [req.params.id, subject, Number(grade)]
+    );
+    // Assigning any subject promotes a pending (self-serve) student to active.
+    const { rows } = await db.query(
+      `UPDATE students SET status = 'active', subject = COALESCE(subject, $2), grade = COALESCE(grade, $3)
+       WHERE id = $1 RETURNING *`,
+      [req.params.id, subject, Number(grade)]
+    );
+    if (!rows.length) return bad(res, "not_found", 404);
+    res.json({ student: rows[0] });
+  } catch (e) {
+    if (e.code === "23503") return bad(res, "student_not_found", 404);
     next(e);
   }
 });

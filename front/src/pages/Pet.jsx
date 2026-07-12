@@ -28,6 +28,7 @@ export default function Pet() {
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(profile.pet.name);
   const [savingName, setSavingName] = useState(false);
+  const [coinsInfoOpen, setCoinsInfoOpen] = useState(false);
   const timers = useRef([]);
   const shopRef = useRef(null);
 
@@ -46,11 +47,13 @@ export default function Pet() {
     try {
       await studentApi.renamePet(trimmed);
       setPetName(trimmed);
+      setEditingName(false);
     } catch {
-      // Keep the old name visible if the save failed; nothing local to roll back.
+      // Keep the old name visible and tell the student the save didn't go
+      // through, instead of silently reverting with no explanation.
+      showFeedback({ type: "poor", text: "Не удалось сохранить имя, попробуй ещё раз" });
     } finally {
       setSavingName(false);
-      setEditingName(false);
     }
   }
 
@@ -128,45 +131,56 @@ export default function Pet() {
   return (
     <div className="pet-page">
       <Card className="pet-page__hero" pad="none">
-        <div className="pet-page__hero-top">
-          <div className="pet-page__identity">
-            <p className="pet-page__eyebrow">Твой компаньон</p>
-            {editingName ? (
-              <div className="pet-page__name-edit">
-                <input
-                  className="pet-page__name-input font-display"
-                  value={nameDraft}
-                  maxLength={24}
-                  autoFocus
-                  onChange={(e) => setNameDraft(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") saveName();
-                    if (e.key === "Escape") setEditingName(false);
-                  }}
-                  disabled={savingName}
-                  aria-label="Имя питомца"
-                />
-                <button className="pet-page__name-btn" onClick={saveName} disabled={savingName} aria-label="Сохранить имя">
-                  <Check size={16} strokeWidth={3} />
-                </button>
-                <button className="pet-page__name-btn" onClick={() => setEditingName(false)} aria-label="Отменить">
-                  <X size={16} strokeWidth={3} />
-                </button>
-              </div>
-            ) : (
-              <button className="pet-page__name-btn-wrap" onClick={startEditName} aria-label="Изменить имя питомца">
-                <h1 className="pet-page__name font-display">{profile.pet.name}</h1>
-                <Pencil size={14} strokeWidth={2.6} className="pet-page__name-pencil" />
-              </button>
-            )}
-          </div>
-          <div className="pet-page__coins" aria-label={`${profile.coins} баллов`}>
-            <Coins size={18} strokeWidth={2.6} />
-            <span className="font-display">{profile.coins}</span>
-          </div>
-        </div>
-
         <div className="pet-page__room" aria-label={`Комната питомца ${profile.pet.name}`}>
+          {editingName ? (
+            <div className="pet-page__room-chip pet-page__room-chip--name pet-page__name-edit">
+              <input
+                className="pet-page__name-input font-display"
+                value={nameDraft}
+                maxLength={24}
+                autoFocus
+                onChange={(e) => setNameDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") saveName();
+                  if (e.key === "Escape") setEditingName(false);
+                }}
+                disabled={savingName}
+                aria-label="Имя питомца"
+              />
+              <button className="pet-page__name-btn" onClick={saveName} disabled={savingName} aria-label="Сохранить имя">
+                <Check size={16} strokeWidth={3} />
+              </button>
+              <button className="pet-page__name-btn" onClick={() => setEditingName(false)} aria-label="Отменить">
+                <X size={16} strokeWidth={3} />
+              </button>
+            </div>
+          ) : (
+            <button
+              className="pet-page__room-chip pet-page__room-chip--name pet-page__name-btn-wrap"
+              onClick={startEditName}
+              aria-label="Изменить имя питомца"
+            >
+              <span className="pet-page__name font-display">{profile.pet.name}</span>
+              <Pencil size={13} strokeWidth={2.6} className="pet-page__name-pencil" />
+            </button>
+          )}
+
+          <button
+            type="button"
+            className="pet-page__room-chip pet-page__room-chip--coins"
+            onClick={() => setCoinsInfoOpen((o) => !o)}
+            aria-expanded={coinsInfoOpen}
+            aria-label={`${profile.coins} баллов — как заработать`}
+          >
+            <Coins size={16} strokeWidth={2.6} />
+            <span className="font-display">{profile.coins}</span>
+          </button>
+          {coinsInfoOpen && (
+            <div className="pet-page__coins-popover" role="status">
+              Начисляются автоматически: половина от XP за каждое верно решённое задание.
+            </div>
+          )}
+
           <span className="pet-page__sun" aria-hidden="true" />
           <span className="pet-page__cloud pet-page__cloud--one" aria-hidden="true" />
           <span className="pet-page__cloud pet-page__cloud--two" aria-hidden="true" />
@@ -238,7 +252,10 @@ export default function Pet() {
 
       {feedback && (
         <div className={`pet-page__toast pet-page__toast--${feedback.type === "poor" ? "poor" : "ok"}`} role="status">
-          {feedback.type === "poor" ? <><Info size={16} strokeWidth={2.6} /> Не хватает баллов, реши ещё пару заданий</> : feedback.type === "fed" ? <><Check size={16} strokeWidth={3} /> Ням! «{feedback.name}» съедено</> : <><Check size={16} strokeWidth={3} /> «{feedback.name}» куплено!</>}
+          {feedback.text ? <><Info size={16} strokeWidth={2.6} /> {feedback.text}</> :
+           feedback.type === "poor" ? <><Info size={16} strokeWidth={2.6} /> Не хватает баллов, реши ещё пару заданий</> :
+           feedback.type === "fed" ? <><Check size={16} strokeWidth={3} /> Ням! «{feedback.name}» съедено</> :
+           <><Check size={16} strokeWidth={3} /> «{feedback.name}» куплено!</>}
         </div>
       )}
     </div>

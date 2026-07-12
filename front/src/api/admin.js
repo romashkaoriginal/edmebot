@@ -38,6 +38,19 @@ async function req(path, { method = "GET", body } = {}) {
   return data;
 }
 
+// Multipart upload — no Content-Type/JSON.stringify, the browser sets the
+// multipart boundary header itself from the FormData body.
+async function reqForm(path, formData) {
+  const res = await fetch(apiUrl(`/api/admin${path}`), {
+    method: "POST",
+    headers: { "x-telegram-init-data": initData() },
+    body: formData,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+
 export const adminApi = {
   // Current user (role check)
   me: () => req("/me"),
@@ -59,6 +72,11 @@ export const adminApi = {
   bonusHistory: (studentId) => req(`/students/${studentId}/bonus`),
   awardBonus: (studentId, b) => req(`/students/${studentId}/bonus`, { method: "POST", body: b }),
 
+  // Subject enrollments — how a self-serve "pending" student is promoted to
+  // active, and how any student gains an additional subject.
+  studentSubjects: (id) => req(`/students/${id}/subjects`),
+  assignSubject: (id, body) => req(`/students/${id}/subjects`, { method: "POST", body }),
+
   // Tasks
   listTasks: (params = {}) => {
     const q = new URLSearchParams(
@@ -68,6 +86,23 @@ export const adminApi = {
   },
   createTask: (t) => req("/tasks", { method: "POST", body: t }),
   deleteTask: (id) => req(`/tasks/${id}`, { method: "DELETE" }),
+  importTasks: (file) => {
+    const form = new FormData();
+    form.append("file", file);
+    return reqForm("/tasks/import", form);
+  },
+  downloadTaskTemplate: async () => {
+    const response = await fetch(apiUrl("/api/admin/tasks/import-template"), {
+      headers: { "x-telegram-init-data": initData() },
+    });
+    if (!response.ok) throw new Error("template_download_failed");
+    const url = URL.createObjectURL(await response.blob());
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "tasks_template.xlsx";
+    link.click();
+    URL.revokeObjectURL(url);
+  },
 
   // Homework
   listHomework: (studentId) =>

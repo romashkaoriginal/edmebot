@@ -21,9 +21,29 @@ CREATE TABLE IF NOT EXISTS students (
   id          BIGSERIAL PRIMARY KEY,
   tg_id       TEXT UNIQUE,
   name        TEXT NOT NULL,
-  grade       INTEGER NOT NULL,
-  subject     TEXT NOT NULL,
+  grade       INTEGER,
+  subject     TEXT,
+  status      TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('pending', 'active')),
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Legacy columns were NOT NULL; self-serve onboarding creates a student
+-- before a subject/grade is chosen, so both must be nullable.
+ALTER TABLE students ALTER COLUMN grade DROP NOT NULL;
+ALTER TABLE students ALTER COLUMN subject DROP NOT NULL;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active';
+ALTER TABLE students DROP CONSTRAINT IF EXISTS students_status_check;
+ALTER TABLE students ADD CONSTRAINT students_status_check CHECK (status IN ('pending', 'active'));
+
+-- Multi-subject enrollment. students.grade/subject stay as the "primary"
+-- (first-chosen) subject for display/back-compat; this table is the source
+-- of truth for which subjects a student actually has access to.
+CREATE TABLE IF NOT EXISTS student_subjects (
+  student_id  BIGINT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  subject     TEXT NOT NULL,
+  grade       INTEGER NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (student_id, subject)
 );
 
 CREATE TABLE IF NOT EXISTS tasks (
@@ -89,6 +109,12 @@ CREATE TABLE IF NOT EXISTS student_topics (
   PRIMARY KEY (student_id, topic_id)
 );
 
+-- Topic ids alone are ambiguous once more than one subject exists (a
+-- Russian topic could reuse a math topic's key). Scope mastery by subject.
+ALTER TABLE student_topics ADD COLUMN IF NOT EXISTS subject TEXT NOT NULL DEFAULT 'Математика';
+ALTER TABLE student_topics DROP CONSTRAINT IF EXISTS student_topics_pkey;
+ALTER TABLE student_topics ADD PRIMARY KEY (student_id, subject, topic_id);
+
 CREATE TABLE IF NOT EXISTS telegram_contacts (
   tg_id        TEXT PRIMARY KEY,
   name         TEXT NOT NULL,
@@ -120,6 +146,13 @@ CREATE INDEX IF NOT EXISTS idx_attempts_student ON attempts (student_id);
 CREATE INDEX IF NOT EXISTS idx_bonus_student ON bonus_transactions (student_id);
 CREATE INDEX IF NOT EXISTS idx_student_topics_student ON student_topics (student_id);
 CREATE INDEX IF NOT EXISTS idx_telegram_contacts_seen ON telegram_contacts (last_seen_at DESC);
+CREATE INDEX IF NOT EXISTS idx_student_subjects_student ON student_subjects (student_id);
+
+-- Backfill: every pre-existing student's single subject/grade becomes their
+-- first enrollment row, so nothing already active loses access.
+INSERT INTO student_subjects (student_id, subject, grade)
+SELECT id, subject, grade FROM students WHERE subject IS NOT NULL AND grade IS NOT NULL
+ON CONFLICT (student_id, subject) DO NOTHING;
 `;
 
 // Map the current hardcoded task bank to grade 7 / Математика so the demo

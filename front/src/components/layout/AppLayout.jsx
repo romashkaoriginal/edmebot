@@ -1,32 +1,47 @@
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
 import { useEffect } from "react";
-import { Target, Dumbbell, PawPrint, BookOpen, User, Zap } from "lucide-react";
+import { Target, Dumbbell, PawPrint, BookOpen, User } from "lucide-react";
 import Logo from "../brand/Logo";
-import StatPill, { StreakPill } from "../ui/StatPill";
+import { StreakPill } from "../ui/StatPill";
 import RewardOverlay from "./RewardOverlay";
 import { useApp } from "../../store/AppStore";
 import { studentApi } from "../../api/student";
 import "./AppLayout.css";
 
-const NAV = [
+const FULL_NAV = [
   { to: "/app/practice", label: "Практика", icon: Dumbbell },
   { to: "/app/diagnostic", label: "Диагностика", icon: Target },
   { to: "/app/homework", label: "Домашка", icon: BookOpen },
   { to: "/app/pet", label: "Питомец", icon: PawPrint },
   { to: "/app/profile", label: "Кабинет", icon: User },
 ];
+// A self-serve student who hasn't been assigned a subject by staff yet
+// only gets the diagnostic — everything else 403s server-side anyway.
+const PENDING_NAV = [{ to: "/app/diagnostic", label: "Диагностика", icon: Target }];
 
 export default function AppLayout() {
-  const { profile, hydrate } = useApp();
+  const { profile, hydrate, hydrated } = useApp();
   const { pathname } = useLocation();
   // Practice/diagnostic run in a focused mode — hide chrome distractions there.
   const focus = pathname.startsWith("/practice/run") || pathname.startsWith("/diagnostic/run");
   const todayISO = new Date().toISOString().slice(0, 10);
   const doneToday = profile.streakLastDoneOn === todayISO;
+  const isActive = profile.status === "active";
+  const NAV = isActive ? FULL_NAV : PENDING_NAV;
 
   useEffect(() => {
-    studentApi.profile().then(hydrate).catch(() => undefined);
+    studentApi.profile().then(hydrate).catch(() => hydrate({ profile: { status: "pending" }, topics: [] }));
   }, [hydrate]);
+
+  if (!hydrated) {
+    return <div className="app__loading">Загрузка приложения…</div>;
+  }
+
+  // A pending student who lands anywhere but the diagnostic (typed URL,
+  // stale link) gets bounced to the one thing they can actually do.
+  if (hydrated && !isActive && !focus && !pathname.startsWith("/app/diagnostic")) {
+    return <Navigate to="/app/diagnostic" replace />;
+  }
 
   return (
     <div className={`app ${focus ? "app--focus" : ""}`}>
@@ -54,10 +69,10 @@ export default function AppLayout() {
           </div>
           <div className="app__stats">
             <StreakPill value={profile.streak} doneToday={doneToday} />
-            <StatPill icon={Zap} value={`${profile.xp} XP`} tone="primary" label="Опыт" />
             <div className="app__level" title={`Уровень ${profile.level}`}>
-              <span className="app__level-tag">ур.</span>
-              <span className="app__level-num font-display">{profile.level}</span>
+              <span className="app__level-tag">ур. {profile.level}</span>
+              <span className="app__level-sep">·</span>
+              <span className="app__level-num font-display">{profile.xp} XP</span>
             </div>
           </div>
         </header>

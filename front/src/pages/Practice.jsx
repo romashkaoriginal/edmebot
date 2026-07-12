@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Dumbbell, AlertCircle, GraduationCap, ListTree, Play } from "lucide-react";
+import { Dumbbell, AlertCircle, ListTree, Play } from "lucide-react";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import SectionTitle from "../components/ui/SectionTitle";
@@ -11,16 +11,9 @@ const MODES = [
   {
     id: "weak",
     icon: AlertCircle,
-    title: "По слабым темам",
-    desc: "Акцент на темах с ошибками из диагностики",
+    title: "Общая практика",
+    desc: "Задания подбираются под твой уровень, с акцентом на слабые темы",
     tone: "danger",
-  },
-  {
-    id: "exam",
-    icon: GraduationCap,
-    title: "Подготовка к контрольной",
-    desc: "Тематический тренинг по выбранному разделу",
-    tone: "primary",
   },
   {
     id: "topic",

@@ -5,7 +5,6 @@ import RequireRole from "./components/admin/RequireRole";
 import AdminIndex from "./components/admin/AdminIndex";
 import { AdminAuthProvider } from "./context/AdminAuth";
 import RoleGate from "./pages/RoleGate";
-import Dashboard from "./pages/Dashboard";
 import Practice from "./pages/Practice";
 import PracticeRun from "./pages/PracticeRun";
 import Diagnostic from "./pages/Diagnostic";
@@ -27,7 +26,7 @@ export default function App() {
 
       {/* Student app */}
       <Route path="app" element={<AppLayout />}>
-        <Route index element={<Dashboard />} />
+        <Route index element={<Navigate to="practice" replace />} />
         <Route path="practice" element={<Practice />} />
         <Route path="practice/run" element={<PracticeRun />} />
         <Route path="diagnostic" element={<Diagnostic />} />
