@@ -65,7 +65,12 @@ export default function Pet() {
     : wornAccessories;
   const items = shopItems.filter((item) => item.category === cat);
   const foodItems = shopItems.filter((item) => item.category === "food");
-  const ownedFood = shopItems.find((item) => item.category === "food" && ownedItems.includes(item.id));
+  const foodInventory = profile.foodInventory ?? {};
+  const ownedFood = shopItems.find((item) => item.category === "food" && Number(foodInventory[item.id] ?? 0) > 0);
+  const petStats = {
+    satiety: clampPercent(profile.petStats?.satiety ?? 80),
+    mood: clampPercent(profile.petStats?.mood ?? 80),
+  };
   const bond = profile.petBond ?? 0;
   const bondLevel = Math.floor(bond / 100) + 1;
   const bondProgress = bond % 100;
@@ -95,7 +100,7 @@ export default function Pet() {
   }
 
   async function purchase(item) {
-    if (ownedItems.includes(item.id)) return true;
+    if (item.category !== "food" && ownedItems.includes(item.id)) return true;
     setBusyId(item.id);
     try {
       const data = await studentApi.buyPetItem(item.id);
@@ -123,10 +128,23 @@ export default function Pet() {
       showFeedback({ type: "poor", text: "Выбери корм в комнате — цена видна до покупки." });
       return;
     }
-    setEating(item.treat ?? item.icon);
-    clearLater(() => setEating(null), 950);
-    clearLater(cheer, 700);
-    showFeedback({ type: "fed", name: item.name });
+    if (Number(foodInventory[item.id] ?? 0) <= 0) {
+      showFeedback({ type: "poor", text: "Этот корм закончился. Купи ещё одну порцию." });
+      return;
+    }
+    setBusyId(`feed:${item.id}`);
+    try {
+      const data = await studentApi.feedPet(item.id);
+      hydrate({ profile: data.profile });
+      setEating(item.treat ?? item.icon);
+      clearLater(() => setEating(null), 950);
+      clearLater(cheer, 700);
+      showFeedback({ type: "fed", name: item.name });
+    } catch (error) {
+      showFeedback({ type: "poor", text: error.message === "food_not_available" ? "Этот корм закончился. Купи ещё одну порцию." : "Не удалось покормить питомца. Попробуй ещё раз." });
+    } finally {
+      setBusyId(null);
+    }
   }
 
   async function wear(item) {
@@ -252,16 +270,18 @@ export default function Pet() {
           {ownedItems.includes("s7") && <div className="pet-page__lamp" aria-hidden="true"><i /></div>}
           {ownedItems.includes("s12") && <div className="pet-page__house" aria-hidden="true"><i /></div>}
           {ownedItems.includes("s8") && <div className="pet-page__star" aria-hidden="true">★</div>}
-          <div className="pet-page__mood" role="status">{studiedToday ? "Воодушевлён после учёбы" : "Спокоен и готов заниматься"}</div>
-          <PetAvatar className="pet-page__avatar" species={profile.pet.species} mood={studiedToday ? "happy" : "idle"} accessories={wornAccessories} reaction={reaction} eating={eating} size={220} />
+          <div className="pet-page__mood" role="status">{petMoodLabel(petStats)}</div>
+          <PetAvatar className="pet-page__avatar" species={profile.pet.species} mood={petStats.mood >= 70 || studiedToday ? "happy" : "idle"} accessories={wornAccessories} reaction={reaction} eating={eating} size={220} />
         </div>
 
         <div className="pet-page__actions" aria-label="Забота о питомце">
-          <button className="pet-action pet-action--primary" onClick={() => feed(ownedFood)}><Cookie size={19} strokeWidth={2.5} /><span>{ownedFood ? "Покормить" : "Выбрать корм"}</span></button>
+          <button className="pet-action pet-action--primary" onClick={() => feed(ownedFood)} disabled={busyId?.startsWith("feed:")}><Cookie size={19} strokeWidth={2.5} /><span>{ownedFood ? "Покормить" : "Выбрать корм"}</span></button>
           <button className="pet-action" onClick={cheer}><Heart size={19} strokeWidth={2.5} /><span>Погладить</span></button>
           <button className="pet-action" onClick={() => setView("shop")}><Store size={19} strokeWidth={2.5} /><span>Каталог</span></button>
         </div>
       </Card>
+
+      <PetVitals stats={petStats} />
 
       <Card className="pet-page__bond" pad="md">
         <div className="pet-page__bond-icon"><Heart size={20} fill="currentColor" /></div>
@@ -276,9 +296,18 @@ export default function Pet() {
         <div className="pet-page__section-head"><SectionTitle>Питание</SectionTitle><p>Корм находится прямо в комнате питомца.</p></div>
         <div className="pet-page__food-list">
           {foodItems.map((item) => {
-            const owned = ownedItems.includes(item.id);
+            const amount = Number(foodInventory[item.id] ?? 0);
             const afford = profile.coins >= item.price;
-            return <Card key={item.id} className="pet-food" pad="sm"><span className="pet-food__icon" aria-hidden="true">{item.icon}</span><span className="pet-food__name">{item.name}</span>{!owned && <span className="shopitem__price"><Coins size={13} /> {item.price}</span>}<Button size="sm" variant={owned || afford ? "accent" : "soft"} icon={Cookie} disabled={!owned && !afford} loading={busyId === item.id} onClick={async () => owned ? feed(item) : (await purchase(item)) && feed(item)}>{owned ? "Покормить" : `Купить · ${item.price}`}</Button></Card>;
+            return <Card key={item.id} className="pet-food" pad="sm">
+              <span className="pet-food__icon" aria-hidden="true">{item.icon}</span>
+              <span className="pet-food__name">{item.name}</span>
+              <span className="pet-food__meta"><Coins size={13} /> {item.price} · +{item.effect?.satiety ?? 24}% сытости</span>
+              {amount > 0 && <span className="pet-food__count">В запасе: {amount}</span>}
+              <div className="pet-food__buttons">
+                <Button size="sm" variant={afford ? "accent" : "soft"} icon={Coins} disabled={!afford} loading={busyId === item.id} onClick={async () => (await purchase(item)) && showFeedback({ type: "ok", name: item.name })}>Купить</Button>
+                <Button size="sm" variant={amount > 0 ? "accent" : "soft"} icon={Cookie} disabled={amount <= 0} loading={busyId === `feed:${item.id}`} onClick={() => feed(item)}>Покормить</Button>
+              </div>
+            </Card>;
           })}
         </div>
       </section>
@@ -366,6 +395,40 @@ export default function Pet() {
       )}
     </div>
   );
+}
+
+function PetVitals({ stats }) {
+  return (
+    <Card className="pet-page__vitals" pad="md" aria-label="Состояние питомца">
+      <PetVitalBar icon="🍖" label="Сытость" value={stats.satiety} tone="satiety" />
+      <PetVitalBar icon="😊" label="Настроение" value={stats.mood} tone="mood" />
+    </Card>
+  );
+}
+
+function PetVitalBar({ icon, label, value, tone }) {
+  return (
+    <div className={`pet-vital pet-vital--${tone}`}>
+      <div className="pet-vital__head">
+        <span><span aria-hidden="true">{icon}</span> {label}</span>
+        <b>{value}%</b>
+      </div>
+      <div className="pet-vital__track" role="progressbar" aria-label={label} aria-valuemin="0" aria-valuemax="100" aria-valuenow={value}>
+        <i style={{ transform: `scaleX(${value / 100})` }} />
+      </div>
+    </div>
+  );
+}
+
+function clampPercent(value) {
+  return Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
+}
+
+function petMoodLabel(stats) {
+  if (stats.satiety < 25) return "Голоден: пора покормить";
+  if (stats.mood < 35) return "Нужно внимание и пара верных ответов";
+  if (stats.mood >= 80 && stats.satiety >= 70) return "Сыт и в отличном настроении";
+  return "Спокоен и готов заниматься";
 }
 
 function RoomItemPreview({ item }) {

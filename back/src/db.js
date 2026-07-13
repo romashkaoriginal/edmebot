@@ -147,6 +147,10 @@ CREATE TABLE IF NOT EXISTS student_profiles (
   onboarding_step      TEXT NOT NULL DEFAULT 'complete',
   pet_name             TEXT NOT NULL DEFAULT 'Рыжик',
   pet_bond             INTEGER NOT NULL DEFAULT 0,
+  pet_satiety          INTEGER NOT NULL DEFAULT 80,
+  pet_mood             INTEGER NOT NULL DEFAULT 80,
+  pet_decay_checked_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  food_inventory       JSONB NOT NULL DEFAULT '{}',
   owned_items          JSONB NOT NULL DEFAULT '[]',
   worn_items           JSONB NOT NULL DEFAULT '{}',
   diagnostic_done      BOOLEAN NOT NULL DEFAULT FALSE,
@@ -156,6 +160,10 @@ CREATE TABLE IF NOT EXISTS student_profiles (
 ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS pet_selected BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS onboarding_step TEXT NOT NULL DEFAULT 'complete';
 ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS pet_bond INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS pet_satiety INTEGER NOT NULL DEFAULT 80;
+ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS pet_mood INTEGER NOT NULL DEFAULT 80;
+ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS pet_decay_checked_at TIMESTAMPTZ NOT NULL DEFAULT now();
+ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS food_inventory JSONB NOT NULL DEFAULT '{}';
 
 CREATE TABLE IF NOT EXISTS student_topics (
   student_id   BIGINT NOT NULL REFERENCES students(id) ON DELETE CASCADE,

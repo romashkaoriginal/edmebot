@@ -15,6 +15,8 @@ const EMPTY_PROFILE = {
   pet: { species: "fox", name: "Рыжик" },
   petSelected: false,
   petBond: 0,
+  petStats: { satiety: 80, mood: 80 },
+  foodInventory: {},
   onboardingStep: "subject",
   coins: 0,
   xp: 0,

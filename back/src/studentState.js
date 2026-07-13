@@ -2,9 +2,29 @@ const db = require("./db");
 const seed = require("./data/seed");
 
 const XP_BY_DIFFICULTY = { easy: 10, medium: 15, hard: 25 };
+const PET_DECAY_INTERVAL_MS = 6 * 60 * 60 * 1000;
+const PET_DECAY_MAX_STEPS = 16;
 
 function statusFromMastery(mastery) {
   return mastery >= 75 ? "green" : mastery >= 50 ? "yellow" : "red";
+}
+
+function clampStat(value) {
+  return Math.max(0, Math.min(100, Number(value) || 0));
+}
+
+function foodEffect(item) {
+  return item?.effect ?? { satiety: 24, mood: 6 };
+}
+
+function petDecay(row) {
+  const lastChecked = row.pet_decay_checked_at ? new Date(row.pet_decay_checked_at).getTime() : Date.now();
+  const steps = Math.min(PET_DECAY_MAX_STEPS, Math.floor((Date.now() - lastChecked) / PET_DECAY_INTERVAL_MS));
+  if (steps <= 0) return null;
+  const satiety = clampStat((row.pet_satiety ?? 80) - steps * 4);
+  const hungerPenalty = satiety < 30 ? steps * 2 : 0;
+  const mood = clampStat((row.pet_mood ?? 80) - steps * 2 - hungerPenalty);
+  return { steps, satiety, mood };
 }
 
 function profileDefaults() {
@@ -18,6 +38,8 @@ function profileDefaults() {
     streakFreezeUsed: false,
     pet: { species: "fox", name: "Рыжик" },
     petBond: 0,
+    petStats: { satiety: 80, mood: 80 },
+    foodInventory: {},
     ownedItems: [],
     wornItems: {},
     diagnosticDone: false,
@@ -42,8 +64,13 @@ function toProfile(row, student) {
     streakFreezeUsed: row.streak_freeze_used,
     pet: { species: row.pet_species, name: row.pet_name },
     petBond: row.pet_bond ?? 0,
+    petStats: {
+      satiety: clampStat(row.pet_satiety ?? 80),
+      mood: clampStat(row.pet_mood ?? 80),
+    },
     petSelected: row.pet_selected,
     onboardingStep: row.onboarding_step,
+    foodInventory: row.food_inventory ?? {},
     ownedItems: row.owned_items ?? [],
     wornItems: row.worn_items ?? {},
     diagnosticDone: row.diagnostic_done,
@@ -73,6 +100,21 @@ const TOPIC_NAME = new Map(seed.topics.map((topic) => [`${topic.subject}:${topic
 async function getState(student, subject = null) {
   await ensure(student);
   const { rows: profiles } = await db.query("SELECT * FROM student_profiles WHERE student_id = $1", [student.id]);
+  let profileRow = profiles[0];
+  const decay = petDecay(profileRow);
+  if (decay) {
+    const { rows: decayed } = await db.query(
+      `UPDATE student_profiles
+       SET pet_satiety = $2,
+           pet_mood = $3,
+           pet_decay_checked_at = now(),
+           updated_at = now()
+       WHERE student_id = $1
+       RETURNING *`,
+      [student.id, decay.satiety, decay.mood]
+    );
+    profileRow = decayed[0] ?? profileRow;
+  }
   const params = subject ? [student.id, subject] : [student.id];
   const { rows: topicRows } = await db.query(
     `SELECT * FROM student_topics WHERE student_id = $1 ${subject ? "AND subject = $2" : ""} ORDER BY mastery ASC`,
@@ -86,7 +128,7 @@ async function getState(student, subject = null) {
     mastery: row.mastery,
     status: row.status,
   }));
-  return { profile: toProfile(profiles[0], student), topics };
+  return { profile: toProfile(profileRow, student), topics };
 }
 
 async function updateTopics(studentId, subject, updates) {
@@ -167,6 +209,8 @@ async function gradePractice(student, task, selected, hintsUsed, attempts) {
   await updateTopics(student.id, task.subject, [{ topicId: task.topic, mastery: nextMastery }]);
 
   let award = { gained: 0, coins: 0, leveledUp: false };
+  const satietyDelta = correct ? -1 : -2;
+  const moodDelta = correct ? 3 : -3;
   if (correct) {
     const gained = Math.max(3, (XP_BY_DIFFICULTY[task.difficulty] ?? 10) - hintsUsed * 3 - attempts * 2);
     const coins = Math.round(gained / 2);
@@ -190,23 +234,73 @@ async function gradePractice(student, task, selected, hintsUsed, attempts) {
       `UPDATE student_profiles
        SET xp=$2, coins=coins+$3, level=$4, xp_from_level=$5, xp_for_next=$6,
            streak=$7, streak_last_done_on=$8,
-           pet_bond=pet_bond+$9, updated_at=now()
+           pet_bond=pet_bond+$9,
+           pet_satiety=LEAST(100, GREATEST(0, pet_satiety+$10)),
+           pet_mood=LEAST(100, GREATEST(0, pet_mood+$11)),
+           pet_decay_checked_at=now(),
+           updated_at=now()
        WHERE student_id=$1`,
-      [student.id, xp, coins, level, xpFromLevel, xpForNext, streak, today, { easy: 1, medium: 2, hard: 3 }[task.difficulty] ?? 1]
+      [student.id, xp, coins, level, xpFromLevel, xpForNext, streak, today, { easy: 1, medium: 2, hard: 3 }[task.difficulty] ?? 1, satietyDelta, moodDelta]
     );
     award = { gained, coins, leveledUp };
+  } else {
+    await db.query(
+      `UPDATE student_profiles
+       SET pet_satiety=LEAST(100, GREATEST(0, pet_satiety+$2)),
+           pet_mood=LEAST(100, GREATEST(0, pet_mood+$3)),
+           pet_decay_checked_at=now(),
+           updated_at=now()
+       WHERE student_id=$1`,
+      [student.id, satietyDelta, moodDelta]
+    );
   }
   return { correct, award, state: await getState(student, task.subject) };
 }
 
 async function buyItem(student, item) {
   const state = await getState(student);
+  if (item.category === "food") {
+    if (state.profile.coins < item.price) return { error: "not_enough_coins" };
+    const foodInventory = {
+      ...(state.profile.foodInventory ?? {}),
+      [item.id]: Number(state.profile.foodInventory?.[item.id] ?? 0) + 1,
+    };
+    await db.query(
+      "UPDATE student_profiles SET coins = coins - $2, food_inventory = $3, updated_at = now() WHERE student_id = $1",
+      [student.id, item.price, JSON.stringify(foodInventory)]
+    );
+    return { state: await getState(student) };
+  }
   if (state.profile.ownedItems.includes(item.id)) return { error: "already_owned" };
   if (state.profile.coins < item.price) return { error: "not_enough_coins" };
   const ownedItems = [...state.profile.ownedItems, item.id];
   await db.query(
     "UPDATE student_profiles SET coins = coins - $2, owned_items = $3, updated_at = now() WHERE student_id = $1",
     [student.id, item.price, JSON.stringify(ownedItems)]
+  );
+  return { state: await getState(student) };
+}
+
+async function feedPet(student, itemId) {
+  const item = seed.shopItems.find((entry) => entry.id === itemId && entry.category === "food");
+  if (!item) return { error: "item_not_found" };
+  const state = await getState(student);
+  const currentAmount = Number(state.profile.foodInventory?.[item.id] ?? 0);
+  if (currentAmount <= 0) return { error: "food_not_available" };
+  const foodInventory = { ...(state.profile.foodInventory ?? {}) };
+  if (currentAmount <= 1) delete foodInventory[item.id];
+  else foodInventory[item.id] = currentAmount - 1;
+  const effect = foodEffect(item);
+  await db.query(
+    `UPDATE student_profiles
+     SET food_inventory = $2,
+         pet_satiety = LEAST(100, GREATEST(0, pet_satiety + $3)),
+         pet_mood = LEAST(100, GREATEST(0, pet_mood + $4)),
+         pet_bond = pet_bond + 1,
+         pet_decay_checked_at = now(),
+         updated_at = now()
+     WHERE student_id = $1`,
+    [student.id, JSON.stringify(foodInventory), effect.satiety ?? 24, effect.mood ?? 6]
   );
   return { state: await getState(student) };
 }
@@ -255,4 +349,4 @@ async function updatePet(student, { species, wornItems, name } = {}) {
   return { state: await getState(student) };
 }
 
-module.exports = { ensure, getState, submitDiagnostic, gradePractice, buyItem, renamePet, updatePet };
+module.exports = { ensure, getState, submitDiagnostic, gradePractice, buyItem, feedPet, renamePet, updatePet };

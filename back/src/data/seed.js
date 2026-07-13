@@ -109,9 +109,9 @@ const achievements = [
 ];
 
 const shopItems = [
-  { id: "s1", category: "food", name: "Ягоды", price: 20, icon: "🫐", treat: "🫐" },
-  { id: "s2", category: "food", name: "Орешки", price: 15, icon: "🌰", treat: "🌰" },
-  { id: "s9", category: "food", name: "Печенье", price: 25, icon: "🍪", treat: "🍪" },
+  { id: "s1", category: "food", name: "Ягоды", price: 20, icon: "🫐", treat: "🫐", effect: { satiety: 22, mood: 8 } },
+  { id: "s2", category: "food", name: "Орешки", price: 15, icon: "🌰", treat: "🌰", effect: { satiety: 16, mood: 5 } },
+  { id: "s9", category: "food", name: "Печенье", price: 25, icon: "🍪", treat: "🍪", effect: { satiety: 28, mood: 10 } },
   { id: "s3", category: "look", name: "Шарф", price: 60, icon: "🧣", slot: "neck", accessory: "scarf" },
   { id: "s4", category: "look", name: "Очки", price: 80, icon: "🕶️", slot: "eyes", accessory: "glasses" },
   { id: "s5", category: "look", name: "Цилиндр", price: 70, icon: "🎩", slot: "head", accessory: "tophat" },
@@ -136,6 +136,8 @@ const weekActivity = [
 const profile = {
   name: "Артём", grade: 7, subject: "Математика",
   pet: { species: "fox", name: "Рыжик" },
+  petStats: { satiety: 80, mood: 80 },
+  foodInventory: {},
   coins: 340, xp: 1240, level: 8, xpForNext: 1600, xpFromLevel: 1000,
   streak: 12, streakFreezeUsed: false,
   solvedTotal: 214, accuracy: 78, avgTimeSec: 42, diagnosticDone: true,
