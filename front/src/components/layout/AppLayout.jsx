@@ -48,6 +48,25 @@ export default function AppLayout() {
     loadProfile();
   }, [loadProfile, loadAttempt]);
 
+  useEffect(() => {
+    if (!hydrated || !isActive || pathname !== "/app/profile") return undefined;
+    const preload = () => {
+      void Promise.allSettled([
+        import("../../pages/Practice"),
+        import("../../pages/PracticeRun"),
+        import("../../pages/Homework"),
+        import("../../pages/Pet"),
+      ]);
+      void studentApi.prefetchStudentSections();
+    };
+    if ("requestIdleCallback" in window) {
+      const id = window.requestIdleCallback(preload, { timeout: 900 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(preload, 120);
+    return () => window.clearTimeout(id);
+  }, [hydrated, isActive, pathname]);
+
   if (loadError && !hydrated) {
     return (
       <main className="app__load-state" role="alert">

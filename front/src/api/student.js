@@ -14,6 +14,29 @@ export async function studentFetch(path, options = {}) {
 }
 
 let diagnosticRequest = null;
+const resourceCache = new Map();
+
+function cachedStudentFetch(key, path, { fresh = false } = {}) {
+  const cached = resourceCache.get(key);
+  if (!fresh && cached) return cached.promise;
+  const entry = { data: fresh ? cached?.data ?? null : null, promise: null };
+  const request = studentFetch(path)
+    .then((data) => {
+      entry.data = data;
+      return data;
+    })
+    .catch((error) => {
+      if (resourceCache.get(key) === entry) resourceCache.delete(key);
+      throw error;
+    });
+  entry.promise = request;
+  resourceCache.set(key, entry);
+  return request;
+}
+
+function invalidateResource(key) {
+  resourceCache.delete(key);
+}
 
 function loadDiagnostic(fresh = false) {
   if (fresh || !diagnosticRequest) {
@@ -27,10 +50,20 @@ function loadDiagnostic(fresh = false) {
 
 export const studentApi = {
   profile: () => studentFetch("/api/profile"),
-  analytics: () => studentFetch("/api/profile/analytics"),
-  homework: () => studentFetch("/api/homework"),
-  completeHomework: (id) => studentFetch(`/api/homework/${id}/complete`, { method: "POST" }),
-  reopenHomework: (id) => studentFetch(`/api/homework/${id}/reopen`, { method: "POST" }),
+  analytics: ({ fresh = false } = {}) => cachedStudentFetch("analytics", "/api/profile/analytics", { fresh }),
+  homework: ({ fresh = false } = {}) => cachedStudentFetch("homework", "/api/homework", { fresh }),
+  completeHomework: async (id) => {
+    const result = await studentFetch(`/api/homework/${id}/complete`, { method: "POST" });
+    invalidateResource("homework");
+    invalidateResource("analytics");
+    return result;
+  },
+  reopenHomework: async (id) => {
+    const result = await studentFetch(`/api/homework/${id}/reopen`, { method: "POST" });
+    invalidateResource("homework");
+    invalidateResource("analytics");
+    return result;
+  },
   practiceSeries: (settings = {}) => {
     const query = new URLSearchParams({ length: "5" });
     Object.entries(settings).forEach(([key, value]) => {
@@ -38,7 +71,11 @@ export const studentApi = {
     });
     return studentFetch(`/api/practice/series?${query}`);
   },
-  answer: (payload) => studentFetch("/api/practice/answer", { method: "POST", body: JSON.stringify(payload) }),
+  answer: async (payload) => {
+    const result = await studentFetch("/api/practice/answer", { method: "POST", body: JSON.stringify(payload) });
+    invalidateResource("analytics");
+    return result;
+  },
   diagnostic: ({ fresh = false } = {}) => loadDiagnostic(fresh),
   prefetchDiagnostic: () => loadDiagnostic(false),
   checkDiagnostic: (taskId, selected) => studentFetch("/api/diagnostic/check", { method: "POST", body: JSON.stringify({ taskId, selected }) }),
@@ -52,4 +89,10 @@ export const studentApi = {
   renamePet: (name) => studentFetch("/api/pet/rename", { method: "POST", body: JSON.stringify({ name }) }),
   updatePet: (payload) => studentFetch("/api/pet", { method: "PATCH", body: JSON.stringify(payload) }),
   onboard: (body) => studentFetch("/api/profile/onboard", { method: "POST", body: JSON.stringify(body) }),
+  prefetchStudentSections: () => Promise.allSettled([
+    cachedStudentFetch("analytics", "/api/profile/analytics"),
+    cachedStudentFetch("homework", "/api/homework"),
+  ]),
+  peekAnalytics: () => resourceCache.get("analytics")?.data ?? null,
+  peekHomework: () => resourceCache.get("homework")?.data ?? null,
 };

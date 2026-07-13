@@ -13,8 +13,6 @@ import { studentApi } from "../api/student";
 import { plural } from "../utils/format";
 import "./Profile.css";
 
-let analyticsCache = null;
-
 export default function Profile() {
   const { profile, topics } = useApp();
   const xpInLevel = profile.xp - profile.xpFromLevel;
@@ -27,22 +25,18 @@ export default function Profile() {
 
   // All analytics (solved, accuracy, weekly activity, achievements) come from
   // the backend and reflect real activity — nothing is fabricated.
-  const [analyticsState, setAnalyticsState] = useState(() => analyticsCache
-    ? { status: "ready", data: analyticsCache }
-    : { status: "loading", data: null });
-  const loadAnalytics = useCallback(({ quiet = false } = {}) => {
-    if (!quiet) setAnalyticsState((state) => ({ ...state, status: "loading" }));
-    studentApi.analytics()
-      .then((data) => {
-        analyticsCache = data;
-        setAnalyticsState({ status: "ready", data });
-      })
-      .catch(() => {
-        if (!analyticsCache) setAnalyticsState({ status: "error", data: null });
-      });
+  const [analyticsState, setAnalyticsState] = useState(() => {
+    const cached = studentApi.peekAnalytics();
+    return cached ? { status: "ready", data: cached } : { status: "loading", data: null };
+  });
+  const loadAnalytics = useCallback(({ fresh = false } = {}) => {
+    setAnalyticsState((state) => state.data ? state : { ...state, status: "loading" });
+    studentApi.analytics({ fresh })
+      .then((data) => setAnalyticsState({ status: "ready", data }))
+      .catch(() => setAnalyticsState((state) => state.data ? state : { status: "error", data: null }));
   }, []);
   useEffect(() => {
-    loadAnalytics({ quiet: Boolean(analyticsCache) });
+    loadAnalytics();
   }, [loadAnalytics]);
 
   const dbStats = analyticsState.data;
@@ -112,7 +106,7 @@ export default function Profile() {
       ) : analyticsState.status === "error" ? (
         <Card className="prof__analytics-error" pad="md" role="alert">
           <p>Не удалось загрузить статистику. Прогресс не потерян.</p>
-          <Button size="sm" variant="soft" icon={RefreshCw} onClick={loadAnalytics}>Повторить</Button>
+          <Button size="sm" variant="soft" icon={RefreshCw} onClick={() => loadAnalytics({ fresh: true })}>Повторить</Button>
         </Card>
       ) : (
         <div className="prof__stats">

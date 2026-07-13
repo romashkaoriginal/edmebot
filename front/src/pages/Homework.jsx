@@ -13,13 +13,12 @@ const FILTERS = [
   { id: "done", label: "Выполнено" },
 ];
 
-let homeworkCache = null;
-
 export default function Homework() {
-  const [homework, setHomework] = useState(() => homeworkCache?.homework ?? []);
-  const [counts, setCounts] = useState(() => homeworkCache?.counts ?? { active: 0, overdue: 0 });
+  const cachedHomework = studentApi.peekHomework();
+  const [homework, setHomework] = useState(() => cachedHomework?.homework ?? []);
+  const [counts, setCounts] = useState(() => cachedHomework?.counts ?? { active: 0, overdue: 0 });
   const [filter, setFilter] = useState("all");
-  const [loading, setLoading] = useState(() => !homeworkCache);
+  const [loading, setLoading] = useState(() => !cachedHomework);
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState(null);
   const [undoItem, setUndoItem] = useState(null);
@@ -30,7 +29,6 @@ export default function Homework() {
     try {
       const data = await studentApi.homework();
       const next = { homework: data.homework ?? [], counts: data.counts ?? { active: 0, overdue: 0 } };
-      homeworkCache = next;
       setHomework(next.homework);
       setCounts(next.counts);
     } catch {
@@ -41,7 +39,7 @@ export default function Homework() {
   }, []);
 
   useEffect(() => {
-    load({ quiet: Boolean(homeworkCache) });
+    load({ quiet: Boolean(studentApi.peekHomework()) });
   }, [load]);
 
   async function complete(item) {
