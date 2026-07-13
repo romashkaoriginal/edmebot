@@ -39,8 +39,8 @@
 }
 .run__progress {
   flex: 1;
-  height: 12px;
-  background: var(--surface-2);
+  height: 10px;
+  background: color-mix(in oklch, var(--line) 76%, var(--surface-2));
   border-radius: var(--r-pill);
   overflow: hidden;
 }
@@ -60,6 +60,13 @@
 .run__top--calm { justify-content: space-between; }
 .run__mode-label { color: var(--muted); font-size: var(--text-sm); font-weight: 800; }
 .run__calm-dot { width: 10px; height: 10px; margin: 17px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 4px var(--success-soft); }
+.run--diagnostic .run__top {
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
 
 /* Run mode is a fixed viewport. Content compacts with height instead of
    turning the entire exercise into a scrollable page. */
@@ -96,6 +103,10 @@
 .run__state-card { width: 100%; }
 .run__state-card p { margin: var(--sp-3) 0 var(--sp-5); color: var(--muted); }
 .run__action-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
   margin-bottom: var(--sp-2);
   padding: var(--sp-3);
   border-radius: var(--r-md);
@@ -104,11 +115,12 @@
   font-size: var(--text-sm);
   font-weight: 700;
 }
+.run__action-error button { min-height: 36px; padding-inline: 10px; border-radius: var(--r-sm); background: var(--surface); color: var(--danger); font-weight: 850; }
 .run__prompt {
   flex: 0 1 auto;
   font-size: clamp(1.12rem, 2.8vh, var(--text-xl));
   line-height: 1.15;
-  margin: clamp(5px, 1vh, var(--sp-2)) 0 clamp(10px, 1.8vh, var(--sp-4));
+  margin: clamp(4px, 0.8vh, var(--sp-2)) 0 clamp(5px, 1vh, var(--sp-2));
   text-wrap: balance;
 }
 .run__question {
@@ -118,12 +130,12 @@
   height: 100%;
   flex-direction: column;
   overflow: hidden;
-  transition: box-shadow var(--dur-pop) var(--ease-out), background-color var(--dur-pop) var(--ease-out);
+  transition: background-color var(--dur-pop) var(--ease-out);
 }
-.run__question--correct { box-shadow: 0 0 0 2px var(--success); }
-.run__question--wrong { box-shadow: 0 0 0 2px var(--danger); }
 .run__notices:empty { display: none; }
-.run__checking { display: inline-flex; margin-bottom: var(--sp-2); color: var(--muted); font-size: var(--text-sm); font-weight: 750; }
+.run__assist { display: flex; min-height: 40px; align-items: center; gap: var(--sp-2); margin-bottom: 4px; }
+.run__assist:empty { display: none; }
+.run__assist .btn { min-height: 40px; padding-inline: 10px; }
 
 .run__footer {
   display: flex;
@@ -131,7 +143,7 @@
   justify-content: space-between;
   gap: var(--sp-3);
   min-height: 58px;
-  padding: clamp(8px, 1.6vh, var(--sp-4)) 0 0;
+  padding: clamp(10px, 1.8vh, var(--sp-4)) 0 4px;
   background: var(--bg);
 }
 .run__footer .btn:last-child {
@@ -146,17 +158,17 @@
 
 .run__explanation,
 .pr__explanation {
-  position: absolute;
-  z-index: 3;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  max-height: 56%;
-  padding: var(--sp-4);
-  overflow: hidden;
-  background: var(--surface);
-  border-top: 2px solid var(--primary);
-  box-shadow: 0 -8px 18px oklch(0.24 0.04 265 / 0.14);
+  position: relative;
+  z-index: 2;
+  flex: 0 1 auto;
+  max-height: clamp(88px, 18vh, 138px);
+  margin-bottom: var(--sp-2);
+  padding: var(--sp-3);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--r-md);
+  background: var(--primary-soft);
+  color: var(--ink);
 }
 .run__explanation > div,
 .pr__explanation-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
@@ -168,19 +180,13 @@
 
 .run__burst,
 .pr__burst { position: absolute; z-index: 4; inset: 0; display: grid; place-items: center; pointer-events: none; }
-.run__burst > span,
-.pr__correct-label { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: var(--r-pill); background: var(--success); color: var(--on-solid); box-shadow: 0 5px 12px oklch(0.43 0.13 150 / 0.24); font-size: var(--text-sm); font-weight: 900; }
-.pr__correct-label b { display: inline-flex; align-items: center; gap: 2px; padding-left: 5px; border-left: 1px solid color-mix(in oklch, currentColor 35%, transparent); }
-.run__burst > span,
-.pr__burst .pr__correct-label { animation: run-feedback-pop 900ms cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 .run__burst i,
-.pr__burst i { --angle: calc(var(--burst-index) * 45deg); position: absolute; top: 50%; left: 50%; width: 8px; height: 12px; border-radius: 3px; background: var(--accent); animation: run-confetti 650ms cubic-bezier(0.16, 1, 0.3, 1) forwards; transform: rotate(var(--angle)) translateY(-20px); }
+.pr__burst i { --angle: calc(var(--burst-index) * 20deg); position: absolute; top: 54%; left: 50%; width: 8px; height: 13px; border-radius: 3px; background: var(--accent); animation: run-confetti 760ms cubic-bezier(0.16, 1, 0.3, 1) forwards; transform: rotate(var(--angle)) translateY(-18px); }
 .run__burst i:nth-of-type(2n),
 .pr__burst i:nth-of-type(2n) { background: var(--primary); }
 .run__burst i:nth-of-type(3n),
 .pr__burst i:nth-of-type(3n) { background: var(--success); }
-@keyframes run-confetti { to { opacity: 0; transform: rotate(var(--angle)) translateY(-105px) rotate(160deg); } }
-@keyframes run-feedback-pop { 0% { opacity: 0; transform: translateY(8px) scale(0.96); } 18%, 72% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-8px) scale(1); } }
+@keyframes run-confetti { to { opacity: 0; transform: rotate(var(--angle)) translateY(-150px) rotate(190deg); } }
 .run__result-card {
   text-align: center;
   display: flex;
@@ -215,11 +221,11 @@
 }
 
 @media (max-width: 560px) {
-  .run { padding: 9px 10px max(9px, env(safe-area-inset-bottom)); }
+  .run { padding: 9px 10px max(16px, calc(env(safe-area-inset-bottom) + 10px)); }
   .run__question.card--pad-lg { padding: clamp(12px, 2.4vh, var(--sp-5)); }
   .run__footer { gap: 5px; }
   .run__footer .btn { min-width: 0; flex: 0 1 auto; padding-inline: 11px; font-size: var(--text-sm); }
-  .run__footer .btn:last-child { flex: 1; }
+  .run__footer .btn:last-child { flex: 0 1 58%; }
   .run__result-actions { width: 100%; }
   .run__result-actions .btn { width: 100%; }
 }
@@ -231,7 +237,7 @@
   .run__prompt { font-size: 1.05rem; margin-block: 4px 8px; }
   .run__footer { min-height: 50px; padding-top: 6px; }
   .run__footer .btn { min-height: 42px; }
-  .run__explanation, .pr__explanation { max-height: 62%; padding: var(--sp-3); }
+  .run__explanation, .pr__explanation { max-height: 106px; padding: 9px 11px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -106,7 +106,13 @@ export default function Practice() {
       {mode === "topic" && hasTopics && (
         <section>
           <SectionTitle>Тема</SectionTitle>
-          <div className="prac__topics">
+          <label className="prac__topic-select">
+            <span className="sr-only">Выбери тему</span>
+            <select value={topic ?? ""} onChange={(event) => setTopic(event.target.value)}>
+              {topics.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+            </select>
+          </label>
+          <div className="prac__topics prac__topics--desktop">
             {topics.map((t) => (
               <button
                 key={t.id}

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Flame, Zap, Target, CheckCircle2, Lightbulb, Trophy, RefreshCw } from "lucide-react";
+import { Flame, Zap, Target, CheckCircle2, Lightbulb, Trophy, RefreshCw, ChevronDown } from "lucide-react";
 import Card from "../components/ui/Card";
 import ProgressBar from "../components/ui/ProgressBar";
 import SectionTitle from "../components/ui/SectionTitle";
@@ -19,6 +19,8 @@ export default function Profile() {
   const xpNeeded = profile.xpForNext - profile.xpFromLevel;
   const weak = topics.filter((t) => t.status === "red");
   const strong = topics.filter((t) => t.status === "green");
+  const [knowledgeOpen, setKnowledgeOpen] = useState(false);
+  const visibleTopics = [...topics].sort((a, b) => a.mastery - b.mastery).slice(0, 10);
 
   // All analytics (solved, accuracy, weekly activity, achievements) come from
   // the backend and reflect real activity — nothing is fabricated.
@@ -138,8 +140,11 @@ export default function Profile() {
       {/* Knowledge map — only after the diagnostic has assessed topics */}
       {topics.length > 0 ? (
         <section>
-          <SectionTitle>Карта знаний</SectionTitle>
-          <KnowledgeMap topics={topics} />
+          <button type="button" className="prof__section-toggle" onClick={() => setKnowledgeOpen((value) => !value)} aria-expanded={knowledgeOpen}>
+            <span><b>Карта знаний</b><small>Сначала самые слабые · до 10 тем</small></span>
+            <ChevronDown size={20} className={knowledgeOpen ? "is-open" : ""} />
+          </button>
+          {knowledgeOpen && <KnowledgeMap topics={visibleTopics} />}
         </section>
       ) : (
         <Card className="prof__nomap" pad="md">
@@ -174,10 +179,10 @@ export default function Profile() {
       )}
 
       {/* Achievements — only earned ones (backend returns real ones) */}
-      {earned.length > 0 && (
+      {achievements.length > 0 && (
         <section>
           <SectionTitle>Достижения</SectionTitle>
-          <Achievements items={earned} />
+          <Achievements items={achievements} compact={6} expandable />
         </section>
       )}
     </div>

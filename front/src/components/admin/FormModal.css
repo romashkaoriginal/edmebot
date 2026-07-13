@@ -107,12 +107,23 @@
   .fmodal__dialog,
   .fmodal__dialog--lg {
     width: 100%;
-    max-height: 94dvh;
+    max-height: 100dvh;
     border-radius: var(--r-lg) var(--r-lg) 0 0;
     animation-name: fmodal-sheet-in;
   }
-  .fmodal__head { padding: var(--sp-3) var(--sp-4); }
-  .fmodal__body { padding: var(--sp-4); padding-bottom: calc(var(--sp-4) + env(safe-area-inset-bottom, 0px)); }
+  .fmodal__head { padding: 9px 12px; }
+  .fmodal__body { padding: 12px; padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+  .fmodal__body .aform { gap: 10px; }
+  .fmodal__body .aform__row { gap: 8px; }
+  .fmodal__body .afield { gap: 4px; }
+  .fmodal__body .aform__actions { padding-top: 0; }
+}
+
+@media (max-height: 720px) and (max-width: 620px) {
+  .fmodal__eyebrow { display: none; }
+  .fmodal__title { font-size: var(--text-md); }
+  .fmodal__close { width: 40px; height: 40px; }
+  .fmodal__body .afield__hint { font-size: 11px; line-height: 1.25; }
 }
 
 @keyframes fmodal-sheet-in {

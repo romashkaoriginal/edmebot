@@ -43,7 +43,8 @@ router.get("/series", async (req, res, next) => {
         ? current.topics.filter((topic) => topic.status !== "green").map((topic) => topic.id)
         : [];
     const { rows } = await db.query(
-      `SELECT id, topic, subject, prompt, options, difficulty, hints
+      `SELECT id, topic, subject, prompt, options, difficulty, hints,
+              correct AS "correctIndex", explanation
          FROM tasks WHERE grade = $1 AND subject = $2
          ORDER BY id ASC`,
       [grade, subject]

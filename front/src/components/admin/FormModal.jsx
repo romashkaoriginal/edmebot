@@ -56,7 +56,7 @@ export default function FormModal({ title, eyebrow, onClose, size = "md", childr
             )}
             <h2 className="fmodal__title">{title}</h2>
           </div>
-          <button className="fmodal__close" type="button" onClick={onClose} aria-label="Закрыть">
+          <button className="fmodal__close" type="button" onClick={onClose} aria-label="Закрыть форму">
             <X size={20} strokeWidth={2.6} />
           </button>
         </header>

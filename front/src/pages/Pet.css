@@ -44,6 +44,13 @@
 .pet-page__plant i:nth-child(2) { left: 15px; transform: rotate(8deg) scale(1.1); }
 .pet-page__plant i:nth-child(3) { right: 6px; transform: rotate(47deg) scale(0.85); }
 .pet-page__rug { position: absolute; z-index: -1; bottom: 14px; width: min(390px, 68%); height: 58px; border: 8px solid oklch(0.95 0.09 82 / 0.75); border-radius: 50%; background: oklch(0.7 0.11 68 / 0.52); }
+.pet-page__lamp { position: absolute; z-index: 0; right: 7%; bottom: 23%; width: 9px; height: 78px; border-radius: var(--r-pill); background: oklch(0.42 0.06 55); }
+.pet-page__lamp::before { position: absolute; top: -15px; left: 50%; width: 52px; height: 30px; border-radius: 26px 26px 8px 8px; background: var(--accent); box-shadow: 0 0 18px oklch(0.84 0.15 82 / 0.65); content: ""; transform: translateX(-50%); }
+.pet-page__lamp i { position: absolute; bottom: -5px; left: 50%; width: 42px; height: 10px; border-radius: 50%; background: oklch(0.36 0.05 55); transform: translateX(-50%); }
+.pet-page__house { position: absolute; z-index: -1; right: 15%; bottom: 23%; width: 92px; height: 66px; border-radius: 8px 8px 3px 3px; background: oklch(0.74 0.12 48); }
+.pet-page__house::before { position: absolute; top: -31px; left: -10px; width: 112px; height: 38px; background: oklch(0.5 0.15 28); clip-path: polygon(50% 0, 100% 100%, 0 100%); content: ""; }
+.pet-page__house i { position: absolute; right: 12px; bottom: 0; width: 24px; height: 38px; border-radius: 12px 12px 0 0; background: oklch(0.32 0.06 48); }
+.pet-page__star { position: absolute; z-index: 0; top: 74px; left: 18%; color: var(--accent); font-size: 2rem; filter: drop-shadow(0 2px 2px oklch(0.5 0.12 75 / 0.25)); }
 
 .pet-page__actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); padding: var(--sp-3) var(--sp-4) var(--sp-4); background: var(--surface); }
 .pet-action { display: inline-flex; min-height: 48px; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); color: var(--ink); font-weight: 800; transition: transform var(--dur-press) var(--ease-out), background-color var(--dur-pop) var(--ease-out); }
@@ -56,7 +63,12 @@
 .pet-page__bond-title { font-weight: 900; }
 .pet-page__bond-body p { margin: 2px 0 8px; color: var(--muted); font-size: var(--text-sm); font-weight: 600; }
 .pet-page__bond-track { height: 7px; overflow: hidden; border-radius: var(--r-pill); background: var(--surface-2); }
-.pet-page__bond-track i { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width 220ms var(--ease-out); }
+.pet-page__bond-track i { display: block; width: 100%; height: 100%; border-radius: inherit; background: var(--accent); transform-origin: left center; transition: transform 220ms var(--ease-out); }
+.pet-page__food-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-2); }
+.pet-food { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 3px 8px; }
+.pet-food__icon { grid-row: 1 / 3; font-size: 1.65rem; }
+.pet-food__name { overflow: hidden; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
+.pet-food .btn { grid-column: 1 / -1; margin-top: 5px; }
 .pet-page__section-head { margin-bottom: var(--sp-3); }
 .pet-page__section-head .section-title { margin: 0; }
 .pet-page__section-head p { margin-top: 4px; color: var(--muted); font-size: var(--text-sm); font-weight: 600; }
@@ -106,7 +118,7 @@
 @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 8px); } }
 @media (min-width: 861px) { .pet-page__toast { bottom: var(--sp-6); } }
 @media (max-width: 760px) { .pet-page__shop { grid-template-columns: repeat(2, minmax(0, 1fr)); }.shopitem { grid-template-columns: 54px minmax(0, 1fr); gap: var(--sp-2); }.shopitem__icon { width: 54px; height: 54px; }.pet-page__change-confirm { grid-template-columns: 1fr; }.pet-page__change-pets { justify-content: center; }.pet-page__change-actions { justify-content: flex-start; } }
-@media (max-width: 560px) { .pet-page { gap: var(--sp-5); }.pet-page__views { align-self: stretch; }.pet-page__views button { flex: 1; justify-content: center; }.pet-page__room { min-height: 300px; }.pet-page__avatar { margin-bottom: 20px; }.pet-page__sun { top: 38px; right: 9%; width: 48px; height: 48px; }.pet-page__plant { left: 5%; scale: 0.8; transform-origin: bottom left; }.pet-page__cloud--one { left: 2%; }.pet-page__actions { padding: var(--sp-2); }.pet-action { min-height: 50px; flex-direction: column; gap: 1px; padding: 5px; font-size: var(--text-xs); }.pet-page__species { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-2); }.petpick { min-height: 134px; }.pet-page__shop { gap: var(--sp-2); }.shopitem { grid-template-columns: 1fr; justify-items: center; gap: 5px; min-height: 166px; text-align: center; }.shopitem .btn, .shopitem__owned, .shopitem__actions { grid-column: 1; justify-self: center; }.shopitem__actions { justify-content: center; }.shopitem__name { max-width: 100%; }.pet-page__mood { bottom: 8px; }.pet-page__room-chip--name { max-width: calc(100% - 112px); }.pet-page__shop-preview { max-width: none; } }
+@media (max-width: 560px) { .pet-page { gap: var(--sp-5); }.pet-page__views { align-self: stretch; }.pet-page__views button { flex: 1; justify-content: center; }.pet-page__room { min-height: 300px; }.pet-page__avatar { margin-bottom: 20px; }.pet-page__sun { top: 38px; right: 9%; width: 48px; height: 48px; }.pet-page__plant { left: 5%; scale: 0.8; transform-origin: bottom left; }.pet-page__cloud--one { left: 2%; }.pet-page__actions { padding: var(--sp-2); }.pet-action { min-height: 50px; flex-direction: column; gap: 1px; padding: 5px; font-size: var(--text-xs); }.pet-page__species { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-2); }.petpick { min-height: 134px; }.pet-page__food-list { gap: 5px; }.pet-food.card--pad-sm { padding: 8px; }.pet-food { grid-template-columns: 1fr; justify-items: center; text-align: center; }.pet-food__icon { grid-row: auto; }.pet-food .btn { width: 100%; padding-inline: 6px; font-size: 12px; }.pet-page__shop { gap: var(--sp-2); }.shopitem { grid-template-columns: 1fr; justify-items: center; gap: 5px; min-height: 166px; text-align: center; }.shopitem .btn, .shopitem__owned, .shopitem__actions { grid-column: 1; justify-self: center; }.shopitem__actions { justify-content: center; }.shopitem__name { max-width: 100%; }.pet-page__mood { bottom: 8px; }.pet-page__room-chip--name { max-width: calc(100% - 112px); }.pet-page__shop-preview { max-width: none; }.pet-page__lamp { right: 5%; scale: 0.82; transform-origin: bottom; }.pet-page__house { right: 7%; scale: 0.82; transform-origin: bottom right; } }
 
 /* First pet choice is onboarding, not the full pet room. */
 .pet-choice { width: min(760px, 100%); margin: auto; padding: var(--sp-5); }

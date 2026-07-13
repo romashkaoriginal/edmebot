@@ -13,6 +13,18 @@ export async function studentFetch(path, options = {}) {
   return data;
 }
 
+let diagnosticRequest = null;
+
+function loadDiagnostic(fresh = false) {
+  if (fresh || !diagnosticRequest) {
+    diagnosticRequest = studentFetch("/api/diagnostic").catch((error) => {
+      diagnosticRequest = null;
+      throw error;
+    });
+  }
+  return diagnosticRequest;
+}
+
 export const studentApi = {
   profile: () => studentFetch("/api/profile"),
   analytics: () => studentFetch("/api/profile/analytics"),
@@ -27,9 +39,14 @@ export const studentApi = {
     return studentFetch(`/api/practice/series?${query}`);
   },
   answer: (payload) => studentFetch("/api/practice/answer", { method: "POST", body: JSON.stringify(payload) }),
-  diagnostic: () => studentFetch("/api/diagnostic"),
+  diagnostic: ({ fresh = false } = {}) => loadDiagnostic(fresh),
+  prefetchDiagnostic: () => loadDiagnostic(false),
   checkDiagnostic: (taskId, selected) => studentFetch("/api/diagnostic/check", { method: "POST", body: JSON.stringify({ taskId, selected }) }),
-  submitDiagnostic: (answers) => studentFetch("/api/diagnostic/submit", { method: "POST", body: JSON.stringify({ answers }) }),
+  submitDiagnostic: async (answers) => {
+    const result = await studentFetch("/api/diagnostic/submit", { method: "POST", body: JSON.stringify({ answers }) });
+    diagnosticRequest = null;
+    return result;
+  },
   pet: () => studentFetch("/api/pet"),
   buyPetItem: (itemId) => studentFetch("/api/pet/buy", { method: "POST", body: JSON.stringify({ itemId }) }),
   renamePet: (name) => studentFetch("/api/pet/rename", { method: "POST", body: JSON.stringify({ name }) }),

@@ -613,7 +613,7 @@ function WizardHeader({ step, subject, grade, topic, onBack, onNavigate }) {
   const crumbs = ["Предмет", "Класс", "Тема", "Вопросы"];
   return (
     <header className="awizard">
-      <div className="awizard__top">
+      <div className="awizard__top apage__head--compact">
         <span className="apage__head-icon apage__head-icon--tasks">
           <ListChecks size={24} strokeWidth={2.4} />
         </span>

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Target, Clock, ListChecks, HelpCircle, ArrowRight } from "lucide-react";
 import Card from "../components/ui/Card";
@@ -5,10 +6,17 @@ import Button from "../components/ui/Button";
 import KnowledgeMap from "../components/shared/KnowledgeMap";
 import SectionTitle from "../components/ui/SectionTitle";
 import { useApp } from "../store/AppStore";
+import { studentApi } from "../api/student";
 import "./Diagnostic.css";
 
 export default function Diagnostic() {
   const { topics, profile } = useApp();
+
+  useEffect(() => {
+    // Warm the whole diagnostic while the student reads the intro. The run
+    // screen reuses this promise, so opening question one needs no new fetch.
+    studentApi.prefetchDiagnostic().catch(() => {});
+  }, []);
 
   return (
     <div className="diag">

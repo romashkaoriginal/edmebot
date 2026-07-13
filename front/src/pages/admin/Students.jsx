@@ -242,7 +242,7 @@ export default function Students() {
             </label>
           </div>
 
-          {!editingId && (
+          {!editingId && !isDemoDraft && (
             <div className="afield">
               <span>Предметы и классы</span>
               <div className="asubject-rows">

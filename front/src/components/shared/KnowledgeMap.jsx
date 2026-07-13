@@ -3,7 +3,7 @@ import ProgressBar from "../ui/ProgressBar";
 import "./KnowledgeMap.css";
 
 const META = {
-  green: { icon: CheckCircle2, label: "Освоено", tone: "success" },
+  green: { icon: CheckCircle2, label: "Уверенно", tone: "success" },
   yellow: { icon: AlertTriangle, label: "Повторить", tone: "warning" },
   red: { icon: XCircle, label: "Слабая тема", tone: "danger" },
 };
@@ -28,7 +28,7 @@ export default function KnowledgeMap({ topics, onPick }) {
               <span className="kmap__name">{t.name}</span>
               <span className={`kmap__status kmap__status--${t.status}`}>{m.label}</span>
               <span className="kmap__bar">
-                <ProgressBar value={t.mastery} tone={m.tone} size="sm" ariaLabel={`${t.name}: освоено ${t.mastery}%`} />
+                <ProgressBar value={t.mastery} tone={m.tone} size="sm" ariaLabel={`${t.name}: уровень уверенности ${t.mastery}%`} />
               </span>
             </Row>
           </li>

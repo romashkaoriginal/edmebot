@@ -179,8 +179,19 @@
 }
 
 .achv__more {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  align-self: center;
+  padding-inline: var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
   font-size: var(--text-sm);
   font-weight: 700;
   color: var(--muted);
   text-align: center;
 }
+.achv__more svg { transition: transform var(--dur-pop) var(--ease-out); }
+.achv__more svg.is-open { transform: rotate(180deg); }

@@ -296,6 +296,26 @@
   white-space: nowrap;
 }
 
+.prof__section-toggle {
+  display: flex;
+  width: 100%;
+  min-height: 62px;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-2);
+  padding: 9px var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+}
+.prof__section-toggle > span { display: flex; flex-direction: column; }
+.prof__section-toggle b { font-size: var(--text-md); }
+.prof__section-toggle small { color: var(--muted); font-size: var(--text-xs); font-weight: 650; }
+.prof__section-toggle > svg { color: var(--muted); transition: transform var(--dur-pop) var(--ease-out); }
+.prof__section-toggle > svg.is-open { transform: rotate(180deg); }
+
 @media (max-width: 560px) {
   .prof__hero {
     flex-wrap: wrap;

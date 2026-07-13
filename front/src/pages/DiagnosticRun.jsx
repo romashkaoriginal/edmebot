@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check, CircleHelp, Info, PartyPopper, RefreshCw, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, CircleHelp, Info, PartyPopper, RefreshCw, X } from "lucide-react";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import OptionList from "../components/shared/OptionList";
@@ -32,7 +32,6 @@ export default function DiagnosticRun() {
   const [done, setDone] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [submitError, setSubmitError] = useState("");
-  const [checking, setChecking] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loadVersion, setLoadVersion] = useState(0);
 
@@ -43,7 +42,7 @@ export default function DiagnosticRun() {
     if (loadVersion === 0) {
       try {
         const cached = JSON.parse(localStorage.getItem(sessionKey) || "null");
-        if (cached && Date.now() - cached.savedAt < SESSION_TTL && cached.questions?.length) {
+        if (cached && Date.now() - cached.savedAt < SESSION_TTL && cached.questions?.length && cached.questions.every((item) => Number.isInteger(item.correctIndex))) {
           setQuestions(cached.questions);
           setIdx(Math.min(cached.idx ?? 0, cached.questions.length - 1));
           setAnswers(cached.answers ?? []);
@@ -57,7 +56,7 @@ export default function DiagnosticRun() {
         localStorage.removeItem(sessionKey);
       }
     }
-    studentApi.diagnostic()
+    studentApi.diagnostic({ fresh: loadVersion > 0 })
       .then((data) => { if (!cancelled) setQuestions(data.questions ?? []); })
       .catch(() => { if (!cancelled) setLoadError("Не удалось загрузить диагностику. Проверь соединение и повтори попытку."); });
     return () => { cancelled = true; };
@@ -89,26 +88,18 @@ export default function DiagnosticRun() {
     setSubmitError("");
   }
 
-  async function selectAnswer(answer) {
-    if (checking || graded) return;
+  function selectAnswer(answer) {
+    if (graded) return;
     setSelected(answer);
-    setChecking(true);
     setSubmitError("");
-    try {
-      const data = await studentApi.checkDiagnostic(question.id, answer);
-      const nextGraded = data.correct ? "correct" : "wrong";
-      const nextFeedback = { correctIndex: data.correctIndex, explanation: data.explanation };
-      setGraded(nextGraded);
-      setFeedback(nextFeedback);
-      setAnswers((items) => [...items.slice(0, idx), { id: question.id, selected: answer }, ...items.slice(idx + 1)]);
-      setResponses((items) => ({ ...items, [idx]: { selected: answer, graded: nextGraded, feedback: nextFeedback } }));
-      if (navigator.vibrate) navigator.vibrate(data.correct ? [24, 32, 24] : 70);
-    } catch {
-      setSelected(null);
-      setSubmitError("Ответ не проверился. Проверь соединение и выбери вариант ещё раз.");
-    } finally {
-      setChecking(false);
-    }
+    const correct = answer === question.correctIndex;
+    const nextGraded = correct ? "correct" : "wrong";
+    const nextFeedback = { correctIndex: question.correctIndex, explanation: question.explanation };
+    setGraded(nextGraded);
+    setFeedback(nextFeedback);
+    setAnswers((items) => [...items.slice(0, idx), { id: question.id, selected: answer }, ...items.slice(idx + 1)]);
+    setResponses((items) => ({ ...items, [idx]: { selected: answer, graded: nextGraded, feedback: nextFeedback } }));
+    if (navigator.vibrate) navigator.vibrate(correct ? [18, 28, 34] : [60, 30, 24]);
   }
 
   async function next() {
@@ -151,22 +142,28 @@ export default function DiagnosticRun() {
         <Card className={`run__question ${graded ? `run__question--${graded}` : ""}`} pad="lg">
           <span className="run__qlabel">Вопрос {idx + 1}</span>
           <h1 className="run__prompt">{question.prompt}</h1>
-          <div className="run__notices" aria-live="polite">{checking && <span className="run__checking">Проверяю…</span>}{submitError && <div className="run__action-error" role="alert">{submitError}</div>}</div>
-          <OptionList options={question.options} selected={selected} onSelect={selectAnswer} state={graded} correctIndex={feedback?.correctIndex} disabled={checking || !!graded} />
-
+          <div className="run__assist">
+            {!graded && <Button variant="ghost" size="sm" icon={CircleHelp} onClick={() => selectAnswer(null)}>Не знаю</Button>}
+            {graded && <Button variant="ghost" size="sm" icon={Info} onClick={() => setShowExplanation((value) => !value)}>{showExplanation ? "Скрыть объяснение" : "Показать объяснение"}</Button>}
+          </div>
+          <div className="run__notices" aria-live="polite">{submitError && <div className="run__action-error" role="alert">{submitError}</div>}</div>
           <AnimatePresence initial={false}>
-            {graded === "correct" && <motion.div className="run__burst" role="status" initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}><span><Check size={18} /> Верно</span>{!reduceMotion && Array.from({ length: 8 }, (_, index) => <i key={index} style={{ "--burst-index": index }} />)}</motion.div>}
             {showExplanation && feedback?.explanation && <motion.div className="run__explanation" initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}><div><strong>Объяснение</strong><button type="button" onClick={() => setShowExplanation(false)} aria-label="Закрыть объяснение"><X size={18} /></button></div><p>{feedback.explanation}</p></motion.div>}
           </AnimatePresence>
+          <OptionList options={question.options} selected={selected} onSelect={selectAnswer} state={graded} correctIndex={feedback?.correctIndex} disabled={!!graded} />
+          {graded === "correct" && <ConfettiBurst reduceMotion={reduceMotion} />}
         </Card>
       </div>
 
       <footer className="run__footer">
         {idx > 0 && <Button variant="ghost" icon={ArrowLeft} onClick={() => restoreQuestion(idx - 1)}>Назад</Button>}
-        {!graded && <Button variant="ghost" icon={CircleHelp} disabled={checking} onClick={() => selectAnswer(null)}>Не знаю</Button>}
-        {graded && <Button variant="ghost" icon={Info} onClick={() => setShowExplanation((value) => !value)}>{showExplanation ? "Скрыть" : "Объяснение"}</Button>}
         {graded && <Button icon={ArrowRight} loading={submitting} onClick={next}>{idx + 1 >= questions.length ? "Завершить" : "Следующее"}</Button>}
       </footer>
     </div>
   );
+}
+
+function ConfettiBurst({ reduceMotion }) {
+  if (reduceMotion) return null;
+  return <div className="run__burst" aria-hidden="true">{Array.from({ length: 18 }, (_, index) => <i key={index} style={{ "--burst-index": index }} />)}</div>;
 }

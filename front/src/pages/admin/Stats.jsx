@@ -57,7 +57,7 @@ export default function Stats() {
 
   return (
     <div className="apage">
-      <header className="apage__head">
+      <header className="apage__head apage__head--compact">
         <span className="apage__head-icon apage__head-icon--stats">
           <BarChart3 size={24} strokeWidth={2.4} />
         </span>

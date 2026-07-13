@@ -424,12 +424,37 @@ function Cap({ anchor }) {
   );
 }
 
+function Crown({ anchor }) {
+  const y = anchor.crownY + 1;
+  const w = Math.min(anchor.crownW, 24);
+  return <g className="acc acc--head"><path d={`M${60 - w} ${y} L${60 - w + 3} ${y - 17} L${51} ${y - 8} L60 ${y - 22} L69 ${y - 8} L${60 + w - 3} ${y - 17} L${60 + w} ${y} Z`} fill="var(--accent)" stroke="oklch(0.58 0.16 70)" strokeWidth="2" /><circle cx="60" cy={y - 12} r="3" fill="var(--primary)" /></g>;
+}
+
+function Headphones({ anchor }) {
+  const [left, right] = anchor.eyeCx;
+  const y = anchor.eyeCy;
+  return <g className="acc acc--ears" fill="none" stroke="var(--primary)" strokeWidth="4"><path d={`M${left - 10} ${y} C${left - 10} ${y - 30} ${right + 10} ${y - 30} ${right + 10} ${y}`} /><rect x={left - 15} y={y - 7} width="9" height="19" rx="4" fill="var(--primary)" /><rect x={right + 6} y={y - 7} width="9" height="19" rx="4" fill="var(--primary)" /></g>;
+}
+
+function Pendant({ anchor }) {
+  const y = anchor.neckY + 2;
+  return <g className="acc acc--neck"><path d={`M44 ${y - 4} Q60 ${y + 18} 76 ${y - 4}`} fill="none" stroke="oklch(0.58 0.14 75)" strokeWidth="2.5" /><circle cx="60" cy={y + 13} r="5" fill="var(--accent)" stroke="oklch(0.58 0.14 75)" strokeWidth="2" /></g>;
+}
+
+function Boots() {
+  return <g className="acc acc--feet" fill="oklch(0.38 0.08 45)"><path d="M36 98 h19 v11 H32 q-4 0-2-5 q2-4 6-6 Z" /><path d="M65 98 h19 q4 2 6 6 q2 5-2 5 H65 Z" /><path d="M38 99 h15" stroke="var(--accent)" strokeWidth="3" /><path d="M67 99 h15" stroke="var(--accent)" strokeWidth="3" /></g>;
+}
+
 const ACCESSORY = {
   scarf: Scarf,
   bowtie: Bowtie,
   glasses: Glasses,
   tophat: TopHat,
   cap: Cap,
+  crown: Crown,
+  headphones: Headphones,
+  pendant: Pendant,
+  boots: Boots,
 };
 
 /**
@@ -443,6 +468,10 @@ const PREVIEW_VIEWBOX = {
   glasses: "32 36 56 30",
   tophat: "32 2 56 30",
   cap: "26 4 68 32",
+  crown: "30 0 60 34",
+  headphones: "28 14 64 56",
+  pendant: "34 60 52 40",
+  boots: "24 92 72 22",
 };
 export function AccessoryPreview({ accessory, size = 44 }) {
   const A = ACCESSORY[accessory];

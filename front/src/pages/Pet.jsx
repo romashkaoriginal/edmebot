@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { Coins, Check, Info, Cookie, Shirt, Heart, Store, Pencil, X, Sparkles, Settings, ArrowRight } from "lucide-react";
+import { Coins, Check, Info, Cookie, Shirt, Heart, Store, Pencil, X, Sparkles, ArrowRight } from "lucide-react";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import SectionTitle from "../components/ui/SectionTitle";
@@ -10,15 +10,15 @@ import { shopItems, petSpecies } from "../data/mock";
 import "./Pet.css";
 
 const CATEGORIES = [
-  { id: "food", label: "Питание" },
   { id: "look", label: "Внешний вид" },
+  { id: "home", label: "Комната" },
 ];
 
 const PET_NAMES = ["Искра", "Плюша", "Финик", "Луна", "Тоша", "Пиксель", "Бусинка", "Персик", "Снежок", "Чип"];
 
 export default function Pet() {
   const { profile, ownedItems, hydrate, setPetSpecies, setPetName } = useApp();
-  const [cat, setCat] = useState("food");
+  const [cat, setCat] = useState("look");
   const [view, setView] = useState("room");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [pendingSpecies, setPendingSpecies] = useState(null);
@@ -64,6 +64,7 @@ export default function Pet() {
     ? Object.values({ ...worn, [previewItem.slot]: previewItem.accessory }).filter(Boolean)
     : wornAccessories;
   const items = shopItems.filter((item) => item.category === cat);
+  const foodItems = shopItems.filter((item) => item.category === "food");
   const ownedFood = shopItems.find((item) => item.category === "food" && ownedItems.includes(item.id));
   const bond = profile.petBond ?? 0;
   const bondLevel = Math.floor(bond / 100) + 1;
@@ -117,9 +118,9 @@ export default function Pet() {
 
   async function feed(item) {
     if (!item) {
-      setView("shop");
-      setCat("food");
-      showFeedback({ type: "poor", text: "Сначала выбери корм — цена будет видна до покупки." });
+      setView("room");
+      requestAnimationFrame(() => document.getElementById("pet-food")?.scrollIntoView({ behavior: "smooth", block: "center" }));
+      showFeedback({ type: "poor", text: "Выбери корм в комнате — цена видна до покупки." });
       return;
     }
     setEating(item.treat ?? item.icon);
@@ -175,7 +176,7 @@ export default function Pet() {
   }
 
   if (!profile.petSelected && profile.onboardingStep === "pet") {
-    return <PetFirstChoice profile={profile} hydrate={hydrate} />;
+    return <PetFirstChoice hydrate={hydrate} />;
   }
 
   return (
@@ -187,7 +188,7 @@ export default function Pet() {
 
       <div className="pet-page__views" role="tablist" aria-label="Разделы питомца">
         <button type="button" role="tab" aria-selected={view === "room"} className={view === "room" ? "is-active" : ""} onClick={() => setView("room")}><Heart size={17} /> Комната</button>
-        <button type="button" role="tab" aria-selected={view === "shop"} className={view === "shop" ? "is-active" : ""} onClick={() => setView("shop")}><Store size={17} /> Предметы</button>
+        <button type="button" role="tab" aria-selected={view === "shop"} className={view === "shop" ? "is-active" : ""} onClick={() => setView("shop")}><Store size={17} /> Каталог</button>
       </div>
 
       {view === "room" && <>
@@ -246,7 +247,10 @@ export default function Pet() {
           <span className="pet-page__cloud pet-page__cloud--one" aria-hidden="true" />
           <span className="pet-page__cloud pet-page__cloud--two" aria-hidden="true" />
           <div className="pet-page__plant" aria-hidden="true"><i /><i /><i /></div>
-          <div className="pet-page__rug" aria-hidden="true" />
+          {ownedItems.includes("s6") && <div className="pet-page__rug" aria-hidden="true" />}
+          {ownedItems.includes("s7") && <div className="pet-page__lamp" aria-hidden="true"><i /></div>}
+          {ownedItems.includes("s12") && <div className="pet-page__house" aria-hidden="true"><i /></div>}
+          {ownedItems.includes("s8") && <div className="pet-page__star" aria-hidden="true">★</div>}
           <div className="pet-page__mood" role="status">{studiedToday ? "Воодушевлён после учёбы" : "Спокоен и готов заниматься"}</div>
           <PetAvatar className="pet-page__avatar" species={profile.pet.species} mood={studiedToday ? "happy" : "idle"} accessories={wornAccessories} reaction={reaction} eating={eating} size={220} />
         </div>
@@ -254,7 +258,7 @@ export default function Pet() {
         <div className="pet-page__actions" aria-label="Забота о питомце">
           <button className="pet-action pet-action--primary" onClick={() => feed(ownedFood)}><Cookie size={19} strokeWidth={2.5} /><span>{ownedFood ? "Покормить" : "Выбрать корм"}</span></button>
           <button className="pet-action" onClick={cheer}><Heart size={19} strokeWidth={2.5} /><span>Погладить</span></button>
-          <button className="pet-action" onClick={() => setView("shop")}><Store size={19} strokeWidth={2.5} /><span>Предметы</span></button>
+          <button className="pet-action" onClick={() => setView("shop")}><Store size={19} strokeWidth={2.5} /><span>Каталог</span></button>
         </div>
       </Card>
 
@@ -263,12 +267,23 @@ export default function Pet() {
         <div className="pet-page__bond-body">
           <div className="pet-page__bond-title">Дружба · уровень {bondLevel}</div>
           <p>Растёт за верные ответы. Ошибки и пропуски её не уменьшают.</p>
-          <div className="pet-page__bond-track" role="progressbar" aria-label="Прогресс дружбы" aria-valuemin="0" aria-valuemax="100" aria-valuenow={bondProgress}><i style={{ width: `${bondProgress}%` }} /></div>
+          <div className="pet-page__bond-track" role="progressbar" aria-label="Прогресс дружбы" aria-valuemin="0" aria-valuemax="100" aria-valuenow={bondProgress}><i style={{ transform: `scaleX(${bondProgress / 100})` }} /></div>
         </div>
       </Card>
 
+      <section className="pet-page__food" id="pet-food">
+        <div className="pet-page__section-head"><SectionTitle>Питание</SectionTitle><p>Корм находится прямо в комнате питомца.</p></div>
+        <div className="pet-page__food-list">
+          {foodItems.map((item) => {
+            const owned = ownedItems.includes(item.id);
+            const afford = profile.coins >= item.price;
+            return <Card key={item.id} className="pet-food" pad="sm"><span className="pet-food__icon" aria-hidden="true">{item.icon}</span><span className="pet-food__name">{item.name}</span>{!owned && <span className="shopitem__price"><Coins size={13} /> {item.price}</span>}<Button size="sm" variant={owned || afford ? "accent" : "soft"} icon={Cookie} disabled={!owned && !afford} loading={busyId === item.id} onClick={async () => owned ? feed(item) : (await purchase(item)) && feed(item)}>{owned ? "Покормить" : `Купить · ${item.price}`}</Button></Card>;
+          })}
+        </div>
+      </section>
+
       <section className="pet-page__collection">
-        <button type="button" className="pet-page__settings-toggle" onClick={() => setSettingsOpen((value) => !value)} aria-expanded={settingsOpen}><Settings size={18} /><span><b>Настройки питомца</b><small>Имя и смена вида</small></span><ArrowRight size={18} className={settingsOpen ? "is-open" : ""} /></button>
+        <button type="button" className="pet-page__settings-toggle" onClick={() => setSettingsOpen((value) => !value)} aria-expanded={settingsOpen}><Sparkles size={18} /><span><b>Сменить питомца</b><small>Смена вида стоит 100 монет</small></span><ArrowRight size={18} className={settingsOpen ? "is-open" : ""} /></button>
         {settingsOpen && <div className="pet-page__settings-panel">
         <div className="pet-page__section-head"><SectionTitle>Сменить питомца · 100 монет</SectionTitle><p>Чтобы вернуться к прежнему виду, потребуется новая смена.</p></div>
         <div className="pet-page__species">
@@ -296,7 +311,7 @@ export default function Pet() {
       </>}
 
       {view === "shop" && <section className="pet-page__shop-section">
-        <div className="pet-page__section-head"><SectionTitle>Предметы за монеты</SectionTitle><p>Цена всегда показана до покупки.</p></div>
+        <div className="pet-page__section-head"><SectionTitle>Каталог питомца</SectionTitle><p>Примеряй одежду или добавляй предметы прямо в комнату.</p></div>
         {cat === "look" && <Card className="pet-page__shop-preview" pad="sm"><PetAvatar species={profile.pet.species} mood="idle" accessories={previewAccessories} size={112} animated={false} /><div><strong>{previewItem ? `Примерка: ${previewItem.name}` : "Текущий образ"}</strong><p>Примерка бесплатна и не меняет сохранённый образ.</p>{previewItem && <button type="button" onClick={() => setPreviewItem(null)}>Сбросить примерку</button>}</div></Card>}
         <div className="pet-page__cats" role="tablist" aria-label="Категории предметов">
           {CATEGORIES.map((category, index) => (
@@ -328,12 +343,10 @@ export default function Pet() {
               <Card key={item.id} className="shopitem" pad="sm">
                 <span className={`shopitem__icon shopitem__icon--${item.category}`} aria-hidden="true">{item.accessory ? <AccessoryPreview accessory={item.accessory} size={52} /> : item.icon}</span>
                 <div className="shopitem__meta"><span className="shopitem__name">{item.name}</span>{!owned && <span className="shopitem__price"><Coins size={13} /> {item.price}</span>}</div>
-                {cat === "food" ? (
-                  <Button size="sm" variant={owned || afford ? "accent" : "soft"} icon={Cookie} disabled={!owned && !afford} loading={busyId === item.id} onClick={async () => owned ? feed(item) : (await purchase(item)) && showFeedback({ type: "ok", name: item.name })}>{owned ? "Покормить" : `Купить за ${item.price}`}</Button>
-                ) : cat === "look" ? (
+                {cat === "look" ? (
                   <div className="shopitem__actions"><Button size="sm" variant="soft" onClick={() => setPreviewItem(item)}>Примерить</Button><Button size="sm" variant={isWorn ? "soft" : owned || afford ? "accent" : "soft"} icon={isWorn ? Check : Shirt} disabled={!owned && !afford} loading={busyId === item.id} onClick={() => wear(item)}>{isWorn ? "Снять" : owned ? "Надеть" : `Купить за ${item.price}`}</Button></div>
                 ) : (
-                  <span />
+                  owned ? <span className="shopitem__owned"><Check size={14} /> В комнате</span> : <Button size="sm" variant={afford ? "accent" : "soft"} icon={Store} disabled={!afford} loading={busyId === item.id} onClick={async () => (await purchase(item)) && showFeedback({ type: "ok", name: item.name })}>Купить за {item.price}</Button>
                 )}
               </Card>
             );
@@ -353,9 +366,9 @@ export default function Pet() {
   );
 }
 
-function PetFirstChoice({ profile, hydrate }) {
+function PetFirstChoice({ hydrate }) {
   const [species, setSpecies] = useState(null);
-  const [name, setName] = useState(profile.pet.name || PET_NAMES[0]);
+  const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [adoptedProfile, setAdoptedProfile] = useState(null);

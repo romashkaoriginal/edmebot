@@ -119,7 +119,9 @@ async function submitDiagnostic(student, answers, subject, questions = null) {
   await ensure(student);
   await updateTopics(student.id, activeSubject, [...byTopic].map(([topicId, stat]) => ({
     topicId,
-    mastery: Math.round((stat.correct / stat.total) * 100),
+    // A single lucky answer must not mark a whole topic as mastered. The
+    // neutral prior keeps 1/1 at 67%, while repeated evidence can reach green.
+    mastery: Math.round(((stat.correct + 1) / (stat.total + 2)) * 100),
   })));
   await db.query("UPDATE student_profiles SET diagnostic_done = TRUE, onboarding_step = 'pet', updated_at = now() WHERE student_id = $1", [student.id]);
   return getState(student, activeSubject);

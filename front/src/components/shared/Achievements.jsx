@@ -1,4 +1,5 @@
-import { Trophy, Lock } from "lucide-react";
+import { useState } from "react";
+import { Trophy, Lock, ChevronDown } from "lucide-react";
 import "./Achievements.css";
 
 /**
@@ -6,9 +7,10 @@ import "./Achievements.css";
  * states, and progress bars for in-progress badges.
  * Set `compact` to cap the number shown (with a "+N ещё" tail).
  */
-export default function Achievements({ items, compact }) {
+export default function Achievements({ items, compact, expandable = false }) {
+  const [expanded, setExpanded] = useState(false);
   const earned = items.filter((a) => a.earned).length;
-  const shown = compact ? items.slice(0, compact) : items;
+  const shown = compact && !expanded ? items.slice(0, compact) : items;
   const rest = compact ? items.length - shown.length : 0;
 
   return (
@@ -58,7 +60,13 @@ export default function Achievements({ items, compact }) {
         ))}
       </div>
 
-      {rest > 0 && <div className="achv__more">и ещё {rest} наград</div>}
+      {expandable && items.length > compact && (
+        <button type="button" className="achv__more" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded}>
+          <ChevronDown size={17} className={expanded ? "is-open" : ""} />
+          {expanded ? "Скрыть остальные" : `Как получить остальные · ещё ${rest}`}
+        </button>
+      )}
+      {!expandable && rest > 0 && <div className="achv__more">и ещё {rest} наград</div>}
     </div>
   );
 }

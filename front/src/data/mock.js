@@ -271,12 +271,17 @@ export const shopItems = [
   { id: "s9", category: "food", name: "Печенье", price: 25, icon: "🍪", treat: "🍪" },
   { id: "s3", category: "look", name: "Шарф", price: 60, icon: "🧣", slot: "neck", accessory: "scarf" },
   { id: "s4", category: "look", name: "Очки", price: 80, icon: "🕶️", slot: "eyes", accessory: "glasses" },
-  { id: "s5", category: "look", name: "Шапка", price: 70, icon: "🎩", slot: "head", accessory: "tophat" },
+  { id: "s5", category: "look", name: "Цилиндр", price: 70, icon: "🎩", slot: "head", accessory: "tophat" },
   { id: "s10", category: "look", name: "Кепка", price: 55, icon: "🧢", slot: "head", accessory: "cap" },
   { id: "s11", category: "look", name: "Бабочка", price: 45, icon: "🎀", slot: "neck", accessory: "bowtie" },
+  { id: "s13", category: "look", name: "Корона", price: 120, icon: "👑", slot: "head", accessory: "crown" },
+  { id: "s14", category: "look", name: "Наушники", price: 95, icon: "🎧", slot: "ears", accessory: "headphones" },
+  { id: "s15", category: "look", name: "Кулон", price: 65, icon: "📿", slot: "neck", accessory: "pendant" },
+  { id: "s16", category: "look", name: "Ботинки", price: 105, icon: "🥾", slot: "feet", accessory: "boots" },
   { id: "s6", category: "home", name: "Коврик", price: 90, icon: "🟫" },
   { id: "s7", category: "home", name: "Лампа", price: 110, icon: "💡" },
-  { id: "s8", category: "collect", name: "Звезда", price: 250, icon: "⭐" },
+  { id: "s12", category: "home", name: "Домик", price: 180, icon: "🏠" },
+  { id: "s8", category: "home", name: "Звезда", price: 250, icon: "⭐" },
 ];
 
 // Weekly activity (module 9): last 7 days of completed tasks

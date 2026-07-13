@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check, Coins, Home, Info, Lightbulb, RefreshCw, X, Zap } from "lucide-react";
+import { ArrowLeft, ArrowRight, Coins, Home, Info, Lightbulb, RefreshCw, X, Zap } from "lucide-react";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import OptionList from "../components/shared/OptionList";
@@ -36,6 +36,7 @@ export default function PracticeRun() {
   const [responses, setResponses] = useState({});
   const [done, setDone] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [pendingSave, setPendingSave] = useState(null);
   const [extending, setExtending] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
   const [actionError, setActionError] = useState("");
@@ -48,7 +49,7 @@ export default function PracticeRun() {
     if (loadVersion === 0) {
       try {
         const cached = JSON.parse(localStorage.getItem(sessionKey) || "null");
-        if (cached && Date.now() - cached.savedAt < SESSION_TTL && Array.isArray(cached.tasks) && cached.tasks.length) {
+        if (cached && Date.now() - cached.savedAt < SESSION_TTL && Array.isArray(cached.tasks) && cached.tasks.length && cached.tasks.every((item) => Number.isInteger(item.correctIndex))) {
           setTasks(cached.tasks);
           setIdx(Math.min(cached.idx ?? 0, cached.tasks.length - 1));
           setSelected(cached.selected ?? null);
@@ -98,6 +99,7 @@ export default function PracticeRun() {
     setHintsUsed(saved?.hintsUsed ?? 0);
     setShowExplanation(false);
     setActionError("");
+    setPendingSave(null);
   }
 
   if (tasks === null) {
@@ -113,26 +115,43 @@ export default function PracticeRun() {
   const task = tasks[idx];
   const topicLabel = topics.find((topic) => topic.id === task.topic && (!task.subject || topic.subject === task.subject))?.name ?? task.topic;
 
-  async function selectAnswer(answer) {
+  function selectAnswer(answer) {
     if (checking || graded) return;
     setSelected(answer);
+    setActionError("");
+    const correct = answer === task.correctIndex;
+    const nextGraded = correct ? "correct" : "wrong";
+    const nextFeedback = {
+      explanation: task.explanation,
+      commonMistake: correct ? null : "Сравни решение с правилом в объяснении и найди шаг, где изменился ответ.",
+      correctIndex: task.correctIndex,
+      award: null,
+    };
+    const response = { selected: answer, graded: nextGraded, feedback: nextFeedback, hintsUsed };
+    setGraded(nextGraded);
+    setFeedback(nextFeedback);
+    setResponses((items) => ({ ...items, [idx]: response }));
+    if (navigator.vibrate) navigator.vibrate(correct ? [18, 28, 34] : [60, 30, 24]);
+    saveAnswer({ answer, nextGraded, nextFeedback, response, correct });
+  }
+
+  async function saveAnswer(payload) {
+    if (checking) return;
+    const { answer, nextFeedback, response, correct } = payload;
     setChecking(true);
+    setPendingSave(payload);
     setActionError("");
     try {
       const data = await studentApi.answer({ taskId: task.id, selected: answer, attempts: 0, hintsUsed });
-      const nextGraded = data.correct ? "correct" : "wrong";
-      const nextFeedback = { explanation: data.explanation, commonMistake: data.commonMistake, correctIndex: data.correctIndex, award: data.award };
+      const savedFeedback = { ...nextFeedback, explanation: data.explanation, commonMistake: data.commonMistake, correctIndex: data.correctIndex, award: data.award };
       hydrate({ profile: data.profile, topics: data.topics });
-      setGraded(nextGraded);
-      setFeedback(nextFeedback);
-      const response = { selected: answer, graded: nextGraded, feedback: nextFeedback, hintsUsed };
-      setResponses((items) => ({ ...items, [idx]: response }));
-      setResults((items) => [...items, { taskId: task.id, correct: data.correct, topic: task.topic, topicLabel, award: data.award }]);
-      if (navigator.vibrate) navigator.vibrate(data.correct ? [24, 32, 24] : 70);
-      if (data.correct) showReward(data.award);
+      setFeedback(savedFeedback);
+      setResponses((items) => ({ ...items, [idx]: { ...response, feedback: savedFeedback } }));
+      setResults((items) => [...items, { taskId: task.id, correct, topic: task.topic, topicLabel, award: data.award }]);
+      setPendingSave(null);
+      if (correct) showReward(data.award);
     } catch {
-      setSelected(null);
-      setActionError("Ответ не сохранился. Проверь соединение и выбери вариант ещё раз.");
+      setActionError("Ответ показан, но пока не сохранён. Проверь соединение и повтори отправку.");
     } finally {
       setChecking(false);
     }
@@ -177,16 +196,17 @@ export default function PracticeRun() {
           <div className="pr__qhead"><span className="run__qlabel">{topicLabel}</span><span className={`pr__diff pr__diff--${task.difficulty}`}>{diffLabel(task.difficulty)}</span></div>
           <h1 className="run__prompt">{task.prompt}</h1>
 
+          <div className="run__assist">
+            {!graded && (task.hints ?? []).length > 0 && <Button variant="ghost" size="sm" icon={Lightbulb} disabled={hintsUsed >= task.hints.length} onClick={() => setHintsUsed((value) => value + 1)}>Подсказка{task.hints.length - hintsUsed > 0 ? ` (${task.hints.length - hintsUsed})` : ""}</Button>}
+            {graded && <Button variant="ghost" size="sm" icon={Info} onClick={() => setShowExplanation((value) => !value)}>{showExplanation ? "Скрыть объяснение" : "Показать объяснение"}</Button>}
+          </div>
+
           <div className="run__notices" aria-live="polite">
-            {checking && <span className="run__checking">Проверяю…</span>}
-            {actionError && <div className="run__action-error" role="alert">{actionError}</div>}
+            {actionError && <div className="run__action-error" role="alert"><span>{actionError}</span>{pendingSave && <button type="button" disabled={checking} onClick={() => saveAnswer(pendingSave)}>Повторить</button>}</div>}
             {hintsUsed > 0 && !graded && <div className="pr__hint"><Lightbulb size={16} /><span>{task.hints[hintsUsed - 1]}</span></div>}
           </div>
 
-          <OptionList options={task.options} selected={selected} onSelect={selectAnswer} state={graded} correctIndex={feedback?.correctIndex} disabled={!!graded || checking} />
-
           <AnimatePresence initial={false}>
-            {graded === "correct" && <RewardBurst reduceMotion={reduceMotion} award={feedback?.award} />}
             {showExplanation && feedback?.explanation && (
               <motion.div className="pr__explanation" initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 }} transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}>
                 <div className="pr__explanation-head"><strong>Объяснение</strong><button type="button" onClick={() => setShowExplanation(false)} aria-label="Закрыть объяснение"><X size={18} /></button></div>
@@ -195,30 +215,22 @@ export default function PracticeRun() {
               </motion.div>
             )}
           </AnimatePresence>
+          <OptionList options={task.options} selected={selected} onSelect={selectAnswer} state={graded} correctIndex={feedback?.correctIndex} disabled={!!graded} />
+          {graded === "correct" && <PracticeConfetti reduceMotion={reduceMotion} />}
         </Card>
       </div>
 
       <footer className="run__footer">
         {idx > 0 && <Button variant="ghost" icon={ArrowLeft} onClick={() => restoreQuestion(idx - 1)}>Назад</Button>}
-        {!graded && (task.hints ?? []).length > 0 && (
-          <Button variant="ghost" icon={Lightbulb} disabled={hintsUsed >= task.hints.length || checking} onClick={() => setHintsUsed((value) => value + 1)}>Подсказка{task.hints.length - hintsUsed > 0 ? ` (${task.hints.length - hintsUsed})` : ""}</Button>
-        )}
-        {graded && <Button variant="ghost" icon={Info} onClick={() => setShowExplanation((value) => !value)}>{showExplanation ? "Скрыть" : "Объяснение"}</Button>}
-        {graded && <Button icon={ArrowRight} loading={extending} onClick={nextTask}>{isEndless ? "Следующее" : idx + 1 >= tasks.length ? "Завершить" : "Следующее"}</Button>}
+        {graded && <Button icon={ArrowRight} loading={extending} disabled={checking || !!pendingSave} onClick={nextTask}>{isEndless ? "Следующее" : idx + 1 >= tasks.length ? "Завершить" : "Следующее"}</Button>}
       </footer>
     </div>
   );
 }
 
-function RewardBurst({ reduceMotion, award }) {
-  const label = <span className="pr__correct-label"><Check size={18} /> Верно <b><Zap size={14} />+{award?.gained ?? 0}</b>{award?.coins > 0 && <b><Coins size={14} />+{award.coins}</b>}</span>;
-  if (reduceMotion) return <span role="status">{label}</span>;
-  return (
-    <motion.div className="pr__burst" role="status" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-      {label}
-      {Array.from({ length: 8 }, (_, index) => <i key={index} style={{ "--burst-index": index }} />)}
-    </motion.div>
-  );
+function PracticeConfetti({ reduceMotion }) {
+  if (reduceMotion) return null;
+  return <div className="pr__burst" aria-hidden="true">{Array.from({ length: 18 }, (_, index) => <i key={index} style={{ "--burst-index": index }} />)}</div>;
 }
 
 function RunError({ message, onRetry }) {
