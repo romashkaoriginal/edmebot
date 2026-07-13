@@ -165,7 +165,16 @@
   .prac__topics--desktop { display: none; }
   .prac__topic-select { display: block; }
   .prac__topic-select select { width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); color: var(--ink); font-weight: 750; }
-  .prac__start { bottom: calc(var(--tabbar-h) + 4px); padding-top: 4px; background: var(--bg); }
+  .prac { padding-bottom: calc(54px + var(--sp-5)); }
+  .prac__start {
+    position: fixed;
+    left: var(--sp-4);
+    right: var(--sp-4);
+    bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 10px);
+    z-index: calc(var(--z-sticky) + 1);
+    padding-top: 0;
+    background: transparent;
+  }
   .prac__start .btn { min-height: 48px; }
   .prac__diagnostic-note { margin-top: 6px; }
 }
