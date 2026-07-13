@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, MessageCircle, Search, X } from "lucide-react";
 import Button from "../ui/Button";
+import useBodyScrollLock from "../../hooks/useBodyScrollLock";
 
 export default function ContactPickerModal({ contacts, isOpen, onClose, onSelect, title = "Выберите контакт" }) {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState("");
   const inputRef = useRef(null);
+  useBodyScrollLock(isOpen);
 
   useEffect(() => {
     if (!isOpen) return undefined;

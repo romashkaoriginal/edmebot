@@ -38,8 +38,11 @@ export default function AdminLayout() {
     <div className="admin">
       <aside className="admin__sidebar">
         <div className="admin__brand">
-          <Logo height={28} />
-          <span className="admin__badge">{user.role === "admin" ? "Админ" : "Репетитор"}</span>
+          <span className="admin__brandmark"><Logo height={32} /></span>
+          <div className="admin__brandcopy">
+            <strong>Панель управления</strong>
+            <span>EDme workspace</span>
+          </div>
         </div>
         <nav className="admin__nav" aria-label="Навигация админ‑панели">
           {nav.map(({ to, label, icon: Icon }) => (
@@ -49,13 +52,25 @@ export default function AdminLayout() {
             </NavLink>
           ))}
         </nav>
-        <Link to="/" className="admin__exit">
-          <LogOut size={18} strokeWidth={2.2} />
-          <span>Выйти</span>
-        </Link>
+        <div className="admin__account">
+          <div className="admin__profile">
+            <span className="admin__avatar" aria-hidden="true">{initials(user.name)}</span>
+            <span className="admin__profilecopy">
+              <strong>{user.name}</strong>
+              <small>{user.role === "admin" ? "Администратор" : "Репетитор"}</small>
+            </span>
+          </div>
+          <Link to="/" className="admin__exit" aria-label="Выйти из панели">
+            <LogOut size={18} strokeWidth={2.2} />
+          </Link>
+        </div>
       </aside>
 
       <div className="admin__main">
+        <header className="admin__mobile-head">
+          <Logo height={30} />
+          <span className="admin__badge">{user.role === "admin" ? "Админ" : "Репетитор"}</span>
+        </header>
         <nav className="admin__tabbar" aria-label="Мобильная навигация">
           {nav.map(({ to, label, icon: Icon }) => (
             <NavLink key={to} to={to} className="admin__tabitem" aria-label={label}>
@@ -70,4 +85,13 @@ export default function AdminLayout() {
       </div>
     </div>
   );
+}
+
+function initials(name) {
+  return String(name || "ED")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0].toUpperCase())
+    .join("");
 }

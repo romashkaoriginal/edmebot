@@ -8,7 +8,7 @@ import { adminApi } from "../../api/admin";
 import "./admin.css";
 
 const SUBJECTS = ["Математика", "Русский"];
-const GRADES = [6, 7, 8, 9, 10, 11];
+const GRADES = [5, 6, 7, 8, 9, 10, 11];
 const EMPTY = { title: "", description: "", due: "", taskIds: [] };
 
 const HW_IMPORT_FIELDS = [
@@ -115,6 +115,7 @@ export default function HomeworkAdmin() {
         </span>
         <div className="apage__head-text">
           <h1>Домашка</h1>
+          <p className="apage__sub">Выдача, дедлайны и контроль выполнения</p>
         </div>
         <div className="apage__head-actions">
           {!student && (

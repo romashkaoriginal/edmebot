@@ -1,6 +1,7 @@
 import { NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
-import { useEffect } from "react";
-import { Target, Dumbbell, PawPrint, BookOpen, User } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { House, Target, Dumbbell, PawPrint, BookOpen, User, RefreshCw } from "lucide-react";
+import Button from "../ui/Button";
 import Logo from "../brand/Logo";
 import { StreakPill } from "../ui/StatPill";
 import RewardOverlay from "./RewardOverlay";
@@ -9,11 +10,11 @@ import { studentApi } from "../../api/student";
 import "./AppLayout.css";
 
 const FULL_NAV = [
+  { to: "/app", label: "Главная", icon: House, end: true },
   { to: "/app/practice", label: "Практика", icon: Dumbbell },
-  { to: "/app/diagnostic", label: "Диагностика", icon: Target },
   { to: "/app/homework", label: "Домашка", icon: BookOpen },
   { to: "/app/pet", label: "Питомец", icon: PawPrint },
-  { to: "/app/profile", label: "Кабинет", icon: User },
+  { to: "/app/profile", label: "Профиль", icon: User },
 ];
 // A self-serve student who hasn't been assigned a subject by staff yet
 // only gets the diagnostic — everything else 403s server-side anyway.
@@ -22,16 +23,39 @@ const PENDING_NAV = [{ to: "/app/diagnostic", label: "Диагностика", i
 export default function AppLayout() {
   const { profile, hydrate, hydrated } = useApp();
   const { pathname } = useLocation();
+  const [loadError, setLoadError] = useState("");
+  const [loadAttempt, setLoadAttempt] = useState(0);
   // Practice/diagnostic run in a focused mode — hide chrome distractions there.
-  const focus = pathname.startsWith("/practice/run") || pathname.startsWith("/diagnostic/run");
+  const focus = pathname.startsWith("/app/practice/run") || pathname.startsWith("/app/diagnostic/run");
   const todayISO = new Date().toISOString().slice(0, 10);
   const doneToday = profile.streakLastDoneOn === todayISO;
   const isActive = profile.status === "active";
   const NAV = isActive ? FULL_NAV : PENDING_NAV;
 
-  useEffect(() => {
-    studentApi.profile().then(hydrate).catch(() => hydrate({ profile: { status: "pending" }, topics: [] }));
+  const loadProfile = useCallback(() => {
+    setLoadError("");
+    studentApi.profile()
+      .then(hydrate)
+      .catch(() => setLoadError("Не удалось загрузить профиль. Проверь соединение и попробуй ещё раз."));
   }, [hydrate]);
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile, loadAttempt]);
+
+  if (loadError && !hydrated) {
+    return (
+      <main className="app__load-state" role="alert">
+        <div className="app__load-state-card">
+          <h1>Профиль не загрузился</h1>
+          <p>{loadError}</p>
+          <Button icon={RefreshCw} onClick={() => setLoadAttempt((value) => value + 1)}>
+            Повторить
+          </Button>
+        </div>
+      </main>
+    );
+  }
 
   if (!hydrated) {
     return <div className="app__loading">Загрузка приложения…</div>;

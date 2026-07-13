@@ -53,4 +53,17 @@ router.post("/:id/complete", async (req, res, next) => {
   }
 });
 
+router.post("/:id/reopen", async (req, res, next) => {
+  try {
+    const { rows } = await db.query(
+      "UPDATE homework SET status = 'active' WHERE id = $1 AND student_id = $2 RETURNING *",
+      [req.params.id, req.student.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: "not_found" });
+    res.json({ ok: true, homework: rows[0] });
+  } catch (e) {
+    next(e);
+  }
+});
+
 module.exports = router;

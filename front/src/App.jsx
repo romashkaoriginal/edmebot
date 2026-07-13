@@ -1,32 +1,36 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import AppLayout from "./components/layout/AppLayout";
 import AdminLayout from "./components/layout/AdminLayout";
 import RequireRole from "./components/admin/RequireRole";
 import AdminIndex from "./components/admin/AdminIndex";
 import { AdminAuthProvider } from "./context/AdminAuth";
-import RoleGate from "./pages/RoleGate";
-import Practice from "./pages/Practice";
-import PracticeRun from "./pages/PracticeRun";
-import Diagnostic from "./pages/Diagnostic";
-import DiagnosticRun from "./pages/DiagnosticRun";
-import Homework from "./pages/Homework";
-import Pet from "./pages/Pet";
-import Profile from "./pages/Profile";
-import Students from "./pages/admin/Students";
-import Users from "./pages/admin/Users";
-import Tasks from "./pages/admin/Tasks";
-import HomeworkAdmin from "./pages/admin/HomeworkAdmin";
-import Stats from "./pages/admin/Stats";
+
+const RoleGate = lazy(() => import("./pages/RoleGate"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Practice = lazy(() => import("./pages/Practice"));
+const PracticeRun = lazy(() => import("./pages/PracticeRun"));
+const Diagnostic = lazy(() => import("./pages/Diagnostic"));
+const DiagnosticRun = lazy(() => import("./pages/DiagnosticRun"));
+const Homework = lazy(() => import("./pages/Homework"));
+const Pet = lazy(() => import("./pages/Pet"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Students = lazy(() => import("./pages/admin/Students"));
+const Users = lazy(() => import("./pages/admin/Users"));
+const Tasks = lazy(() => import("./pages/admin/Tasks"));
+const HomeworkAdmin = lazy(() => import("./pages/admin/HomeworkAdmin"));
+const Stats = lazy(() => import("./pages/admin/Stats"));
 
 export default function App() {
   return (
-    <Routes>
+    <Suspense fallback={<div className="app__loading" role="status">Загружаем раздел…</div>}>
+      <Routes>
       {/* Entry: choose admin or demo student */}
       <Route index element={<RoleGate />} />
 
       {/* Student app */}
       <Route path="app" element={<AppLayout />}>
-        <Route index element={<Navigate to="practice" replace />} />
+        <Route index element={<Dashboard />} />
         <Route path="practice" element={<Practice />} />
         <Route path="practice/run" element={<PracticeRun />} />
         <Route path="diagnostic" element={<Diagnostic />} />
@@ -68,6 +72,7 @@ export default function App() {
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }

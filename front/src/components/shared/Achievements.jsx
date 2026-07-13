@@ -18,7 +18,7 @@ export default function Achievements({ items, compact }) {
           <Trophy size={18} strokeWidth={2.6} />
         </span>
         <span className="achv__count font-display">{earned}</span>
-        <span className="achv__of">из {items.length} наград</span>
+        <span className="achv__of">{earned === items.length ? "получено" : `из ${items.length} наград`}</span>
       </div>
 
       <div className="achv__grid">

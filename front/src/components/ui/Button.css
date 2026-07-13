@@ -31,7 +31,7 @@
 }
 
 .btn--sm {
-  min-height: 36px;
+  min-height: 44px;
   padding-inline: var(--sp-4);
   font-size: var(--text-sm);
   border-radius: var(--r-sm);
@@ -80,7 +80,7 @@
 .btn--soft {
   --_bg: var(--primary-soft);
   --_fg: var(--primary-strong);
-  --_bg-hover: oklch(0.905 0.055 295);
+  --_bg-hover: oklch(0.905 0.055 265);
   --_shadow: none;
 }
 

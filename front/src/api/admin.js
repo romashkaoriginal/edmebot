@@ -79,6 +79,7 @@ export const adminApi = {
 
   // Students
   listStudents: () => req("/students"),
+  listDemoStudents: () => req("/demo-students"),
   createStudent: (s) => req("/students", { method: "POST", body: s }),
   updateStudent: (id, s) => req(`/students/${id}`, { method: "PUT", body: s }),
   deleteStudent: (id) => req(`/students/${id}`, { method: "DELETE" }),
@@ -101,6 +102,7 @@ export const adminApi = {
   },
   taskTopics: ({ grade, subject }) =>
     req(`/tasks/topics?grade=${encodeURIComponent(grade)}&subject=${encodeURIComponent(subject)}`),
+  taskOverview: (subject) => req(`/tasks/overview?subject=${encodeURIComponent(subject)}`),
   createTask: (t) => req("/tasks", { method: "POST", body: t }),
   updateTask: (id, t) => req(`/tasks/${id}`, { method: "PUT", body: t }),
   deleteTask: (id) => req(`/tasks/${id}`, { method: "DELETE" }),

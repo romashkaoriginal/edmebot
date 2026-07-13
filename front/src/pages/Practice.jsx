@@ -1,7 +1,6 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Dumbbell, AlertCircle, ListTree, Play } from "lucide-react";
-import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import SectionTitle from "../components/ui/SectionTitle";
 import { useApp } from "../store/AppStore";
@@ -35,9 +34,18 @@ export default function Practice() {
   const navigate = useNavigate();
   const { topics } = useApp();
   const hasTopics = topics.length > 0;
-  const [mode, setMode] = useState("weak");
-  const [level, setLevel] = useState("auto");
-  const [topic, setTopic] = useState(topics[0]?.id ?? null);
+  const stored = readPracticePrefs();
+  const [mode, setMode] = useState(stored.mode ?? "weak");
+  const [level, setLevel] = useState(stored.level ?? "auto");
+  const [topic, setTopic] = useState(stored.topic ?? topics[0]?.id ?? null);
+
+  useEffect(() => {
+    if (topics[0] && !topics.some((item) => item.id === topic)) setTopic(topics[0].id);
+  }, [topic, topics]);
+
+  useEffect(() => {
+    localStorage.setItem("edme:practice:prefs", JSON.stringify({ mode, level, topic }));
+  }, [level, mode, topic]);
 
   function start() {
     const params = new URLSearchParams({ mode, level });
@@ -68,7 +76,7 @@ export default function Practice() {
                 className={`prac__mode ${mode === m.id ? "prac__mode--on" : ""}`}
                 onClick={() => !disabled && setMode(m.id)}
                 disabled={disabled}
-                title={disabled ? "Сначала пройди диагностику" : undefined}
+                aria-pressed={mode === m.id}
               >
                 <span className={`prac__mode-icon prac__mode-icon--${m.tone}`}>
                   <m.icon size={20} strokeWidth={2.4} />
@@ -81,6 +89,11 @@ export default function Practice() {
             );
           })}
         </div>
+        {!hasTopics && (
+          <p className="prac__diagnostic-note">
+            Выбор темы откроется после диагностики. <Link to="/app/diagnostic">Пройти её сейчас</Link>
+          </p>
+        )}
       </section>
 
       {mode === "topic" && hasTopics && (
@@ -92,6 +105,7 @@ export default function Practice() {
                 key={t.id}
                 className={`prac__chip ${topic === t.id ? "prac__chip--on" : ""}`}
                 onClick={() => setTopic(t.id)}
+                aria-pressed={topic === t.id}
               >
                 {t.name}
               </button>
@@ -108,6 +122,7 @@ export default function Practice() {
               key={l.id}
               className={`prac__level ${level === l.id ? "prac__level--on" : ""}`}
               onClick={() => setLevel(l.id)}
+              aria-pressed={level === l.id}
             >
               <span className="prac__level-label">{l.label}</span>
               <span className="prac__level-desc">{l.desc}</span>
@@ -116,11 +131,19 @@ export default function Practice() {
         </div>
       </section>
 
-      <Card className="prac__start" pad="md">
-        <Button size="lg" full icon={Play} onClick={start}>
-          Поехали!
+      <div className="prac__start">
+        <Button size="lg" full variant="accent" icon={Play} onClick={start}>
+          Начать серию
         </Button>
-      </Card>
+      </div>
     </div>
   );
+}
+
+function readPracticePrefs() {
+  try {
+    return JSON.parse(localStorage.getItem("edme:practice:prefs") || "{}");
+  } catch {
+    return {};
+  }
 }

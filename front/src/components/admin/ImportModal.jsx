@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Upload, Download, X } from "lucide-react";
+import { Upload, Download } from "lucide-react";
 import Button from "../ui/Button";
+import FormModal from "./FormModal";
 import "../../pages/admin/admin.css";
 
 /**
@@ -51,15 +52,7 @@ export default function ImportModal({ title, eyebrow, fields, onDownload, onImpo
   }
 
   return (
-    <div className="contact-picker" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <section className="contact-picker__dialog" role="dialog" aria-modal="true" aria-labelledby="import-title">
-        <header className="contact-picker__head">
-          <div>
-            <p className="contact-picker__eyebrow"><Upload size={15} /> {eyebrow}</p>
-            <h2 id="import-title">{title}</h2>
-          </div>
-          <button className="aicon-btn aicon-btn--close" type="button" onClick={onClose} aria-label="Закрыть"><X size={18} /></button>
-        </header>
+    <FormModal title={title} eyebrow={{ icon: Upload, text: eyebrow }} onClose={onClose} size="lg">
         <form className="aform admin-import" onSubmit={submit}>
           <div className="import-format">
             <strong className="import-format__title">Формат файла (.xlsx)</strong>
@@ -98,7 +91,6 @@ export default function ImportModal({ title, eyebrow, fields, onDownload, onImpo
             <Button type="submit" icon={Upload} disabled={busy || !file}>{busy ? "Загрузка…" : "Загрузить"}</Button>
           </div>
         </form>
-      </section>
-    </div>
+    </FormModal>
   );
 }

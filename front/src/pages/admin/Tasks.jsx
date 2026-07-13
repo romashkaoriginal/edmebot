@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import {
-  ListChecks, Plus, Trash2, X, Upload, Download, ChevronLeft, ChevronRight,
+  ListChecks, Plus, Trash2, X, Upload, ChevronLeft, ChevronRight,
   Calculator, PenLine, Folder, Eye, EyeOff, Pencil, CheckCircle2,
 } from "lucide-react";
 import Button from "../../components/ui/Button";
@@ -26,7 +26,7 @@ const SUBJECTS = [
   { name: "Математика", icon: Calculator, tone: "primary" },
   { name: "Русский", icon: PenLine, tone: "accent" },
 ];
-const GRADES = [6, 7, 8, 9, 10, 11];
+const GRADES = [5, 6, 7, 8, 9, 10, 11];
 const DIFFICULTIES = [
   { id: "easy", label: "Лёгкое" },
   { id: "medium", label: "Среднее" },
@@ -55,6 +55,7 @@ export default function Tasks() {
   const [topic, setTopic] = useState(null);
 
   const [topics, setTopics] = useState([]);
+  const [gradeOverview, setGradeOverview] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -83,6 +84,16 @@ export default function Tasks() {
     }
   }, [subject, grade]);
 
+  const loadGradeOverview = useCallback(async () => {
+    if (!subject) return;
+    try {
+      const { grades } = await adminApi.taskOverview(subject);
+      setGradeOverview(grades ?? []);
+    } catch (e) {
+      setError(e.message);
+    }
+  }, [subject]);
+
   const loadTasks = useCallback(async () => {
     if (!subject || !grade || !topic) return;
     setLoading(true);
@@ -98,6 +109,7 @@ export default function Tasks() {
   }, [subject, grade, topic]);
 
   useEffect(() => { if (subject && grade && !topic) loadTopics(); }, [subject, grade, topic, loadTopics]);
+  useEffect(() => { if (subject && !grade) loadGradeOverview(); }, [subject, grade, loadGradeOverview]);
   useEffect(() => { if (topic) loadTasks(); }, [topic, loadTasks]);
 
   useEffect(() => {
@@ -229,6 +241,20 @@ export default function Tasks() {
     setExpanded(new Set());
   }
 
+  function goToStep(targetStep) {
+    setExpanded(new Set());
+    if (targetStep <= 1) {
+      setSubject(null);
+      setGrade(null);
+      setTopic(null);
+    } else if (targetStep === 2) {
+      setGrade(null);
+      setTopic(null);
+    } else if (targetStep === 3) {
+      setTopic(null);
+    }
+  }
+
   function createTopic(e) {
     e.preventDefault();
     const name = newTopic.trim();
@@ -266,14 +292,19 @@ export default function Tasks() {
   if (!grade) {
     return (
       <div className="apage">
-        <WizardHeader step={2} subject={subject} onBack={() => setSubject(null)} />
+        <WizardHeader step={2} subject={subject} onBack={() => goToStep(1)} onNavigate={goToStep} />
         <div className="agrade-grid">
-          {GRADES.map((g) => (
-            <button key={g} className="agrade" onClick={() => { setGrade(g); setTopic(null); }}>
-              <span className="agrade__num">{g}</span>
-              <span className="agrade__cap">класс</span>
-            </button>
-          ))}
+          {GRADES.map((g) => {
+            const overview = gradeOverview.find((item) => Number(item.grade) === g);
+            const topicCount = overview?.topics ?? 0;
+            return (
+              <button key={g} className="agrade" onClick={() => { setGrade(g); setTopic(null); }}>
+                <span className="agrade__value"><span className="agrade__num">{g}</span><span className="agrade__cap">класс</span></span>
+                <span className="agrade__topics">{topicCount} {plural(topicCount, "тема", "темы", "тем")}</span>
+                <ChevronRight size={18} strokeWidth={2.6} className="agrade__go" />
+              </button>
+            );
+          })}
         </div>
       </div>
     );
@@ -287,12 +318,12 @@ export default function Tasks() {
           step={3}
           subject={subject}
           grade={grade}
-          onBack={() => setGrade(null)}
+          onBack={() => goToStep(2)}
+          onNavigate={goToStep}
         />
         <div className="asection__head">
           <SectionTitle>Темы ({topics.length})</SectionTitle>
           <div className="apage__head-actions">
-            <Button type="button" variant="soft" size="sm" icon={Download} onClick={() => adminApi.downloadTaskTemplate().catch((e) => setError(e.message))}>Шаблон</Button>
             <Button type="button" variant="soft" size="sm" icon={Upload} onClick={() => setImportOpen(true)}>Импорт</Button>
             <Button type="button" size="sm" icon={Plus} onClick={() => { setNewTopic(""); setTopicModalOpen(true); }}>Тема</Button>
             <Button type="button" variant="danger" size="sm" icon={Trash2} onClick={removeTaskBank} disabled={loading || topics.length === 0}>
@@ -372,7 +403,8 @@ export default function Tasks() {
         subject={subject}
         grade={grade}
         topic={topic}
-        onBack={() => setTopic(null)}
+        onBack={() => goToStep(3)}
+        onNavigate={goToStep}
       />
       <div className="asection__head">
         <SectionTitle>Вопросы ({tasks.length})</SectionTitle>
@@ -577,7 +609,7 @@ export default function Tasks() {
   );
 }
 
-function WizardHeader({ step, subject, grade, topic, onBack }) {
+function WizardHeader({ step, subject, grade, topic, onBack, onNavigate }) {
   const crumbs = ["Предмет", "Класс", "Тема", "Вопросы"];
   return (
     <header className="awizard">
@@ -587,6 +619,7 @@ function WizardHeader({ step, subject, grade, topic, onBack }) {
         </span>
         <div className="apage__head-text">
           <h1>Задания</h1>
+          <p className="apage__sub">Банк вопросов по предметам, классам и темам</p>
         </div>
         {onBack && (
           <Button type="button" variant="soft" size="sm" icon={ChevronLeft} onClick={onBack}>Назад</Button>
@@ -603,10 +636,17 @@ function WizardHeader({ step, subject, grade, topic, onBack }) {
             : n === 3 ? (topic || c)
             : c;
           return (
-            <span key={c} className={`awizard__step${active ? " is-active" : ""}${done ? " is-done" : ""}`}>
+            <button
+              type="button"
+              key={c}
+              className={`awizard__step${active ? " is-active" : ""}${done ? " is-done" : ""}`}
+              onClick={done ? () => onNavigate?.(n) : undefined}
+              disabled={!done}
+              aria-current={active ? "step" : undefined}
+            >
               <span className="awizard__step-num">{n}</span>
               <span className="awizard__step-label">{label}</span>
-            </span>
+            </button>
           );
         })}
       </div>

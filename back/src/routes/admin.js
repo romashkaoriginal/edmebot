@@ -2,6 +2,7 @@
 // Admin: students, users, tasks, homework, stats, bonuses.
 // Tutor: tasks, homework, stats only.
 const express = require("express");
+const crypto = require("crypto");
 const db = require("../db");
 const { requireAuth, requireRole } = require("../middleware/auth");
 
@@ -103,9 +104,26 @@ router.delete("/users/:id", requireRole("admin"), async (req, res, next) => {
 router.get("/students", requireRole("admin", "tutor"), async (_req, res, next) => {
   try {
     const { rows } = await db.query(
-      `SELECT s.* FROM students s
+      `SELECT s.*,
+              (s.tg_id = 'demo' OR s.tg_id LIKE 'demo:%') AS is_demo
+         FROM students s
        WHERE NOT EXISTS (SELECT 1 FROM users u WHERE u.tg_id = s.tg_id)
        ORDER BY s.id ASC`
+    );
+    res.json({ students: rows });
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.get("/demo-students", requireRole("admin", "tutor"), async (_req, res, next) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT id, name, grade, subject
+         FROM students
+        WHERE status = 'active'
+          AND (tg_id = 'demo' OR tg_id LIKE 'demo:%')
+        ORDER BY id ASC`
     );
     res.json({ students: rows });
   } catch (e) {
@@ -139,9 +157,22 @@ function fullName(firstName, lastName) {
     .join(" ");
 }
 
+function isDemoTelegramId(value) {
+  return /^(demo|демо)(:|$)/iu.test(String(value ?? "").trim());
+}
+
+function studentTelegramId(value, currentValue = null) {
+  const input = String(value ?? "").trim();
+  if (/^(demo|демо)$/iu.test(input)) {
+    return isDemoTelegramId(currentValue) ? currentValue : `demo:${crypto.randomUUID()}`;
+  }
+  return input;
+}
+
 router.post("/students", requireRole("admin"), async (req, res, next) => {
   try {
-    const { tgId, firstName, lastName } = req.body ?? {};
+    const { firstName, lastName } = req.body ?? {};
+    const tgId = studentTelegramId(req.body?.tgId);
     if (!tgId) return bad(res, "tg_id_required");
     const name = fullName(firstName, lastName);
     if (!name) return bad(res, "name_required");
@@ -174,8 +205,14 @@ router.post("/students", requireRole("admin"), async (req, res, next) => {
 
 router.put("/students/:id", requireRole("admin"), async (req, res, next) => {
   try {
-    const { firstName, lastName, grade, subject, tgId } = req.body ?? {};
+    const { firstName, lastName, grade, subject } = req.body ?? {};
+    let { tgId } = req.body ?? {};
     if (tgId === "") return bad(res, "tg_id_required");
+    if (/^(demo|демо)$/iu.test(String(tgId ?? "").trim())) {
+      const { rows: currentRows } = await db.query("SELECT tg_id FROM students WHERE id = $1", [req.params.id]);
+      if (!currentRows.length) return bad(res, "not_found", 404);
+      tgId = studentTelegramId(tgId, currentRows[0].tg_id);
+    }
     const hasName = firstName != null || lastName != null;
     const name = hasName ? fullName(firstName, lastName) : null;
     if (hasName && !name) return bad(res, "name_required");
@@ -290,6 +327,26 @@ router.post("/students/:id/bonus", requireRole("admin"), async (req, res, next) 
 });
 
 // ---------- Tasks (admin + tutor) ----------
+
+router.get("/tasks/overview", requireRole("admin", "tutor"), async (req, res, next) => {
+  try {
+    const { subject } = req.query;
+    if (!subject) return bad(res, "subject_required");
+    const { rows } = await db.query(
+      `SELECT grade,
+              COUNT(DISTINCT topic)::int AS topics,
+              COUNT(*)::int AS questions
+         FROM tasks
+        WHERE subject = $1
+        GROUP BY grade
+        ORDER BY grade ASC`,
+      [subject]
+    );
+    res.json({ grades: rows });
+  } catch (e) {
+    next(e);
+  }
+});
 
 // Distinct topics for a grade+subject, each with how many questions it holds.
 // Powers the topic step of the tasks wizard (subject → class → topic → questions).
@@ -456,10 +513,38 @@ router.post("/homework", requireRole("admin", "tutor"), async (req, res, next) =
   try {
     const { studentId, title, description, due, taskIds } = req.body ?? {};
     if (!studentId || !title) return bad(res, "studentId_and_title_required");
+    const cleanTitle = String(title).trim();
+    if (!cleanTitle) return bad(res, "studentId_and_title_required");
+    if (due && Number.isNaN(new Date(due).getTime())) return bad(res, "invalid_due_date");
+
+    const submittedTaskIds = Array.isArray(taskIds) ? taskIds : [];
+    const cleanTaskIds = [...new Set(submittedTaskIds.map(Number))];
+    if (cleanTaskIds.some((id) => !Number.isInteger(id) || id <= 0)) {
+      return bad(res, "invalid_task_ids");
+    }
+
+    const { rows: studentRows } = await db.query(
+      "SELECT id, grade, subject FROM students WHERE id = $1 AND status = 'active'",
+      [studentId]
+    );
+    if (!studentRows.length) return bad(res, "student_not_found", 404);
+    const student = studentRows[0];
+
+    if (cleanTaskIds.length) {
+      const { rows: taskRows } = await db.query(
+        `SELECT id FROM tasks
+          WHERE id = ANY($1::bigint[])
+            AND grade = $2
+            AND subject = $3`,
+        [cleanTaskIds, student.grade, student.subject]
+      );
+      if (taskRows.length !== cleanTaskIds.length) return bad(res, "tasks_do_not_match_student");
+    }
+
     const { rows } = await db.query(
       `INSERT INTO homework (student_id, title, description, due, task_ids)
        VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-      [studentId, title, description || null, due || null, JSON.stringify(taskIds ?? [])]
+      [studentId, cleanTitle, String(description ?? "").trim() || null, due || null, JSON.stringify(cleanTaskIds)]
     );
     res.status(201).json({ homework: rows[0] });
   } catch (e) {

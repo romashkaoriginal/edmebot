@@ -18,22 +18,6 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Public: student list for the student-picker in RoleGate (no tg_id exposed).
-// Only "active" (fully provisioned) students are offered here — a
-// self-serve "pending" student has nothing meaningful to view yet.
-app.get('/api/students/list', async (_req, res, next) => {
-  try {
-    const db = require('./src/db');
-    const { rows } = await db.query(
-      `SELECT s.id, s.name, s.grade, s.subject FROM students s
-        WHERE s.status = 'active'
-          AND NOT EXISTS (SELECT 1 FROM users u WHERE u.tg_id = s.tg_id)
-        ORDER BY s.id ASC`
-    );
-    res.json({ students: rows });
-  } catch (e) { next(e); }
-});
-
 // Module routes (no AI — rule-based logic only)
 app.use('/api/profile', require('./src/routes/profile'));
 app.use('/api/diagnostic', require('./src/routes/diagnostic'));

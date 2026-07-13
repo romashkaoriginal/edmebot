@@ -76,7 +76,7 @@
 .acc {
   transform-box: fill-box;
   transform-origin: center;
-  animation: acc-pop 320ms var(--ease-spring) both;
+  animation: acc-pop 320ms var(--ease-emphasis) both;
 }
 @keyframes acc-pop {
   0% {
@@ -91,7 +91,7 @@
 
 /* ---- Reaction: cheer (correct answer / purchase / level-up) ---- */
 .pet--cheer .pet__body {
-  animation: pet-cheer 700ms var(--ease-spring);
+  animation: pet-cheer 700ms var(--ease-emphasis);
 }
 @keyframes pet-cheer {
   0% {
@@ -141,11 +141,11 @@
   }
 }
 
-/* ---- Reaction: wobble (not enough coins / gentle "no") ---- */
+/* ---- Reaction: denied purchase / gentle "no" ---- */
 .pet--wobble .pet__body {
-  animation: pet-wobble 500ms ease-in-out;
+  animation: pet-denied 500ms var(--ease-in-out);
 }
-@keyframes pet-wobble {
+@keyframes pet-denied {
   0%,
   100% {
     transform: rotate(0);

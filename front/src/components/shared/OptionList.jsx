@@ -26,6 +26,7 @@ export default function OptionList({ options, selected, onSelect, state, correct
               className={`opt opt--${mod || "idle"}`}
               onClick={() => onSelect(i)}
               disabled={disabled}
+              aria-pressed={isSelected}
             >
               <span className="opt__marker">{String.fromCharCode(1040 + i)}</span>
               <span className="opt__text">{opt}</span>

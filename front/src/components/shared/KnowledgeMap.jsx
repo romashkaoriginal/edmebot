@@ -16,7 +16,7 @@ export default function KnowledgeMap({ topics, onPick }) {
         const Icon = m.icon;
         const Row = onPick ? "button" : "div";
         return (
-          <li key={t.id}>
+          <li key={`${t.subject ?? "subject"}:${t.id}`}>
             <Row
               className={`kmap__row kmap__row--${t.status}`}
               onClick={onPick ? () => onPick(t) : undefined}
@@ -28,7 +28,7 @@ export default function KnowledgeMap({ topics, onPick }) {
               <span className="kmap__name">{t.name}</span>
               <span className={`kmap__status kmap__status--${t.status}`}>{m.label}</span>
               <span className="kmap__bar">
-                <ProgressBar value={t.mastery} tone={m.tone} size="sm" />
+                <ProgressBar value={t.mastery} tone={m.tone} size="sm" ariaLabel={`${t.name}: освоено ${t.mastery}%`} />
               </span>
             </Row>
           </li>

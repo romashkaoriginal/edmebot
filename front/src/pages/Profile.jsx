@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Flame, Zap, Target, CheckCircle2, Lightbulb, Trophy } from "lucide-react";
+import { Flame, Zap, Target, CheckCircle2, Lightbulb, Trophy, RefreshCw } from "lucide-react";
 import Card from "../components/ui/Card";
 import ProgressBar from "../components/ui/ProgressBar";
 import SectionTitle from "../components/ui/SectionTitle";
 import PetAvatar from "../components/pet/PetAvatar";
 import KnowledgeMap from "../components/shared/KnowledgeMap";
 import Achievements from "../components/shared/Achievements";
+import Button from "../components/ui/Button";
 import { useApp } from "../store/AppStore";
 import { studentApi } from "../api/student";
 import { plural } from "../utils/format";
@@ -21,15 +22,20 @@ export default function Profile() {
 
   // All analytics (solved, accuracy, weekly activity, achievements) come from
   // the backend and reflect real activity — nothing is fabricated.
-  const [dbStats, setDbStats] = useState(null);
-  useEffect(() => {
+  const [analyticsState, setAnalyticsState] = useState({ status: "loading", data: null });
+  const loadAnalytics = useCallback(() => {
+    setAnalyticsState((state) => ({ ...state, status: "loading" }));
     studentApi.analytics()
-      .then(setDbStats)
-      .catch(() => setDbStats(null));
+      .then((data) => setAnalyticsState({ status: "ready", data }))
+      .catch(() => setAnalyticsState({ status: "error", data: null }));
   }, []);
+  useEffect(() => {
+    loadAnalytics();
+  }, [loadAnalytics]);
 
-  const solvedTotal = dbStats?.stats?.solvedTotal ?? 0;
-  const accuracy = dbStats?.stats?.accuracy ?? 0;
+  const dbStats = analyticsState.data;
+  const solvedTotal = dbStats?.stats?.solvedTotal;
+  const accuracy = dbStats?.stats?.accuracy;
   const weekActivity = dbStats?.weekActivity ?? [];
   const achievements = dbStats?.achievements ?? [];
   const maxTasks = Math.max(1, ...weekActivity.map((d) => d.tasks));
@@ -70,12 +76,12 @@ export default function Profile() {
           </span>
         </div>
 
-        <div className="prof__companion">
+        <Link to="/app/pet" className="prof__companion">
           <PetAvatar species={profile.pet.species} mood="happy" size={48} />
           <span className="prof__companion-text">
-            Твой питомец — <b>{profile.pet.name}</b>
+            Награда за учёбу — <b>{profile.pet.name}</b>
           </span>
-        </div>
+        </Link>
       </Card>
 
       {/* Level progress */}
@@ -86,29 +92,37 @@ export default function Profile() {
           </span>
           <span className="prof__xp-sub">до уровня {profile.level + 1}: {xpNeeded - xpInLevel} XP</span>
         </div>
-        <ProgressBar value={xpInLevel} max={xpNeeded} tone="xp" />
+        <ProgressBar value={xpInLevel} max={xpNeeded} tone="xp" ariaLabel={`Прогресс уровня: ${xpInLevel} из ${xpNeeded} XP`} />
       </Card>
 
-      {/* Stat tiles */}
-      <div className="prof__stats">
-        <StatTile icon={CheckCircle2} value={solvedTotal} label="решено заданий" tone="primary" />
-        <StatTile icon={Target} value={`${accuracy}%`} label="правильных" tone="success" />
-        <StatTile icon={Trophy} value={earned.length} label="наград" tone="accent" />
-      </div>
+      {analyticsState.status === "loading" ? (
+        <div className="prof__stats prof__stats--loading" aria-label="Загружаем статистику"><span /><span /><span /></div>
+      ) : analyticsState.status === "error" ? (
+        <Card className="prof__analytics-error" pad="md" role="alert">
+          <p>Не удалось загрузить статистику. Прогресс не потерян.</p>
+          <Button size="sm" variant="soft" icon={RefreshCw} onClick={loadAnalytics}>Повторить</Button>
+        </Card>
+      ) : (
+        <div className="prof__stats">
+          <StatTile icon={CheckCircle2} value={solvedTotal} label="решено заданий" tone="primary" />
+          <StatTile icon={Target} value={`${accuracy}%`} label="правильных" tone="success" />
+          <StatTile icon={Trophy} value={earned.length} label="наград" tone="accent" />
+        </div>
+      )}
 
       {/* Weekly activity — only when there is real activity */}
       {hasActivity && (
         <section>
           <SectionTitle>Активность за неделю</SectionTitle>
           <Card pad="md">
-            <div className="prof__chart">
+            <div className="prof__chart" role="list" aria-label="Количество решённых заданий по дням">
               {weekActivity.map((d) => (
-                <div key={d.day} className="prof__bar-col">
+                <div key={d.day} className="prof__bar-col" role="listitem" aria-label={`${d.day}: ${d.tasks} заданий`}>
                   <div className="prof__bar-wrap">
                     <div
                       className="prof__bar"
                       style={{ height: `${(d.tasks / maxTasks) * 100}%` }}
-                      title={`${d.tasks} заданий`}
+                      aria-hidden="true"
                     >
                       <span className="prof__bar-val">{d.tasks}</span>
                     </div>

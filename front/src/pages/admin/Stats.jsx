@@ -9,7 +9,7 @@ import ProgressBar from "../../components/ui/ProgressBar";
 import { adminApi } from "../../api/admin";
 import "./admin.css";
 
-const GRADES = [6, 7, 8, 9, 10, 11];
+const GRADES = [5, 6, 7, 8, 9, 10, 11];
 const PET_NAMES = { fox: "Лиса", cat: "Кот", owl: "Сова", dragon: "Дракон" };
 
 export default function Stats() {
@@ -63,6 +63,7 @@ export default function Stats() {
         </span>
         <div className="apage__head-text">
           <h1>Статистика</h1>
+          <p className="apage__sub">Прогресс, активность и слабые темы учеников</p>
         </div>
       </header>
 
@@ -130,6 +131,10 @@ export default function Stats() {
                 <div>
                   <h2 className="astats-detail__name">{selected.name}</h2>
                   <p className="arow__meta">{selected.grade} класс · {selected.subject}</p>
+                </div>
+                <div className="aaccuracy" style={{ "--accuracy": `${selected.accuracy}%` }} aria-label={`Точность ${selected.accuracy}%`}>
+                  <span>{selected.accuracy}%</span>
+                  <small>точность</small>
                 </div>
               </div>
 

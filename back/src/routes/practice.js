@@ -30,7 +30,15 @@ router.get("/series", async (req, res, next) => {
          ORDER BY CASE WHEN topic = ANY($3::text[]) THEN 0 ELSE 1 END, id ASC`,
       [grade, subject, weakTopics]
     );
-    const tasks = rows.length ? Array.from({ length }, (_, index) => ({ ...rows[index % rows.length], id: String(rows[index % rows.length].id) })) : [];
+    const requestedTopic = req.query.mode === "topic" ? String(req.query.topic || "") : "";
+    const requestedLevel = ["easy", "medium", "hard"].includes(req.query.level) ? req.query.level : "";
+    const filtered = rows.filter((task) =>
+      (!requestedTopic || task.topic === requestedTopic) &&
+      (!requestedLevel || task.difficulty === requestedLevel)
+    );
+    const tasks = filtered.length
+      ? Array.from({ length }, (_, index) => ({ ...filtered[index % filtered.length], id: String(filtered[index % filtered.length].id) }))
+      : [];
     res.json({ tasks });
   } catch (e) { next(e); }
 });

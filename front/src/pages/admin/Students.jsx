@@ -111,7 +111,7 @@ export default function Students() {
     setForm({
       firstName: s.first_name || s.name || "",
       lastName: s.last_name || "",
-      tgId: s.tg_id || "",
+      tgId: s.is_demo ? "демо" : s.tg_id || "",
       subjects: [{ subject: s.subject || "Математика", grade: s.grade || 7 }],
     });
     setFormOpen(true);
@@ -176,6 +176,7 @@ export default function Students() {
         </span>
         <div className="apage__head-text">
           <h1>Ученики</h1>
+          <p className="apage__sub">Профили, доступы, предметы и тестовые аккаунты</p>
         </div>
         <Button type="button" icon={Plus} onClick={() => { reset(); setFormOpen(true); }}>Добавить</Button>
       </header>
@@ -202,7 +203,7 @@ export default function Students() {
               <small>{contacts.length ? `Доступно новых контактов: ${contacts.length}` : "Новых контактов пока нет: попросите ученика написать боту /start"}</small>
             </div>
           )}
-          <div className="aform__row">
+          <div className="aform__row aform__row--student">
             <label className="afield">
               <span>Имя</span>
               <input
@@ -228,9 +229,12 @@ export default function Students() {
                 className="ainput"
                 value={form.tgId}
                 onChange={(e) => setForm({ ...form, tgId: e.target.value })}
-                placeholder="123456789"
+                placeholder="123456789 или демо"
+                autoCapitalize="none"
+                spellCheck="false"
                 required
               />
+              {!editingId && <small className="afield__hint">Для тестового профиля введите «демо». Система создаст отдельный безопасный демо-аккаунт.</small>}
             </label>
           </div>
 
@@ -373,7 +377,7 @@ export default function Students() {
           <div className="alist">
             {visibleStudents.map((s) => {
               const open = expandedId === s.id;
-              const isDemo = s.tg_id === "demo";
+              const isDemo = Boolean(s.is_demo || /^demo(?::|$)/i.test(s.tg_id || ""));
               return (
                 <div className={`arow arow--card${open ? " is-open" : ""}`} key={s.id}>
                   <div className="arow__lead">

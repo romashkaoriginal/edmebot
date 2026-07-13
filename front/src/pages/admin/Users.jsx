@@ -106,6 +106,7 @@ export default function Users() {
         </span>
         <div className="apage__head-text">
           <h1>Пользователи</h1>
+          <p className="apage__sub">Роли сотрудников и доступ к панели управления</p>
         </div>
         <Button type="button" icon={Plus} onClick={() => { reset(); setFormOpen(true); }}>Добавить</Button>
       </header>

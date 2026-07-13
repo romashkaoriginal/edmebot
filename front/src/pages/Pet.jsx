@@ -19,10 +19,11 @@ const CATEGORIES = [
 ];
 
 export default function Pet() {
-  const { profile, ownedItems, buyItem, setPetSpecies, setPetName } = useApp();
+  const { profile, ownedItems, hydrate, setPetSpecies, setPetName } = useApp();
   const [cat, setCat] = useState("food");
   const [feedback, setFeedback] = useState(null);
-  const [worn, setWorn] = useState({});
+  const [worn, setWorn] = useState(profile.wornItems ?? {});
+  const [busyId, setBusyId] = useState(null);
   const [reaction, setReaction] = useState(null);
   const [eating, setEating] = useState(null);
   const [editingName, setEditingName] = useState(false);
@@ -70,7 +71,7 @@ export default function Pet() {
 
   function showFeedback(payload) {
     setFeedback(payload);
-    clearLater(() => setFeedback(null), 1800);
+    clearLater(() => setFeedback(null), 3500);
   }
 
   function cheer() {
@@ -78,42 +79,58 @@ export default function Pet() {
     clearLater(() => setReaction(null), 750);
   }
 
-  function feed(item) {
-    if (!ownedItems.includes(item.id)) {
-      const ok = buyItem(item);
-      if (!ok) {
-        setReaction("wobble");
-        clearLater(() => setReaction(null), 520);
-        showFeedback({ type: "poor" });
-        return;
-      }
+  async function purchase(item) {
+    if (ownedItems.includes(item.id)) return true;
+    setBusyId(item.id);
+    try {
+      const data = await studentApi.buyPetItem(item.id);
+      hydrate({ profile: data.profile });
+      return true;
+    } catch (error) {
+      setReaction("wobble");
+      clearLater(() => setReaction(null), 520);
+      showFeedback({
+        type: "poor",
+        text: error.message === "not_enough_coins"
+          ? "Не хватает баллов. Реши ещё несколько заданий."
+          : "Покупка не сохранилась. Проверь соединение и попробуй ещё раз.",
+      });
+      return false;
+    } finally {
+      setBusyId(null);
     }
+  }
+
+  async function feed(item) {
+    if (!(await purchase(item))) return;
     setEating(item.treat ?? item.icon);
     clearLater(() => setEating(null), 950);
     clearLater(cheer, 700);
     showFeedback({ type: "fed", name: item.name });
   }
 
-  function wear(item) {
-    if (!ownedItems.includes(item.id)) {
-      const ok = buyItem(item);
-      if (!ok) {
-        setReaction("wobble");
-        clearLater(() => setReaction(null), 520);
-        showFeedback({ type: "poor" });
-        return;
-      }
+  async function wear(item) {
+    if (!(await purchase(item))) return;
+    const nextWorn = {
+      ...worn,
+      [item.slot]: worn[item.slot] === item.accessory ? null : item.accessory,
+    };
+    setBusyId(item.id);
+    try {
+      const data = await studentApi.updatePet({ wornItems: nextWorn });
+      setWorn(nextWorn);
+      hydrate({ profile: data.profile });
+      cheer();
+    } catch {
+      showFeedback({ type: "poor", text: "Не удалось сохранить внешний вид питомца." });
+    } finally {
+      setBusyId(null);
     }
-    setWorn((current) => ({
-      ...current,
-      [item.slot]: current[item.slot] === item.accessory ? null : item.accessory,
-    }));
-    cheer();
   }
 
-  function buyGeneric(item) {
+  async function buyGeneric(item) {
     if (ownedItems.includes(item.id)) return;
-    const ok = buyItem(item);
+    const ok = await purchase(item);
     if (ok) {
       cheer();
       showFeedback({ type: "ok", name: item.name });
@@ -125,11 +142,36 @@ export default function Pet() {
   }
 
   function scrollToShop() {
-    shopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    shopRef.current?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+  }
+
+  async function chooseSpecies(species) {
+    if (profile.pet.species === species || busyId) return;
+    setBusyId(`species:${species}`);
+    try {
+      const data = await studentApi.updatePet({ species });
+      setPetSpecies(species);
+      hydrate({ profile: data.profile });
+      cheer();
+    } catch {
+      showFeedback({ type: "poor", text: "Не удалось сохранить выбор питомца." });
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  function selectCategory(categoryId, index) {
+    setCat(categoryId);
+    requestAnimationFrame(() => document.getElementById(`pet-tab-${index}`)?.focus());
   }
 
   return (
     <div className="pet-page">
+      <header className="pet-page__heading">
+        <h1>Питомец</h1>
+        <p>Награда за регулярную учёбу: практика приносит баллы для ухода и предметов.</p>
+      </header>
       <Card className="pet-page__hero" pad="none">
         <div className="pet-page__room" aria-label={`Комната питомца ${profile.pet.name}`}>
           {editingName ? (
@@ -206,10 +248,16 @@ export default function Pet() {
       </Card>
 
       <section className="pet-page__collection">
-        <div className="pet-page__section-head"><div><p className="pet-page__eyebrow">Коллекция</p><SectionTitle>Выбери друга</SectionTitle></div></div>
+        <div className="pet-page__section-head"><SectionTitle>Выбери питомца</SectionTitle></div>
         <div className="pet-page__species">
           {petSpecies.map((species) => (
-            <button key={species.id} className={`petpick ${profile.pet.species === species.id ? "petpick--on" : ""}`} onClick={() => setPetSpecies(species.id)} aria-pressed={profile.pet.species === species.id}>
+            <button
+              key={species.id}
+              className={`petpick ${profile.pet.species === species.id ? "petpick--on" : ""}`}
+              onClick={() => chooseSpecies(species.id)}
+              disabled={busyId === `species:${species.id}`}
+              aria-pressed={profile.pet.species === species.id}
+            >
               <PetAvatar species={species.id} mood="happy" size={84} />
               <span className="petpick__name">{species.name}</span>
               {profile.pet.species === species.id && <span className="petpick__check"><Check size={13} strokeWidth={3} /></span>}
@@ -219,14 +267,29 @@ export default function Pet() {
       </section>
 
       <section className="pet-page__shop-section" ref={shopRef}>
-        <div className="pet-page__section-head"><div><p className="pet-page__eyebrow">Лавка</p><SectionTitle>Сделай комнату уютнее</SectionTitle></div></div>
+        <div className="pet-page__section-head"><SectionTitle>Предметы за учебные баллы</SectionTitle></div>
         <div className="pet-page__cats" role="tablist" aria-label="Категории предметов">
-          {CATEGORIES.map((category) => (
-            <button key={category.id} className={`pet-page__cat ${cat === category.id ? "pet-page__cat--on" : ""}`} onClick={() => setCat(category.id)} role="tab" aria-selected={cat === category.id}>{category.label}</button>
+          {CATEGORIES.map((category, index) => (
+            <button
+              id={`pet-tab-${index}`}
+              key={category.id}
+              className={`pet-page__cat ${cat === category.id ? "pet-page__cat--on" : ""}`}
+              onClick={() => setCat(category.id)}
+              onKeyDown={(event) => {
+                if (event.key === "ArrowRight") { event.preventDefault(); selectCategory(CATEGORIES[(index + 1) % CATEGORIES.length].id, (index + 1) % CATEGORIES.length); }
+                if (event.key === "ArrowLeft") { event.preventDefault(); selectCategory(CATEGORIES[(index - 1 + CATEGORIES.length) % CATEGORIES.length].id, (index - 1 + CATEGORIES.length) % CATEGORIES.length); }
+              }}
+              role="tab"
+              aria-selected={cat === category.id}
+              aria-controls="pet-shop-panel"
+              tabIndex={cat === category.id ? 0 : -1}
+            >
+              {category.label}
+            </button>
           ))}
         </div>
 
-        <div className="pet-page__shop">
+        <div className="pet-page__shop" id="pet-shop-panel" role="tabpanel" aria-live="polite">
           {items.map((item) => {
             const owned = ownedItems.includes(item.id);
             const afford = profile.coins >= item.price;
@@ -236,13 +299,13 @@ export default function Pet() {
                 <span className={`shopitem__icon shopitem__icon--${item.category}`} aria-hidden="true">{item.accessory ? <AccessoryPreview accessory={item.accessory} size={52} /> : item.icon}</span>
                 <div className="shopitem__meta"><span className="shopitem__name">{item.name}</span>{!owned && <span className="shopitem__price"><Coins size={13} /> {item.price}</span>}</div>
                 {cat === "food" ? (
-                  <Button size="sm" variant={owned || afford ? "accent" : "soft"} icon={Cookie} disabled={!owned && !afford} onClick={() => feed(item)}>{owned ? "Покормить" : "Купить"}</Button>
+                  <Button size="sm" variant={owned || afford ? "accent" : "soft"} icon={Cookie} disabled={!owned && !afford} loading={busyId === item.id} onClick={() => feed(item)}>{owned ? "Покормить" : "Купить"}</Button>
                 ) : cat === "look" ? (
-                  <Button size="sm" variant={isWorn ? "soft" : owned || afford ? "accent" : "soft"} icon={isWorn ? Check : Shirt} disabled={!owned && !afford} onClick={() => wear(item)}>{isWorn ? "Надето" : owned ? "Надеть" : "Купить"}</Button>
+                  <Button size="sm" variant={isWorn ? "soft" : owned || afford ? "accent" : "soft"} icon={isWorn ? Check : Shirt} disabled={!owned && !afford} loading={busyId === item.id} onClick={() => wear(item)}>{isWorn ? "Снять" : owned ? "Надеть" : "Купить"}</Button>
                 ) : owned ? (
                   <span className="shopitem__owned"><Check size={15} strokeWidth={3} /> Куплено</span>
                 ) : (
-                  <Button size="sm" variant={afford ? "accent" : "soft"} icon={Coins} disabled={!afford} onClick={() => buyGeneric(item)}>Купить</Button>
+                  <Button size="sm" variant={afford ? "accent" : "soft"} icon={Coins} disabled={!afford} loading={busyId === item.id} onClick={() => buyGeneric(item)}>Купить</Button>
                 )}
               </Card>
             );
@@ -251,7 +314,7 @@ export default function Pet() {
       </section>
 
       {feedback && (
-        <div className={`pet-page__toast pet-page__toast--${feedback.type === "poor" ? "poor" : "ok"}`} role="status">
+        <div className={`pet-page__toast pet-page__toast--${feedback.type === "poor" ? "poor" : "ok"}`} role="status" aria-live="polite">
           {feedback.text ? <><Info size={16} strokeWidth={2.6} /> {feedback.text}</> :
            feedback.type === "poor" ? <><Info size={16} strokeWidth={2.6} /> Не хватает баллов, реши ещё пару заданий</> :
            feedback.type === "fed" ? <><Check size={16} strokeWidth={3} /> Ням! «{feedback.name}» съедено</> :

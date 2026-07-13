@@ -1,11 +1,11 @@
 .pet-page { display: flex; flex-direction: column; gap: var(--sp-6); padding-bottom: var(--sp-4); }
+.pet-page__heading p { margin-top: 6px; color: var(--muted); font-weight: 600; }
 
 .pet-page__hero { overflow: hidden; border-color: oklch(0.88 0.04 82); background: oklch(0.98 0.025 88); }
-.pet-page__eyebrow { margin: 0 0 2px; color: var(--muted); font-size: var(--text-xs); font-weight: 800; letter-spacing: 0; text-transform: uppercase; }
 
 /* Name + coins live as glass chips inside the scene itself, instead of a
    separate header row above it — one visual language, clearly grouped. */
-.pet-page__room-chip { position: absolute; top: 12px; z-index: 3; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--r-pill); background: oklch(1 0 0 / 0.85); backdrop-filter: blur(6px); box-shadow: var(--shadow-sm); border: none; font-family: inherit; cursor: pointer; }
+.pet-page__room-chip { position: absolute; top: 12px; z-index: 3; display: inline-flex; min-height: 44px; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--r-pill); background: var(--surface); box-shadow: var(--shadow-sm); border: none; font-family: inherit; cursor: pointer; }
 .pet-page__room-chip--name { left: 12px; }
 .pet-page__room-chip--coins { right: 12px; color: oklch(0.5 0.13 75); }
 .pet-page__room-chip--coins .font-display { color: var(--ink); font-size: var(--text-sm); }
@@ -20,7 +20,7 @@
 .pet-page__name-edit { padding: 4px 8px; gap: 6px; }
 .pet-page__name-input { min-width: 0; width: 8ch; padding: 2px 6px; border: 2px solid var(--primary); border-radius: var(--r-sm); background: var(--surface); color: var(--ink); font-size: var(--text-sm); }
 .pet-page__name-input:focus { outline: none; }
-.pet-page__name-btn { display: grid; place-items: center; width: 24px; height: 24px; border-radius: var(--r-sm); background: var(--surface-2); color: var(--ink); flex-shrink: 0; }
+.pet-page__name-btn { display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--r-sm); background: var(--surface-2); color: var(--ink); flex-shrink: 0; }
 .pet-page__name-btn:disabled { opacity: 0.5; }
 
 .pet-page__room { position: relative; display: grid; min-height: 312px; place-items: end center; overflow: hidden; isolation: isolate; padding-bottom: 10px; background: linear-gradient(180deg, oklch(0.9 0.085 210) 0 72%, oklch(0.82 0.08 142) 72% 100%); }
@@ -69,7 +69,7 @@
 
 .pet-page__cats { display: flex; gap: var(--sp-2); margin-bottom: var(--sp-4); overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
 .pet-page__cats::-webkit-scrollbar { display: none; }
-.pet-page__cat { min-height: 38px; flex: 0 0 auto; padding: 0 var(--sp-4); border: 1px solid var(--line); border-radius: var(--r-pill); background: var(--surface); color: var(--muted); font-size: var(--text-sm); font-weight: 800; }
+.pet-page__cat { min-height: 44px; flex: 0 0 auto; padding: 0 var(--sp-4); border: 1px solid var(--line); border-radius: var(--r-pill); background: var(--surface); color: var(--muted); font-size: var(--text-sm); font-weight: 800; }
 .pet-page__cat--on { border-color: var(--primary); background: var(--primary); color: var(--on-primary); }
 .pet-page__shop { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); }
 .shopitem { display: grid; grid-template-columns: 62px minmax(0, 1fr); align-items: center; gap: var(--sp-3); min-height: 112px; }

@@ -11,6 +11,7 @@
   line-height: 1;
   cursor: pointer;
 }
+.statpill:is(button) { min-height: 44px; }
 
 .statpill-wrap {
   position: relative;

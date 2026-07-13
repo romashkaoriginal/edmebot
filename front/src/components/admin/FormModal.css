@@ -5,7 +5,7 @@
   display: grid;
   place-items: center;
   padding: var(--sp-4);
-  background: oklch(0.24 0.055 290 / 0.48);
+  background: oklch(0.2 0.07 263 / 0.56);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   animation: fmodal-fade var(--dur-pop) var(--ease-out);
@@ -20,7 +20,7 @@
   background: var(--surface-solid);
   border: 0;
   border-radius: var(--r-lg);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 8px 18px oklch(0.2 0.08 263 / 0.25);
   animation: fmodal-in var(--dur-modal) var(--ease-out);
 }
 .fmodal__dialog--lg {
@@ -34,20 +34,20 @@
   gap: var(--sp-3);
   padding: var(--sp-4) var(--sp-5);
   border-bottom: 1px solid var(--line);
-  background: var(--primary-soft);
+  background: var(--primary-strong);
 }
 .fmodal__eyebrow {
   display: flex;
   align-items: center;
   gap: 6px;
   margin: 0 0 2px;
-  color: var(--primary-strong);
+  color: var(--accent);
   font-size: var(--text-sm);
   font-weight: 800;
 }
 .fmodal__title {
   margin: 0;
-  color: var(--ink);
+  color: var(--on-primary);
   font-size: var(--text-lg);
   font-weight: 800;
 }
@@ -55,13 +55,13 @@
 .fmodal__close {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
-  border: 1px solid var(--line);
+  border: 0;
   border-radius: var(--r-md);
-  background: var(--surface-solid);
-  color: var(--muted);
+  background: oklch(1 0 0 / 0.14);
+  color: var(--on-primary);
   cursor: pointer;
   transition:
     background var(--dur-pop) var(--ease-out),
@@ -69,8 +69,8 @@
     transform var(--dur-press) var(--ease-out);
 }
 .fmodal__close:hover {
-  background: var(--danger-soft);
-  color: var(--danger);
+  background: oklch(1 0 0 / 0.22);
+  color: var(--on-primary);
 }
 .fmodal__close:active {
   transform: scale(0.94);
@@ -79,6 +79,7 @@
 .fmodal__body {
   overflow-y: auto;
   overscroll-behavior: contain;
+  touch-action: pan-y;
   padding: var(--sp-5);
 }
 
@@ -100,12 +101,21 @@
 
 @media (max-width: 620px) {
   .fmodal {
-    padding: var(--sp-3);
-    place-items: center;
+    padding: 0;
+    place-items: end center;
   }
   .fmodal__dialog,
   .fmodal__dialog--lg {
     width: 100%;
-    max-height: calc(100dvh - 2 * var(--sp-3));
+    max-height: 94dvh;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    animation-name: fmodal-sheet-in;
   }
+  .fmodal__head { padding: var(--sp-3) var(--sp-4); }
+  .fmodal__body { padding: var(--sp-4); padding-bottom: calc(var(--sp-4) + env(safe-area-inset-bottom, 0px)); }
+}
+
+@keyframes fmodal-sheet-in {
+  from { opacity: 0; transform: translateY(100%); }
+  to { opacity: 1; transform: translateY(0); }
 }

@@ -5,19 +5,11 @@ import Logo from "../components/brand/Logo";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import { adminApi, initData, initTelegramWebApp } from "../api/admin";
-import { apiUrl } from "../api/base";
 import { studentApi } from "../api/student";
 import "./RoleGate.css";
 
 const ONBOARD_SUBJECTS = ["Математика", "Русский"];
 const ONBOARD_GRADES = [5, 6, 7, 8, 9, 10, 11];
-
-async function fetchStudentList() {
-  const res = await fetch(apiUrl("/api/students/list"));
-  if (!res.ok) throw new Error("failed");
-  const { students } = await res.json();
-  return students;
-}
 
 export default function RoleGate() {
   const navigate = useNavigate();
@@ -82,7 +74,7 @@ export default function RoleGate() {
   async function openStudentPick() {
     setStudentsLoading(true);
     try {
-      const list = await fetchStudentList();
+      const { students: list } = await adminApi.listDemoStudents();
       setStudents(list);
       setView("student-pick");
     } catch {
@@ -145,10 +137,10 @@ export default function RoleGate() {
         <div className="gate__inner">
           <div className="gate__brand"><Logo height={40} /></div>
           <h1 className="gate__title font-display">Выберите ученика</h1>
-          <p className="gate__sub">Откройте приложение от имени выбранного ученика.</p>
+          <p className="gate__sub">Доступны только демо-ученики — реальные аккаунты нельзя открывать от имени сотрудника.</p>
           <div className="gate__student-list">
             {students.length === 0 ? (
-              <p className="gate__sub">Нет учеников в базе.</p>
+              <p className="gate__sub">Демо-учеников нет. Создайте ученика с Telegram ID «демо».</p>
             ) : (
               students.map((s) => (
                 <Card key={s.id} className="gate__student-row" pad="sm">

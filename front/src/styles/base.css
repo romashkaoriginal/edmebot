@@ -30,8 +30,7 @@ body {
   text-rendering: optimizeLegibility;
   min-height: 100dvh;
   overflow-x: hidden;
-  /* Belt-and-suspenders against pinch-zoom on iOS Safari / Telegram in-app browser */
-  touch-action: pan-x pan-y;
+  touch-action: auto;
 }
 
 h1,
@@ -95,7 +94,7 @@ ol {
 }
 
 :focus-visible {
-  outline: 3px solid oklch(0.47 0.16 292 / 0.42);
+  outline: 3px solid oklch(0.402 0.259 265 / 0.42);
   outline-offset: 2px;
   border-radius: var(--r-sm);
 }

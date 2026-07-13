@@ -68,8 +68,23 @@ async function requireStudent(req, res, next) {
     if (!telegramUser) return res.status(401).json({ error: "telegram_auth_invalid" });
 
     const tgId = String(telegramUser.id);
-    const { rows: staffRows } = await db.query("SELECT 1 FROM users WHERE tg_id = $1", [tgId]);
-    if (staffRows.length) return res.status(403).json({ error: "staff_account" });
+    const { rows: staffRows } = await db.query("SELECT * FROM users WHERE tg_id = $1", [tgId]);
+    if (staffRows.length) {
+      const demoStudentId = req.header("x-demo-student-id");
+      if (!demoStudentId) return res.status(403).json({ error: "staff_account" });
+      const { rows: demoRows } = await db.query(
+        `SELECT * FROM students
+          WHERE id = $1
+            AND status = 'active'
+            AND (tg_id = 'demo' OR tg_id LIKE 'demo:%')`,
+        [demoStudentId]
+      );
+      if (!demoRows.length) return res.status(403).json({ error: "demo_student_required" });
+      req.telegramUser = telegramUser;
+      req.user = staffRows[0];
+      req.student = demoRows[0];
+      return next();
+    }
     await db.query(
       "UPDATE students SET status = 'pending' WHERE tg_id = $1 AND access_until IS NOT NULL AND access_until <= now()",
       [tgId]

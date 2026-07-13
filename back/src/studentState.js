@@ -187,4 +187,27 @@ async function renamePet(student, name) {
   return { state: await getState(student) };
 }
 
-module.exports = { ensure, getState, submitDiagnostic, gradePractice, buyItem, renamePet };
+async function updatePet(student, { species, wornItems } = {}) {
+  const allowedSpecies = new Set(["fox", "raccoon", "squirrel", "owl", "cat"]);
+  if (species !== undefined && !allowedSpecies.has(species)) return { error: "invalid_species" };
+  const state = await getState(student);
+  const nextSpecies = species ?? state.profile.pet.species;
+  let nextWorn = state.profile.wornItems;
+  if (wornItems && typeof wornItems === "object" && !Array.isArray(wornItems)) {
+    const ownedLooks = seed.shopItems.filter((item) =>
+      state.profile.ownedItems.includes(item.id) && item.slot && item.accessory
+    );
+    nextWorn = Object.fromEntries(
+      Object.entries(wornItems).filter(([slot, accessory]) =>
+        accessory === null || ownedLooks.some((item) => item.slot === slot && item.accessory === accessory)
+      )
+    );
+  }
+  await db.query(
+    "UPDATE student_profiles SET pet_species = $2, worn_items = $3, updated_at = now() WHERE student_id = $1",
+    [student.id, nextSpecies, JSON.stringify(nextWorn)]
+  );
+  return { state: await getState(student) };
+}
+
+module.exports = { ensure, getState, submitDiagnostic, gradePractice, buyItem, renamePet, updatePet };
