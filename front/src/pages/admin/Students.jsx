@@ -238,7 +238,6 @@ export default function Students() {
                 spellCheck="false"
                 required
               />
-              {!editingId && <small className="afield__hint">Для тестового профиля введите «демо». Система создаст отдельный безопасный демо-аккаунт.</small>}
             </label>
           </div>
 

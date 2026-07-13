@@ -139,7 +139,7 @@ export default function Profile() {
 
       {/* Knowledge map — only after the diagnostic has assessed topics */}
       {topics.length > 0 ? (
-        <section>
+        <section className="prof__knowledge">
           <button type="button" className="prof__section-toggle" onClick={() => setKnowledgeOpen((value) => !value)} aria-expanded={knowledgeOpen}>
             <span><b>Карта знаний</b><small>Сначала самые слабые · до 10 тем</small></span>
             <ChevronDown size={20} className={knowledgeOpen ? "is-open" : ""} />

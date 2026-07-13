@@ -7,6 +7,7 @@ import Card from "../components/ui/Card";
 import OptionList from "../components/shared/OptionList";
 import { useApp } from "../store/AppStore";
 import { studentApi } from "../api/student";
+import { answerHaptic } from "../utils/haptics";
 import "./RunMode.css";
 import "./PracticeRun.css";
 
@@ -131,7 +132,7 @@ export default function PracticeRun() {
     setGraded(nextGraded);
     setFeedback(nextFeedback);
     setResponses((items) => ({ ...items, [idx]: response }));
-    if (navigator.vibrate) navigator.vibrate(correct ? [18, 28, 34] : [60, 30, 24]);
+    answerHaptic(correct);
     saveAnswer({ answer, nextGraded, nextFeedback, response, correct });
   }
 
@@ -206,24 +207,17 @@ export default function PracticeRun() {
             {hintsUsed > 0 && !graded && <div className="pr__hint"><Lightbulb size={16} /><span>{task.hints[hintsUsed - 1]}</span></div>}
           </div>
 
-          <AnimatePresence initial={false}>
-            {showExplanation && feedback?.explanation && (
-              <motion.div className="pr__explanation" initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 }} transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}>
-                <div className="pr__explanation-head"><strong>Объяснение</strong><button type="button" onClick={() => setShowExplanation(false)} aria-label="Закрыть объяснение"><X size={18} /></button></div>
-                <p>{feedback.explanation}</p>
-                {graded === "wrong" && feedback.commonMistake && <small>{feedback.commonMistake}</small>}
-              </motion.div>
-            )}
-          </AnimatePresence>
           <OptionList options={task.options} selected={selected} onSelect={selectAnswer} state={graded} correctIndex={feedback?.correctIndex} disabled={!!graded} />
           {graded === "correct" && <PracticeConfetti reduceMotion={reduceMotion} />}
+          <div className="run__question-actions">
+            {idx > 0 && <Button variant="soft" icon={ArrowLeft} onClick={() => restoreQuestion(idx - 1)}>Назад</Button>}
+            {graded && <Button icon={ArrowRight} loading={extending} disabled={checking || !!pendingSave} onClick={nextTask}>{isEndless ? "Следующее" : idx + 1 >= tasks.length ? "Завершить" : "Следующее"}</Button>}
+          </div>
         </Card>
       </div>
-
-      <footer className="run__footer">
-        {idx > 0 && <Button variant="ghost" icon={ArrowLeft} onClick={() => restoreQuestion(idx - 1)}>Назад</Button>}
-        {graded && <Button icon={ArrowRight} loading={extending} disabled={checking || !!pendingSave} onClick={nextTask}>{isEndless ? "Следующее" : idx + 1 >= tasks.length ? "Завершить" : "Следующее"}</Button>}
-      </footer>
+      <AnimatePresence initial={false}>
+        {showExplanation && feedback?.explanation && <><motion.button type="button" className="run__sheet-backdrop" aria-label="Закрыть объяснение" onClick={() => setShowExplanation(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} /><motion.aside className="run__explanation-sheet" role="dialog" aria-modal="true" aria-label="Объяснение" initial={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(100%)" }} animate={{ opacity: 1, transform: "translateY(0)" }} exit={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(100%)" }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}><div><strong>Объяснение</strong><button type="button" onClick={() => setShowExplanation(false)} aria-label="Закрыть объяснение"><X size={20} /></button></div><p>{feedback.explanation}</p>{graded === "wrong" && feedback.commonMistake && <small>{feedback.commonMistake}</small>}</motion.aside></>}
+      </AnimatePresence>
     </div>
   );
 }

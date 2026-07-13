@@ -110,11 +110,15 @@ async function submitDiagnostic(student, answers, subject, questions = null) {
   for (const answer of answers) {
     const question = source.find((item) => String(item.id) === String(answer.id));
     if (!question || question.subject !== activeSubject) continue;
-    const stat = byTopic.get(question.topic) ?? { correct: 0, total: 0 };
-    stat.total += 1;
-    if (answer.selected === question.correct) stat.correct += 1;
-    byTopic.set(question.topic, stat);
-    await recordMistake(student.id, question, answer.selected, answer.selected === question.correct);
+    const correct = answer.selected === question.correct;
+    // Diagnostic only discovers gaps. A correct one-off answer is not enough
+    // evidence to add a topic to the knowledge map; practice builds mastery.
+    if (!correct) {
+      const stat = byTopic.get(question.topic) ?? { correct: 0, total: 0 };
+      stat.total += 1;
+      byTopic.set(question.topic, stat);
+    }
+    await recordMistake(student.id, question, answer.selected, correct);
   }
   await ensure(student);
   await updateTopics(student.id, activeSubject, [...byTopic].map(([topicId, stat]) => ({

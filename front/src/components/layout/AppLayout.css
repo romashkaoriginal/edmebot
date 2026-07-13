@@ -191,7 +191,6 @@
 
 /* ---------- Focus mode ---------- */
 .app--focus .app__sidebar,
-.app--focus .app__tabbar,
 .app--focus .app__header {
   display: none;
 }
@@ -274,6 +273,14 @@
     border-top: 1px solid var(--line);
     padding-bottom: env(safe-area-inset-bottom, 0);
   }
+  .app--focus:not(.app--onboarding) .app__main,
+  .app--focus:not(.app--onboarding) .app__content {
+    height: calc(100dvh - var(--tabbar-h) - env(safe-area-inset-bottom, 0px));
+  }
+  .app--focus:not(.app--onboarding) .run {
+    height: calc(100dvh - var(--tabbar-h) - env(safe-area-inset-bottom, 0px));
+  }
+  .app--focus.app--onboarding .app__tabbar { display: none; }
   .tabitem {
     display: flex;
     flex-direction: column;

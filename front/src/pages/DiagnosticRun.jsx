@@ -8,6 +8,7 @@ import OptionList from "../components/shared/OptionList";
 import KnowledgeMap from "../components/shared/KnowledgeMap";
 import { studentApi } from "../api/student";
 import { useApp } from "../store/AppStore";
+import { answerHaptic } from "../utils/haptics";
 import "./RunMode.css";
 
 const SESSION_TTL = 6 * 60 * 60 * 1000;
@@ -99,7 +100,7 @@ export default function DiagnosticRun() {
     setFeedback(nextFeedback);
     setAnswers((items) => [...items.slice(0, idx), { id: question.id, selected: answer }, ...items.slice(idx + 1)]);
     setResponses((items) => ({ ...items, [idx]: { selected: answer, graded: nextGraded, feedback: nextFeedback } }));
-    if (navigator.vibrate) navigator.vibrate(correct ? [18, 28, 34] : [60, 30, 24]);
+    answerHaptic(correct);
   }
 
   async function next() {
@@ -147,18 +148,17 @@ export default function DiagnosticRun() {
             {graded && <Button variant="ghost" size="sm" icon={Info} onClick={() => setShowExplanation((value) => !value)}>{showExplanation ? "Скрыть объяснение" : "Показать объяснение"}</Button>}
           </div>
           <div className="run__notices" aria-live="polite">{submitError && <div className="run__action-error" role="alert">{submitError}</div>}</div>
-          <AnimatePresence initial={false}>
-            {showExplanation && feedback?.explanation && <motion.div className="run__explanation" initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}><div><strong>Объяснение</strong><button type="button" onClick={() => setShowExplanation(false)} aria-label="Закрыть объяснение"><X size={18} /></button></div><p>{feedback.explanation}</p></motion.div>}
-          </AnimatePresence>
           <OptionList options={question.options} selected={selected} onSelect={selectAnswer} state={graded} correctIndex={feedback?.correctIndex} disabled={!!graded} />
           {graded === "correct" && <ConfettiBurst reduceMotion={reduceMotion} />}
+          <div className="run__question-actions">
+            {idx > 0 && <Button variant="soft" icon={ArrowLeft} onClick={() => restoreQuestion(idx - 1)}>Назад</Button>}
+            {graded && <Button icon={ArrowRight} loading={submitting} onClick={next}>{idx + 1 >= questions.length ? "Завершить" : "Следующее"}</Button>}
+          </div>
         </Card>
       </div>
-
-      <footer className="run__footer">
-        {idx > 0 && <Button variant="ghost" icon={ArrowLeft} onClick={() => restoreQuestion(idx - 1)}>Назад</Button>}
-        {graded && <Button icon={ArrowRight} loading={submitting} onClick={next}>{idx + 1 >= questions.length ? "Завершить" : "Следующее"}</Button>}
-      </footer>
+      <AnimatePresence initial={false}>
+        {showExplanation && feedback?.explanation && <><motion.button type="button" className="run__sheet-backdrop" aria-label="Закрыть объяснение" onClick={() => setShowExplanation(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} /><motion.aside className="run__explanation-sheet" role="dialog" aria-modal="true" aria-label="Объяснение" initial={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(100%)" }} animate={{ opacity: 1, transform: "translateY(0)" }} exit={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(100%)" }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}><div><strong>Объяснение</strong><button type="button" onClick={() => setShowExplanation(false)} aria-label="Закрыть объяснение"><X size={20} /></button></div><p>{feedback.explanation}</p></motion.aside></>}
+      </AnimatePresence>
     </div>
   );
 }
