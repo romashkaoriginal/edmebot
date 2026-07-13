@@ -201,7 +201,7 @@ export default function Students() {
                   {selectedContact ? "Изменить" : "Выбрать из чата"}
                 </Button>
               </div>
-              <small>{contacts.length ? `Доступно новых контактов: ${contacts.length}` : "Новых контактов пока нет: попросите ученика написать боту /start"}</small>
+              {contacts.length > 0 && <small>Доступно новых контактов: {contacts.length}</small>}
             </div>
           )}
           {!editingId && isDemoDraft && (

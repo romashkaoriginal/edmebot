@@ -8,14 +8,14 @@ router.use(requireStudent);
 
 // Achievements are computed from REAL signals — never pre-granted. Each has a
 // predicate over the student's actual profile/stats, so a new student sees an
-// honest (possibly empty) list that fills in as they earn things.
+// honest list with locked conditions that fills in as they earn things.
 const ACHIEVEMENTS = [
-  { id: "diagnostic", name: "Первый шаг", desc: "Пройден входной тест", icon: "🎯", when: (p) => p.profile.diagnosticDone },
-  { id: "first_task", name: "Разминка", desc: "Первое решённое задание", icon: "✏️", when: (p) => p.stats.solvedTotal >= 1 },
-  { id: "ten_tasks", name: "Десятка", desc: "10 решённых заданий", icon: "🔟", when: (p) => p.stats.solvedTotal >= 10 },
-  { id: "fifty_tasks", name: "Полусотка", desc: "50 решённых заданий", icon: "💯", when: (p) => p.stats.solvedTotal >= 50 },
-  { id: "streak_7", name: "Неделя в строю", desc: "Стрик 7 дней", icon: "🔥", when: (p) => p.profile.streak >= 7 },
-  { id: "level_5", name: "Пятый уровень", desc: "Достигнут 5 уровень", icon: "⬆️", when: (p) => p.profile.level >= 5 },
+  { id: "diagnostic", name: "Первый шаг", desc: "Пройди входной тест", icon: "🎯", tier: "bronze", when: (p) => p.profile.diagnosticDone },
+  { id: "first_task", name: "Разминка", desc: "Реши первое задание", icon: "✏️", tier: "bronze", when: (p) => p.stats.solvedTotal >= 1, progress: (p) => ({ cur: Math.min(p.stats.solvedTotal, 1), max: 1 }) },
+  { id: "ten_tasks", name: "Десятка", desc: "Реши 10 заданий", icon: "🔟", tier: "silver", when: (p) => p.stats.solvedTotal >= 10, progress: (p) => ({ cur: Math.min(p.stats.solvedTotal, 10), max: 10 }) },
+  { id: "fifty_tasks", name: "Полусотка", desc: "Реши 50 заданий", icon: "💯", tier: "gold", when: (p) => p.stats.solvedTotal >= 50, progress: (p) => ({ cur: Math.min(p.stats.solvedTotal, 50), max: 50 }) },
+  { id: "streak_7", name: "Неделя в строю", desc: "Сохраняй стрик 7 дней", icon: "🔥", tier: "silver", when: (p) => p.profile.streak >= 7, progress: (p) => ({ cur: Math.min(p.profile.streak, 7), max: 7 }) },
+  { id: "level_5", name: "Пятый уровень", desc: "Достигни 5 уровня", icon: "⬆️", tier: "gold", when: (p) => p.profile.level >= 5, progress: (p) => ({ cur: Math.min(p.profile.level, 5), max: 5 }) },
   { id: "green_topic", name: "Знаток", desc: "Тема освоена на зелёный", icon: "🧩", when: (p) => p.topics.some((t) => t.status === "green") },
 ];
 
@@ -87,9 +87,10 @@ router.get("/analytics", async (req, res, next) => {
       avgTimeSec: 0,
     };
     const forPredicate = { ...current, stats };
-    const achievements = ACHIEVEMENTS
-      .filter((a) => a.when(forPredicate))
-      .map(({ when, ...a }) => ({ ...a, earned: true }));
+    const achievements = ACHIEVEMENTS.map(({ when, progress, ...achievement }) => {
+      const earned = when(forPredicate);
+      return { ...achievement, earned, ...(!earned && progress ? { progress: progress(forPredicate) } : {}) };
+    });
     res.json({
       ...current,
       stats,

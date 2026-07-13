@@ -7,8 +7,10 @@ import "./Achievements.css";
  * states, and progress bars for in-progress badges.
  * Set `compact` to cap the number shown (with a "+N ещё" tail).
  */
-export default function Achievements({ items, compact, expandable = false }) {
-  const [expanded, setExpanded] = useState(false);
+export default function Achievements({ items, compact, expandable = false, expanded: controlledExpanded, onExpandedChange, showToggle = true }) {
+  const [internalExpanded, setInternalExpanded] = useState(false);
+  const expanded = controlledExpanded ?? internalExpanded;
+  const setExpanded = onExpandedChange ?? setInternalExpanded;
   const earned = items.filter((a) => a.earned).length;
   const shown = compact && !expanded ? items.slice(0, compact) : items;
   const rest = compact ? items.length - shown.length : 0;
@@ -60,7 +62,7 @@ export default function Achievements({ items, compact, expandable = false }) {
         ))}
       </div>
 
-      {expandable && items.length > compact && (
+      {showToggle && expandable && items.length > compact && (
         <button type="button" className="achv__more" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded}>
           <ChevronDown size={17} className={expanded ? "is-open" : ""} />
           {expanded ? "Скрыть остальные" : `Как получить остальные · ещё ${rest}`}

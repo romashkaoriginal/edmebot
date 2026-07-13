@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Flame, Zap, Target, CheckCircle2, Lightbulb, Trophy, RefreshCw, ChevronDown } from "lucide-react";
+import { Flame, Zap, Target, CheckCircle2, Lightbulb, Trophy, RefreshCw, ChevronDown, ListChecks } from "lucide-react";
 import Card from "../components/ui/Card";
 import ProgressBar from "../components/ui/ProgressBar";
 import SectionTitle from "../components/ui/SectionTitle";
@@ -13,6 +13,8 @@ import { studentApi } from "../api/student";
 import { plural } from "../utils/format";
 import "./Profile.css";
 
+let analyticsCache = null;
+
 export default function Profile() {
   const { profile, topics } = useApp();
   const xpInLevel = profile.xp - profile.xpFromLevel;
@@ -20,19 +22,27 @@ export default function Profile() {
   const weak = topics.filter((t) => t.status === "red");
   const strong = topics.filter((t) => t.status === "green");
   const [knowledgeOpen, setKnowledgeOpen] = useState(false);
+  const [achievementsOpen, setAchievementsOpen] = useState(false);
   const visibleTopics = [...topics].sort((a, b) => a.mastery - b.mastery).slice(0, 10);
 
   // All analytics (solved, accuracy, weekly activity, achievements) come from
   // the backend and reflect real activity — nothing is fabricated.
-  const [analyticsState, setAnalyticsState] = useState({ status: "loading", data: null });
-  const loadAnalytics = useCallback(() => {
-    setAnalyticsState((state) => ({ ...state, status: "loading" }));
+  const [analyticsState, setAnalyticsState] = useState(() => analyticsCache
+    ? { status: "ready", data: analyticsCache }
+    : { status: "loading", data: null });
+  const loadAnalytics = useCallback(({ quiet = false } = {}) => {
+    if (!quiet) setAnalyticsState((state) => ({ ...state, status: "loading" }));
     studentApi.analytics()
-      .then((data) => setAnalyticsState({ status: "ready", data }))
-      .catch(() => setAnalyticsState({ status: "error", data: null }));
+      .then((data) => {
+        analyticsCache = data;
+        setAnalyticsState({ status: "ready", data });
+      })
+      .catch(() => {
+        if (!analyticsCache) setAnalyticsState({ status: "error", data: null });
+      });
   }, []);
   useEffect(() => {
-    loadAnalytics();
+    loadAnalytics({ quiet: Boolean(analyticsCache) });
   }, [loadAnalytics]);
 
   const dbStats = analyticsState.data;
@@ -178,11 +188,11 @@ export default function Profile() {
         </section>
       )}
 
-      {/* Achievements — only earned ones (backend returns real ones) */}
+      {/* Achievements include locked conditions so the student knows what to do next. */}
       {achievements.length > 0 && (
         <section>
-          <SectionTitle>Достижения</SectionTitle>
-          <Achievements items={achievements} compact={6} expandable />
+          <SectionTitle action={<button type="button" className="prof__achievements-button" onClick={() => setAchievementsOpen((value) => !value)} aria-expanded={achievementsOpen}><ListChecks size={17} />{achievementsOpen ? "Скрыть список" : "Все и условия"}</button>}>Достижения</SectionTitle>
+          <Achievements items={achievements} compact={6} expandable expanded={achievementsOpen} onExpandedChange={setAchievementsOpen} showToggle={false} />
         </section>
       )}
     </div>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Coins, Home, Info, Lightbulb, RefreshCw, X, Zap } from "lucide-react";
+import { ArrowLeft, ArrowRight, Coins, Flame, Home, Info, Lightbulb, RefreshCw, X, Zap } from "lucide-react";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import OptionList from "../components/shared/OptionList";
@@ -17,7 +17,7 @@ export default function PracticeRun() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const reduceMotion = useReducedMotion();
-  const { hydrate, topics, showReward } = useApp();
+  const { hydrate, topics, profile } = useApp();
   const settingsString = searchParams.toString();
   const isEndless = searchParams.get("mode") === "endless";
   const sessionKey = useMemo(() => {
@@ -41,6 +41,7 @@ export default function PracticeRun() {
   const [extending, setExtending] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
   const [actionError, setActionError] = useState("");
+  const [liveAward, setLiveAward] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -150,7 +151,10 @@ export default function PracticeRun() {
       setResponses((items) => ({ ...items, [idx]: { ...response, feedback: savedFeedback } }));
       setResults((items) => [...items, { taskId: task.id, correct, topic: task.topic, topicLabel, award: data.award }]);
       setPendingSave(null);
-      if (correct) showReward(data.award);
+      if (correct && (data.award?.gained || data.award?.coins)) {
+        setLiveAward({ ...data.award, id: Date.now() });
+        window.setTimeout(() => setLiveAward(null), 950);
+      }
     } catch {
       setActionError("Ответ показан, но пока не сохранён. Проверь соединение и повтори отправку.");
     } finally {
@@ -188,8 +192,7 @@ export default function PracticeRun() {
     <div className="run run--practice">
       <header className="run__top run__top--calm">
         <button className="run__close" onClick={exitRun} aria-label="Выйти из практики"><X size={22} strokeWidth={2.4} /></button>
-        <span className="run__mode-label">Практика без таймера</span>
-        <span className="run__calm-dot" aria-hidden="true" />
+        <LivePracticeStats profile={profile} award={liveAward} />
       </header>
 
       <div className="run__body">
@@ -208,7 +211,6 @@ export default function PracticeRun() {
           </div>
 
           <OptionList options={task.options} selected={selected} onSelect={selectAnswer} state={graded} correctIndex={feedback?.correctIndex} disabled={!!graded} />
-          {graded === "correct" && <PracticeConfetti reduceMotion={reduceMotion} />}
           <div className="run__question-actions">
             {idx > 0 && <Button variant="soft" icon={ArrowLeft} onClick={() => restoreQuestion(idx - 1)}>Назад</Button>}
             {graded && <Button icon={ArrowRight} loading={extending} disabled={checking || !!pendingSave} onClick={nextTask}>{isEndless ? "Следующее" : idx + 1 >= tasks.length ? "Завершить" : "Следующее"}</Button>}
@@ -222,9 +224,17 @@ export default function PracticeRun() {
   );
 }
 
-function PracticeConfetti({ reduceMotion }) {
-  if (reduceMotion) return null;
-  return <div className="pr__burst" aria-hidden="true">{Array.from({ length: 18 }, (_, index) => <i key={index} style={{ "--burst-index": index }} />)}</div>;
+function LivePracticeStats({ profile, award }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const lit = profile.streakLastDoneOn === today;
+  const xpInLevel = Math.max(0, profile.xp - profile.xpFromLevel);
+  const xpNeeded = Math.max(1, profile.xpForNext - profile.xpFromLevel);
+  const progress = Math.min(1, xpInLevel / xpNeeded);
+  return <div className="run__live-stats" aria-label="Прогресс ученика">
+    <span className={`run__live-stat run__live-stat--streak ${lit ? "is-lit" : ""} ${award ? "is-celebrating" : ""}`}><Flame size={17} /><b>{profile.streak}</b></span>
+    <span className="run__live-stat run__live-stat--coins"><Coins size={16} /><b>{profile.coins}</b>{award?.coins > 0 && <i key={`c-${award.id}`} className="run__live-gain">+{award.coins}</i>}</span>
+    <span className="run__live-stat run__live-level"><span className="run__live-level-copy"><small>ур. {profile.level}</small><b>{profile.xp} XP</b></span><span className="run__live-level-track"><i style={{ transform: `scaleX(${progress})` }} /></span>{award?.gained > 0 && <i key={`x-${award.id}`} className="run__live-gain">+{award.gained} XP</i>}</span>
+  </div>;
 }
 
 function RunError({ message, onRetry }) {

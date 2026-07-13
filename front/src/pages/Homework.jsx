@@ -13,11 +13,13 @@ const FILTERS = [
   { id: "done", label: "Выполнено" },
 ];
 
+let homeworkCache = null;
+
 export default function Homework() {
-  const [homework, setHomework] = useState([]);
-  const [counts, setCounts] = useState({ active: 0, overdue: 0 });
+  const [homework, setHomework] = useState(() => homeworkCache?.homework ?? []);
+  const [counts, setCounts] = useState(() => homeworkCache?.counts ?? { active: 0, overdue: 0 });
   const [filter, setFilter] = useState("all");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !homeworkCache);
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState(null);
   const [undoItem, setUndoItem] = useState(null);
@@ -27,8 +29,10 @@ export default function Homework() {
     setError("");
     try {
       const data = await studentApi.homework();
-      setHomework(data.homework ?? []);
-      setCounts(data.counts ?? { active: 0, overdue: 0 });
+      const next = { homework: data.homework ?? [], counts: data.counts ?? { active: 0, overdue: 0 } };
+      homeworkCache = next;
+      setHomework(next.homework);
+      setCounts(next.counts);
     } catch {
       setError("Не удалось загрузить домашние задания. Проверь соединение и повтори попытку.");
     } finally {
@@ -37,7 +41,7 @@ export default function Homework() {
   }, []);
 
   useEffect(() => {
-    load();
+    load({ quiet: Boolean(homeworkCache) });
   }, [load]);
 
   async function complete(item) {

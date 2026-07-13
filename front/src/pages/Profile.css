@@ -107,6 +107,10 @@
   font-weight: 600;
 }
 
+.prof__achievements-button { display: inline-flex; min-height: 44px; align-items: center; gap: 6px; padding: 0 12px; border-radius: var(--r-md); background: var(--primary-soft); color: var(--primary-strong); font-size: var(--text-sm); font-weight: 800; transition: transform 160ms var(--ease-out), background-color 160ms var(--ease-out); }
+.prof__achievements-button:active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) { .prof__achievements-button:hover { background: color-mix(in oklch, var(--primary-soft) 76%, var(--primary)); } }
+
 /* Stat tiles */
 .prof__stats {
   display: grid;
