@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Coins, Flame, Home, Info, Lightbulb, RefreshCw, X, Zap } from "lucide-react";
+import { ArrowLeft, ArrowRight, Coins, Home, Info, Lightbulb, RefreshCw, X, Zap } from "lucide-react";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import OptionList from "../components/shared/OptionList";
@@ -231,7 +231,7 @@ function LivePracticeStats({ profile, award }) {
   const xpNeeded = Math.max(1, profile.xpForNext - profile.xpFromLevel);
   const progress = Math.min(1, xpInLevel / xpNeeded);
   return <div className="run__live-stats" aria-label="Прогресс ученика">
-    <span className={`run__live-stat run__live-stat--streak ${lit ? "is-lit" : ""} ${award ? "is-celebrating" : ""}`}><Flame size={17} /><b>{profile.streak}</b></span>
+    <span className={`run__live-stat run__live-stat--streak ${lit ? "is-lit" : ""} ${award ? "is-celebrating" : ""}`}><span className="run__live-flame" aria-hidden="true">🔥</span><b>{profile.streak}</b></span>
     <span className="run__live-stat run__live-stat--coins"><Coins size={16} /><b>{profile.coins}</b>{award?.coins > 0 && <i key={`c-${award.id}`} className="run__live-gain">+{award.coins}</i>}</span>
     <span className="run__live-stat run__live-level"><span className="run__live-level-copy"><small>ур. {profile.level}</small><b>{profile.xp} XP</b></span><span className="run__live-level-track"><i style={{ transform: `scaleX(${progress})` }} /></span>{award?.gained > 0 && <i key={`x-${award.id}`} className="run__live-gain">+{award.gained} XP</i>}</span>
   </div>;
