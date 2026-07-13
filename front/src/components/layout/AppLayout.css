@@ -1,7 +1,9 @@
 ﻿.app {
-  min-height: 100dvh;
+  height: 100dvh;
+  min-height: 0;
   display: grid;
   grid-template-columns: var(--sidebar-w) 1fr;
+  overflow: hidden;
 }
 .app__loading {
   display: grid;
@@ -92,8 +94,11 @@
 /* ---------- Main column ---------- */
 .app__main {
   min-width: 0;
+  height: 100dvh;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 .app__header {
   position: sticky;
@@ -178,10 +183,16 @@
 
 .app__content {
   flex: 1;
+  min-height: 0;
   width: 100%;
   max-width: var(--content-max);
   margin: 0 auto;
   padding: var(--sp-6) var(--sp-5) var(--sp-8);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y pinch-zoom;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ---------- Bottom tab bar (mobile) ---------- */
@@ -234,8 +245,8 @@
 .app--onboarding.app { grid-template-columns: 1fr; min-height: 100dvh; }
 .app--onboarding .app__content { min-height: 100dvh; display: grid; place-items: center; }
 .app--pet-choice.app,
-.app--pet-choice .app__main,
-.app--pet-choice .app__content { height: 100dvh; min-height: 0; overflow: hidden; }
+.app--pet-choice .app__main { height: 100dvh; min-height: 0; overflow: hidden; }
+.app--pet-choice .app__content { height: 100dvh; min-height: 0; overflow-x: hidden; overflow-y: auto; }
 .app--pet-choice .app__content { padding: 0; }
 /* If a very small screen can't fit the intro card, let it scroll rather than
    clip вЂ” but the default is a fixed, centered, unscrolled screen. */
@@ -244,7 +255,7 @@
     overflow-y: auto;
     align-content: start;
   }
-  .app--pet-choice .app__content { overflow: hidden; align-content: stretch; }
+  .app--pet-choice .app__content { overflow-y: auto; align-content: stretch; }
 }
 
 /* ---------- Responsive ---------- */

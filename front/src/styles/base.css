@@ -15,7 +15,8 @@ html {
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
   overflow-x: hidden;
-  overscroll-behavior: none;
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: auto;
   background: var(--bg);
 }
 
@@ -33,7 +34,8 @@ body {
   min-height: 100dvh;
   overflow-x: hidden;
   touch-action: auto;
-  overscroll-behavior: none;
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: auto;
 }
 
 h1,
