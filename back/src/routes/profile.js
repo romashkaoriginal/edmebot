@@ -25,7 +25,7 @@ router.get("/", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-const ONBOARD_SUBJECTS = ["Русский", "Математика"];
+const ONBOARD_SUBJECTS = ["Математика"];
 
 // Self-serve onboarding: a brand-new (auto-provisioned "pending") student
 // picks a subject + grade so they can take that subject's diagnostic. This
@@ -33,19 +33,28 @@ const ONBOARD_SUBJECTS = ["Русский", "Математика"];
 // them a subject via the admin panel, which is the actual promotion step.
 router.post("/onboard", async (req, res, next) => {
   try {
+    const current = await state.getState(req.student);
+    if (!["subject", "diagnostic"].includes(current.profile.onboardingStep)) {
+      return res.status(409).json({ error: "onboarding_step_invalid" });
+    }
     const { subject, grade } = req.body ?? {};
     if (!ONBOARD_SUBJECTS.includes(subject)) return res.status(400).json({ error: "invalid_subject" });
     const g = Number(grade);
-    if (!Number.isInteger(g) || g < 5 || g > 11) return res.status(400).json({ error: "invalid_grade" });
+    if (!Number.isInteger(g) || g < 6 || g > 11) return res.status(400).json({ error: "invalid_grade" });
 
     await db.query(
       `INSERT INTO student_subjects (student_id, subject, grade) VALUES ($1,$2,$3)
        ON CONFLICT (student_id, subject) DO UPDATE SET grade = EXCLUDED.grade`,
       [req.student.id, subject, g]
     );
+    await state.ensure(req.student);
+    await db.query(
+      "UPDATE student_profiles SET onboarding_step = 'diagnostic', updated_at = now() WHERE student_id = $1",
+      [req.student.id]
+    );
     // Keep the legacy single subject/grade columns as "primary" = first chosen.
     await db.query(
-      `UPDATE students SET subject = COALESCE(subject, $2), grade = COALESCE(grade, $3) WHERE id = $1`,
+      `UPDATE students SET subject = $2, grade = $3 WHERE id = $1`,
       [req.student.id, subject, g]
     );
     const refreshed = await db.query("SELECT * FROM students WHERE id = $1", [req.student.id]);

@@ -1,6 +1,6 @@
 import { NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
-import { House, Target, Dumbbell, PawPrint, BookOpen, User, RefreshCw } from "lucide-react";
+import { Target, Dumbbell, PawPrint, BookOpen, User, RefreshCw, Coins } from "lucide-react";
 import Button from "../ui/Button";
 import Logo from "../brand/Logo";
 import { StreakPill } from "../ui/StatPill";
@@ -10,7 +10,6 @@ import { studentApi } from "../../api/student";
 import "./AppLayout.css";
 
 const FULL_NAV = [
-  { to: "/app", label: "Главная", icon: House, end: true },
   { to: "/app/practice", label: "Практика", icon: Dumbbell },
   { to: "/app/homework", label: "Домашка", icon: BookOpen },
   { to: "/app/pet", label: "Питомец", icon: PawPrint },
@@ -30,7 +29,12 @@ export default function AppLayout() {
   const todayISO = new Date().toISOString().slice(0, 10);
   const doneToday = profile.streakLastDoneOn === todayISO;
   const isActive = profile.status === "active";
+  const onboardingStep = profile.onboardingStep ?? "complete";
+  const onboardingIncomplete = onboardingStep !== "complete";
   const NAV = isActive ? FULL_NAV : PENDING_NAV;
+  const xpInLevel = Math.max(0, profile.xp - profile.xpFromLevel);
+  const xpNeeded = Math.max(1, profile.xpForNext - profile.xpFromLevel);
+  const xpProgress = Math.min(100, Math.round((xpInLevel / xpNeeded) * 100));
 
   const loadProfile = useCallback(() => {
     setLoadError("");
@@ -63,13 +67,22 @@ export default function AppLayout() {
 
   // A pending student who lands anywhere but the diagnostic (typed URL,
   // stale link) gets bounced to the one thing they can actually do.
-  if (hydrated && !isActive && !focus && !pathname.startsWith("/app/diagnostic")) {
+  if (onboardingStep === "subject" && !pathname.startsWith("/app/onboarding")) {
+    return <Navigate to="/app/onboarding" replace />;
+  }
+  if (onboardingStep === "diagnostic" && !pathname.startsWith("/app/diagnostic")) {
+    return <Navigate to="/app/diagnostic" replace />;
+  }
+  if (onboardingStep === "pet" && !pathname.startsWith("/app/pet")) {
+    return <Navigate to="/app/pet" replace />;
+  }
+  if (hydrated && !isActive && !onboardingIncomplete && !focus && !pathname.startsWith("/app/diagnostic")) {
     return <Navigate to="/app/diagnostic" replace />;
   }
 
   return (
-    <div className={`app ${focus ? "app--focus" : ""} ${!isActive ? "app--pending" : ""}`}>
-      <aside className="app__sidebar">
+    <div className={`app ${focus ? "app--focus" : ""} ${onboardingIncomplete ? "app--onboarding" : ""} ${!isActive ? "app--pending" : ""}`}>
+      {!onboardingIncomplete && <aside className="app__sidebar">
         <div className="app__brand">
           <Logo height={34} />
         </div>
@@ -84,29 +97,29 @@ export default function AppLayout() {
         <div className="app__sidebar-foot">
           <div className="app__subject">{profile.subject}</div>
         </div>
-      </aside>
+      </aside>}
 
       <div className="app__main">
-        <header className="app__header">
+        {!onboardingIncomplete && <header className="app__header">
           <div className="app__header-brand">
             <Logo height={34} />
           </div>
           {isActive && <div className="app__stats">
             <StreakPill value={profile.streak} doneToday={doneToday} />
+            <div className="app__coins" title="Монеты"><Coins size={16} aria-hidden="true" /><b>{profile.coins}</b></div>
             <div className="app__level" title={`Уровень ${profile.level}`}>
-              <span className="app__level-tag">ур. {profile.level}</span>
-              <span className="app__level-sep">·</span>
-              <span className="app__level-num font-display">{profile.xp} XP</span>
+              <span className="app__level-copy"><span className="app__level-tag">ур. {profile.level}</span><span className="app__level-sep">·</span><span className="app__level-num font-display">{profile.xp} XP</span></span>
+              <span className="app__level-track" aria-label={`Осталось ${Math.max(0, xpNeeded - xpInLevel)} XP`}><i style={{ width: `${xpProgress}%` }} /></span>
             </div>
           </div>}
-        </header>
+        </header>}
 
         <main className="app__content">
           <Outlet />
         </main>
       </div>
 
-      {isActive && <nav className="app__tabbar" aria-label="Мобильная навигация">
+      {isActive && !onboardingIncomplete && <nav className="app__tabbar" aria-label="Мобильная навигация">
         {NAV.map(({ to, label, icon: Icon, end }) => (
           <NavLink key={to} to={to} end={end} className="tabitem" aria-label={label}>
             <Icon size={22} strokeWidth={2.2} aria-hidden="true" />

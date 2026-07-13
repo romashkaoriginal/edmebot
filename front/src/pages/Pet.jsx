@@ -147,15 +147,16 @@ export default function Pet() {
   }
 
   async function chooseSpecies(species) {
-    if (profile.pet.species === species || busyId) return;
+    if ((profile.petSelected && profile.pet.species === species) || busyId) return;
+    if (profile.petSelected && !window.confirm("Смена питомца стоит 100 монет. Вернуться к прежнему питомцу можно будет только через новую платную смену. Продолжить?")) return;
     setBusyId(`species:${species}`);
     try {
       const data = await studentApi.updatePet({ species });
       setPetSpecies(species);
       hydrate({ profile: data.profile });
       cheer();
-    } catch {
-      showFeedback({ type: "poor", text: "Не удалось сохранить выбор питомца." });
+    } catch (error) {
+      showFeedback({ type: "poor", text: error.message === "not_enough_coins" ? "Для смены питомца нужно 100 монет." : "Не удалось сохранить выбор питомца." });
     } finally {
       setBusyId(null);
     }
@@ -170,7 +171,7 @@ export default function Pet() {
     <div className="pet-page">
       <header className="pet-page__heading">
         <h1>Питомец</h1>
-        <p>Награда за регулярную учёбу: практика приносит баллы для ухода и предметов.</p>
+        <p>{profile.petSelected ? `Твой питомец — ${profile.pet.name}. Практика приносит монеты для ухода и предметов.` : "Диагностика пройдена. Теперь выбери питомца — первый выбор бесплатный."}</p>
       </header>
       <Card className="pet-page__hero" pad="none">
         <div className="pet-page__room" aria-label={`Комната питомца ${profile.pet.name}`}>
@@ -248,7 +249,7 @@ export default function Pet() {
       </Card>
 
       <section className="pet-page__collection">
-        <div className="pet-page__section-head"><SectionTitle>Выбери питомца</SectionTitle></div>
+        <div className="pet-page__section-head"><SectionTitle>{profile.petSelected ? "Сменить питомца · 100 монет" : "Выбери питомца"}</SectionTitle></div>
         <div className="pet-page__species">
           {petSpecies.map((species) => (
             <button

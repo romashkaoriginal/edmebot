@@ -116,11 +116,15 @@ async function requireStudent(req, res, next) {
 
 // Chain after requireStudent on routes that a "pending" (self-serve,
 // not-yet-assigned) student must not reach — practice and homework.
-function requireActiveStudent(req, res, next) {
+async function requireActiveStudent(req, res, next) {
   if (req.student.status !== "active" || (req.student.access_until && new Date(req.student.access_until) <= new Date())) {
     return res.status(403).json({ error: "onboarding_incomplete" });
   }
-  next();
+  try {
+    const { rows } = await db.query("SELECT onboarding_step FROM student_profiles WHERE student_id = $1", [req.student.id]);
+    if (rows[0]?.onboarding_step !== "complete") return res.status(403).json({ error: "onboarding_incomplete" });
+    next();
+  } catch (e) { next(e); }
 }
 
 function requireRole(...roles) {

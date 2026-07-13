@@ -118,16 +118,22 @@
   margin-left: auto;
 }
 .app__level {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 4px;
-  height: 34px;
-  padding: 0 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  min-width: 104px;
+  height: 40px;
+  padding: 5px 11px;
   border-radius: var(--r-pill);
   background: var(--primary);
   color: var(--on-primary);
   box-shadow: var(--shadow-primary);
 }
+.app__level-copy { display: flex; justify-content: center; align-items: baseline; gap: 4px; }
+.app__level-track { display: block; height: 3px; overflow: hidden; border-radius: var(--r-pill); background: color-mix(in oklch, white 28%, transparent); }
+.app__level-track i { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
+.app__coins { display: inline-flex; align-items: center; gap: 5px; min-height: 36px; padding: 0 10px; border-radius: var(--r-pill); background: var(--accent-soft); color: var(--accent-strong); }
 .app__level-tag {
   font-size: var(--text-xs);
   font-weight: 700;
@@ -200,6 +206,8 @@
   width: 100%;
   max-width: 560px;
 }
+.app--onboarding.app { grid-template-columns: 1fr; min-height: 100dvh; }
+.app--onboarding .app__content { min-height: 100dvh; display: grid; place-items: center; }
 /* If a very small screen can't fit the intro card, let it scroll rather than
    clip вЂ” but the default is a fixed, centered, unscrolled screen. */
 @media (max-height: 640px) {
@@ -229,7 +237,7 @@
   }
   .app__tabbar {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     position: fixed;
     bottom: 0;
     left: 0;
@@ -258,4 +266,12 @@
     color: var(--primary-strong);
   }
   .tabitem.active svg { color: var(--accent); }
+}
+
+@media (max-width: 430px) {
+  .app__header { padding-inline: var(--sp-3); gap: var(--sp-2); }
+  .app__header-brand { width: 72px; overflow: hidden; }
+  .app__stats { gap: 5px; }
+  .app__coins { padding-inline: 8px; }
+  .app__level { min-width: 92px; padding-inline: 8px; }
 }

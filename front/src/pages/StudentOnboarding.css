@@ -1,0 +1,21 @@
+.sonboard { width: min(100%, 620px); margin: 0 auto; display: flex; flex-direction: column; gap: var(--sp-5); }
+.sonboard__head { display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: var(--text-sm); font-weight: 800; }
+.sonboard__panel { display: flex; flex-direction: column; gap: var(--sp-5); padding: var(--sp-5); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--shadow-md); }
+.sonboard__panel h1 { margin-bottom: var(--sp-2); }
+.sonboard__panel p { color: var(--muted); }
+.sonboard__subjects { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+.sonboard__subject { min-height: 150px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: var(--sp-2); padding: var(--sp-4); border-radius: var(--r-md); background: var(--surface-2); text-align: left; }
+.sonboard__subject strong { font-size: var(--text-lg); }
+.sonboard__subject span { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: var(--text-sm); font-weight: 700; }
+.sonboard__subject.is-selected { background: var(--primary); color: var(--on-primary); }
+.sonboard__subject.is-selected span { color: color-mix(in oklch, white 78%, var(--primary)); }
+.sonboard__subject:disabled { cursor: not-allowed; opacity: .56; }
+.sonboard__grades { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3); }
+.sonboard__grades button { aspect-ratio: 1; display: grid; place-content: center; border-radius: var(--r-md); background: var(--surface-2); color: var(--ink); }
+.sonboard__grades strong { font-size: var(--text-2xl); line-height: 1; }
+.sonboard__grades span { color: var(--muted); font-size: var(--text-sm); font-weight: 700; }
+.sonboard__grades button.is-selected { background: var(--primary); color: var(--on-primary); }
+.sonboard__grades button.is-selected span { color: var(--on-primary); }
+.sonboard__actions { display: grid; grid-template-columns: auto 1fr; gap: var(--sp-2); }
+.sonboard__error { color: var(--danger) !important; font-weight: 700; }
+@media (max-width: 520px) { .sonboard__panel { padding: var(--sp-4); } .sonboard__subjects { grid-template-columns: 1fr; } .sonboard__subject { min-height: 104px; } }

@@ -11,7 +11,7 @@ import { adminApi } from "../../api/admin";
 import "./admin.css";
 
 const SUBJECTS = ["Математика", "Русский"];
-const GRADES = [5, 6, 7, 8, 9, 10, 11];
+const GRADES = [6, 7, 8, 9, 10, 11];
 const EMPTY = {
   firstName: "",
   lastName: "",
@@ -36,6 +36,7 @@ export default function Students() {
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
   const [panel, setPanel] = useState(null); // 'bonus' | 'subjects'
+  const isDemoDraft = /^(demo|демо)$/iu.test(form.tgId.trim());
 
   const load = useCallback(async () => {
     try {
@@ -75,7 +76,7 @@ export default function Students() {
     e.preventDefault();
     setError("");
     const subjects = form.subjects.filter((s) => s.subject && s.grade);
-    if (!editingId && subjects.length === 0) {
+    if (!editingId && !isDemoDraft && subjects.length === 0) {
       setError("Добавьте хотя бы один предмет");
       return;
     }
@@ -95,7 +96,7 @@ export default function Students() {
           firstName: form.firstName,
           lastName: form.lastName,
           tgId: form.tgId,
-          subjects,
+          subjects: isDemoDraft ? [] : subjects,
         });
       }
       reset();
@@ -170,13 +171,13 @@ export default function Students() {
 
   return (
     <div className="apage">
-      <header className="apage__head">
+      <header className="apage__head apage__head--compact">
         <span className="apage__head-icon apage__head-icon--students">
           <Users size={24} strokeWidth={2.4} />
         </span>
         <div className="apage__head-text">
           <h1>Ученики</h1>
-          <p className="apage__sub">Профили, доступы, предметы и тестовые аккаунты</p>
+          <p className="apage__sub">Ученики</p>
         </div>
         <Button type="button" icon={Plus} onClick={() => { reset(); setFormOpen(true); }}>Добавить</Button>
       </header>
@@ -188,7 +189,7 @@ export default function Students() {
         onClose={reset}
       >
         <form className="aform" onSubmit={submit}>
-          {!editingId && (
+          {!editingId && !isDemoDraft && (
             <div className="afield acontact-field">
               <span><MessageCircle size={15} /> Выберите человека из чата бота</span>
               <div className="acontact-field__selection">
@@ -202,6 +203,9 @@ export default function Students() {
               </div>
               <small>{contacts.length ? `Доступно новых контактов: ${contacts.length}` : "Новых контактов пока нет: попросите ученика написать боту /start"}</small>
             </div>
+          )}
+          {!editingId && isDemoDraft && (
+            <p className="afield__hint">Предмет и класс ученик выберет сам при первом входе.</p>
           )}
           <div className="aform__row aform__row--student">
             <label className="afield">

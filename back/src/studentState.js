@@ -40,6 +40,8 @@ function toProfile(row, student) {
     streakLastDoneOn: row.streak_last_done_on ? row.streak_last_done_on.toISOString?.().slice(0, 10) ?? String(row.streak_last_done_on) : null,
     streakFreezeUsed: row.streak_freeze_used,
     pet: { species: row.pet_species, name: row.pet_name },
+    petSelected: row.pet_selected,
+    onboardingStep: row.onboarding_step,
     ownedItems: row.owned_items ?? [],
     wornItems: row.worn_items ?? {},
     diagnosticDone: row.diagnostic_done,
@@ -51,8 +53,8 @@ async function ensure(student) {
   // a student's knowledge map stays empty until a diagnostic or practice
   // actually assesses a topic, so nothing fake is ever shown.
   await db.query(
-    `INSERT INTO student_profiles (student_id)
-     VALUES ($1) ON CONFLICT (student_id) DO NOTHING`,
+    `INSERT INTO student_profiles (student_id, onboarding_step)
+     VALUES ($1, 'subject') ON CONFLICT (student_id) DO NOTHING`,
     [student.id]
   );
 }
@@ -116,7 +118,7 @@ async function submitDiagnostic(student, answers, subject, questions = null) {
     topicId,
     mastery: Math.round((stat.correct / stat.total) * 100),
   })));
-  await db.query("UPDATE student_profiles SET diagnostic_done = TRUE, updated_at = now() WHERE student_id = $1", [student.id]);
+  await db.query("UPDATE student_profiles SET diagnostic_done = TRUE, onboarding_step = 'pet', updated_at = now() WHERE student_id = $1", [student.id]);
   return getState(student, activeSubject);
 }
 
@@ -192,6 +194,9 @@ async function updatePet(student, { species, wornItems } = {}) {
   if (species !== undefined && !allowedSpecies.has(species)) return { error: "invalid_species" };
   const state = await getState(student);
   const nextSpecies = species ?? state.profile.pet.species;
+  const changesSpecies = species !== undefined && species !== state.profile.pet.species;
+  const changePrice = state.profile.petSelected && changesSpecies ? 100 : 0;
+  if (changePrice && state.profile.coins < changePrice) return { error: "not_enough_coins" };
   let nextWorn = state.profile.wornItems;
   if (wornItems && typeof wornItems === "object" && !Array.isArray(wornItems)) {
     const ownedLooks = seed.shopItems.filter((item) =>
@@ -204,8 +209,13 @@ async function updatePet(student, { species, wornItems } = {}) {
     );
   }
   await db.query(
-    "UPDATE student_profiles SET pet_species = $2, worn_items = $3, updated_at = now() WHERE student_id = $1",
-    [student.id, nextSpecies, JSON.stringify(nextWorn)]
+    `UPDATE student_profiles
+     SET pet_species = $2, worn_items = $3,
+         pet_selected = pet_selected OR $4,
+         onboarding_step = CASE WHEN $4 THEN 'complete' ELSE onboarding_step END,
+         coins = coins - $5, updated_at = now()
+     WHERE student_id = $1`,
+    [student.id, nextSpecies, JSON.stringify(nextWorn), species !== undefined, changePrice]
   );
   return { state: await getState(student) };
 }

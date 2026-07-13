@@ -137,8 +137,7 @@ export default function DiagnosticRun() {
           <p className="run__result-lead">Это не оценка, а маршрут обучения. Сначала потренируем темы, где сейчас нужно больше практики.</p>
           <div className="run__result-map"><KnowledgeMap topics={resultTopics} /></div>
           <div className="run__result-actions">
-            <Button variant="soft" onClick={() => navigate("/app")}>На главную</Button>
-            <Button icon={ArrowRight} onClick={() => navigate("/app/practice/run")}>Начать практику</Button>
+            <Button icon={ArrowRight} onClick={() => navigate("/app/pet", { replace: true })}>Выбрать питомца</Button>
           </div>
         </Card>
       </div>

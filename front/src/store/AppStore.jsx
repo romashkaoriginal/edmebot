@@ -13,6 +13,8 @@ const EMPTY_PROFILE = {
   // flashes the full nav before the real status is known.
   status: "pending",
   pet: { species: "fox", name: "Рыжик" },
+  petSelected: false,
+  onboardingStep: "subject",
   coins: 0,
   xp: 0,
   level: 1,

@@ -100,13 +100,13 @@ export default function Users() {
 
   return (
     <div className="apage">
-      <header className="apage__head">
+      <header className="apage__head apage__head--compact">
         <span className="apage__head-icon apage__head-icon--users">
           <UserCog size={24} strokeWidth={2.4} />
         </span>
         <div className="apage__head-text">
           <h1>Пользователи</h1>
-          <p className="apage__sub">Роли сотрудников и доступ к панели управления</p>
+          <p className="apage__sub">Пользователи</p>
         </div>
         <Button type="button" icon={Plus} onClick={() => { reset(); setFormOpen(true); }}>Добавить</Button>
       </header>

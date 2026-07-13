@@ -79,7 +79,7 @@ export default function Profile() {
         <Link to="/app/pet" className="prof__companion">
           <PetAvatar species={profile.pet.species} mood="happy" size={48} />
           <span className="prof__companion-text">
-            Награда за учёбу — <b>{profile.pet.name}</b>
+            Твой питомец — <b>{profile.pet.name}</b>
           </span>
         </Link>
       </Card>

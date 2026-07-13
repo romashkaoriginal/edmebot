@@ -127,12 +127,17 @@ CREATE TABLE IF NOT EXISTS student_profiles (
   streak_last_done_on  DATE,
   streak_freeze_used   BOOLEAN NOT NULL DEFAULT FALSE,
   pet_species          TEXT NOT NULL DEFAULT 'fox',
+  pet_selected         BOOLEAN NOT NULL DEFAULT FALSE,
+  onboarding_step      TEXT NOT NULL DEFAULT 'complete',
   pet_name             TEXT NOT NULL DEFAULT 'Рыжик',
   owned_items          JSONB NOT NULL DEFAULT '[]',
   worn_items           JSONB NOT NULL DEFAULT '{}',
   diagnostic_done      BOOLEAN NOT NULL DEFAULT FALSE,
   updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS pet_selected BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS onboarding_step TEXT NOT NULL DEFAULT 'complete';
 
 CREATE TABLE IF NOT EXISTS student_topics (
   student_id   BIGINT NOT NULL REFERENCES students(id) ON DELETE CASCADE,

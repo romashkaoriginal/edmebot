@@ -26,7 +26,7 @@ const SUBJECTS = [
   { name: "Математика", icon: Calculator, tone: "primary" },
   { name: "Русский", icon: PenLine, tone: "accent" },
 ];
-const GRADES = [5, 6, 7, 8, 9, 10, 11];
+const GRADES = [6, 7, 8, 9, 10, 11];
 const DIFFICULTIES = [
   { id: "easy", label: "Лёгкое" },
   { id: "medium", label: "Среднее" },

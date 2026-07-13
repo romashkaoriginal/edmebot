@@ -33,6 +33,10 @@ router.post("/rename", async (req, res, next) => {
 
 router.patch("/", async (req, res, next) => {
   try {
+    const current = await state.getState(req.student);
+    if (req.body?.species !== undefined && !["pet", "complete"].includes(current.profile.onboardingStep)) {
+      return res.status(409).json({ error: "onboarding_step_invalid" });
+    }
     const result = await state.updatePet(req.student, req.body);
     if (result.error) return res.status(400).json(result);
     res.json({ ok: true, profile: result.state.profile });

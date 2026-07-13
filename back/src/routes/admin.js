@@ -139,7 +139,7 @@ function readSubjects(body) {
   const push = (subject, grade) => {
     const s = String(subject ?? "").trim();
     const g = Number(grade);
-    if (!s || !Number.isInteger(g) || g < 5 || g > 11 || seen.has(s)) return;
+    if (!s || !Number.isInteger(g) || g < 6 || g > 11 || seen.has(s)) return;
     seen.add(s);
     out.push({ subject: s, grade: g });
   };
@@ -177,13 +177,14 @@ router.post("/students", requireRole("admin"), async (req, res, next) => {
     const name = fullName(firstName, lastName);
     if (!name) return bad(res, "name_required");
     const subjects = readSubjects(req.body);
-    if (!subjects.length) return bad(res, "at_least_one_subject_required");
+    const demo = isDemoTelegramId(tgId);
+    if (!demo && !subjects.length) return bad(res, "at_least_one_subject_required");
     const { rows: staffRows } = await db.query("SELECT 1 FROM users WHERE tg_id = $1", [tgId]);
     if (staffRows.length) return bad(res, "staff_account_cannot_be_student", 409);
     // The first subject is the "primary" one (kept on students for display/
     // back-compat); the rest go into student_subjects. status defaults to
     // 'active' — a student created here already has a subject.
-    const primary = subjects[0];
+    const primary = subjects[0] ?? { grade: null, subject: null };
     const { rows } = await db.query(
       `INSERT INTO students (tg_id, name, first_name, last_name, grade, subject)
        VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,

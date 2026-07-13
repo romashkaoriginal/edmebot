@@ -8,8 +8,7 @@ import { adminApi, initData, initTelegramWebApp } from "../api/admin";
 import { studentApi } from "../api/student";
 import "./RoleGate.css";
 
-const ONBOARD_SUBJECTS = ["Математика", "Русский"];
-const ONBOARD_GRADES = [5, 6, 7, 8, 9, 10, 11];
+const ONBOARD_GRADES = [6, 7, 8, 9, 10, 11];
 
 export default function RoleGate() {
   const navigate = useNavigate();
@@ -19,7 +18,7 @@ export default function RoleGate() {
   const [students, setStudents] = useState([]);
   const [studentsLoading, setStudentsLoading] = useState(false);
   const [hasInitData, setHasInitData] = useState(() => Boolean(initData()));
-  const [onboardSubject, setOnboardSubject] = useState(ONBOARD_SUBJECTS[0]);
+  const [onboardSubject, setOnboardSubject] = useState("Математика");
   const [onboardGrade, setOnboardGrade] = useState(7);
   const [onboardSubmitting, setOnboardSubmitting] = useState(false);
   const [onboardError, setOnboardError] = useState("");
@@ -44,7 +43,7 @@ export default function RoleGate() {
         setRole(false);
         try {
           const { profile } = await studentApi.profile();
-          if (profile?.status === "pending") setView("onboarding");
+          if (profile?.onboardingStep !== "complete") navigate("/app", { replace: true });
         } catch {
           // Keep the Telegram-only entry card when student auth also fails.
         }
@@ -53,7 +52,7 @@ export default function RoleGate() {
       }
     }
     resolveRole();
-  }, []);
+  }, [navigate]);
 
   const isStaff = role === "admin" || role === "tutor";
 
@@ -94,21 +93,13 @@ export default function RoleGate() {
       <div className="gate">
         <div className="gate__inner">
           <div className="gate__brand"><Logo height={40} /></div>
-          <h1 className="gate__title font-display">Расскажи о себе</h1>
-          <p className="gate__sub">Выбери предмет и класс — мы подберём входной тест.</p>
+          <h1 className="gate__title font-display">Что будем изучать?</h1>
+          <p className="gate__sub">Сначала выбери предмет, затем свой класс.</p>
           <form className="gate__onboard-form" onSubmit={submitOnboarding}>
-            <label className="gate__onboard-field">
-              <span>Предмет</span>
-              <select
-                className="gate__onboard-select"
-                value={onboardSubject}
-                onChange={(e) => setOnboardSubject(e.target.value)}
-              >
-                {ONBOARD_SUBJECTS.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            </label>
+            <div className="gate__subject-options" role="radiogroup" aria-label="Предмет">
+              <button type="button" className="gate__subject-option is-selected" aria-pressed="true" onClick={() => setOnboardSubject("Математика")}> <strong>Математика</strong><span>Доступно</span> </button>
+              <button type="button" className="gate__subject-option" disabled aria-disabled="true"> <strong>Русский язык</strong><span>Скоро</span> </button>
+            </div>
             <label className="gate__onboard-field">
               <span>Класс</span>
               <select
@@ -146,7 +137,7 @@ export default function RoleGate() {
                 <Card key={s.id} className="gate__student-row" pad="sm">
                   <div className="gate__student-info">
                     <strong>{s.name}</strong>
-                    <span>{s.grade} класс · {s.subject}</span>
+                    <span>{s.grade && s.subject ? `${s.grade} класс · ${s.subject}` : "Первый вход не завершён"}</span>
                   </div>
                   <Button size="sm" iconRight={ArrowRight} onClick={() => pickStudent(s)}>
                     Войти

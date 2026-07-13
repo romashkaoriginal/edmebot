@@ -7,7 +7,7 @@ import AdminIndex from "./components/admin/AdminIndex";
 import { AdminAuthProvider } from "./context/AdminAuth";
 
 const RoleGate = lazy(() => import("./pages/RoleGate"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
+const StudentOnboarding = lazy(() => import("./pages/StudentOnboarding"));
 const Practice = lazy(() => import("./pages/Practice"));
 const PracticeRun = lazy(() => import("./pages/PracticeRun"));
 const Diagnostic = lazy(() => import("./pages/Diagnostic"));
@@ -30,7 +30,8 @@ export default function App() {
 
       {/* Student app */}
       <Route path="app" element={<AppLayout />}>
-        <Route index element={<Dashboard />} />
+        <Route path="onboarding" element={<StudentOnboarding />} />
+        <Route index element={<Navigate to="profile" replace />} />
         <Route path="practice" element={<Practice />} />
         <Route path="practice/run" element={<PracticeRun />} />
         <Route path="diagnostic" element={<Diagnostic />} />

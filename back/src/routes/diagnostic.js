@@ -12,6 +12,10 @@ router.use(requireStudent);
 // req.student.subject to already be set.
 router.get("/", async (req, res, next) => {
   try {
+    const current = await state.getState(req.student);
+    if (current.profile.onboardingStep !== "diagnostic" && current.profile.onboardingStep !== "complete") {
+      return res.status(409).json({ error: "onboarding_step_invalid" });
+    }
     const subject = req.query.subject || req.student.subject || "Математика";
     const { rows: enrollments } = await db.query(
       "SELECT grade FROM student_subjects WHERE student_id = $1 AND subject = $2",
@@ -31,6 +35,10 @@ router.get("/", async (req, res, next) => {
 
 router.post("/submit", async (req, res, next) => {
   try {
+    const current = await state.getState(req.student);
+    if (current.profile.onboardingStep !== "diagnostic" && current.profile.onboardingStep !== "complete") {
+      return res.status(409).json({ error: "onboarding_step_invalid" });
+    }
     const answers = Array.isArray(req.body?.answers) ? req.body.answers : [];
     if (!answers.length) return res.status(400).json({ error: "answers_required" });
     const subject = req.body?.subject || req.student.subject || "Математика";
