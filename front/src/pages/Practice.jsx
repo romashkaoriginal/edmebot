@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Dumbbell, AlertCircle, ListTree, Play } from "lucide-react";
+import { Dumbbell, AlertCircle, Infinity as InfinityIcon, ListTree, Play } from "lucide-react";
 import Button from "../components/ui/Button";
 import SectionTitle from "../components/ui/SectionTitle";
 import { useApp } from "../store/AppStore";
@@ -8,10 +8,17 @@ import "./Practice.css";
 
 const MODES = [
   {
+    id: "endless",
+    icon: InfinityIcon,
+    title: "Бесконечная практика",
+    desc: "Решай без финального экрана: задания будут подгружаться дальше",
+    tone: "primary",
+  },
+  {
     id: "weak",
     icon: AlertCircle,
-    title: "Общая практика",
-    desc: "Задания подбираются под твой уровень, с акцентом на слабые темы",
+    title: "Работа над ошибками",
+    desc: "В приоритете слабые темы и места, где чаще всего ошибаешься",
     tone: "danger",
   },
   {
@@ -35,7 +42,7 @@ export default function Practice() {
   const { topics } = useApp();
   const hasTopics = topics.length > 0;
   const stored = readPracticePrefs();
-  const [mode, setMode] = useState(stored.mode ?? "weak");
+  const [mode, setMode] = useState(stored.mode ?? "endless");
   const [level, setLevel] = useState(stored.level ?? "auto");
   const [topic, setTopic] = useState(stored.topic ?? topics[0]?.id ?? null);
 

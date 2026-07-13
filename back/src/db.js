@@ -116,6 +116,22 @@ CREATE TABLE IF NOT EXISTS attempts (
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Persistent mistake history powers the dedicated "work on mistakes" mode.
+-- Keep one aggregate row per student/task: repetitions are useful signal,
+-- while the last timestamp keeps recent gaps ahead of old ones.
+CREATE TABLE IF NOT EXISTS student_mistakes (
+  student_id    BIGINT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  task_id       BIGINT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+  subject       TEXT NOT NULL,
+  topic         TEXT NOT NULL,
+  wrong_count   INTEGER NOT NULL DEFAULT 1,
+  correct_count INTEGER NOT NULL DEFAULT 0,
+  last_selected INTEGER,
+  last_wrong_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (student_id, task_id)
+);
+
 CREATE TABLE IF NOT EXISTS student_profiles (
   student_id           BIGINT PRIMARY KEY REFERENCES students(id) ON DELETE CASCADE,
   xp                   INTEGER NOT NULL DEFAULT 0,
@@ -130,6 +146,7 @@ CREATE TABLE IF NOT EXISTS student_profiles (
   pet_selected         BOOLEAN NOT NULL DEFAULT FALSE,
   onboarding_step      TEXT NOT NULL DEFAULT 'complete',
   pet_name             TEXT NOT NULL DEFAULT 'Рыжик',
+  pet_bond             INTEGER NOT NULL DEFAULT 0,
   owned_items          JSONB NOT NULL DEFAULT '[]',
   worn_items           JSONB NOT NULL DEFAULT '{}',
   diagnostic_done      BOOLEAN NOT NULL DEFAULT FALSE,
@@ -138,6 +155,7 @@ CREATE TABLE IF NOT EXISTS student_profiles (
 
 ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS pet_selected BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS onboarding_step TEXT NOT NULL DEFAULT 'complete';
+ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS pet_bond INTEGER NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS student_topics (
   student_id   BIGINT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
@@ -182,6 +200,7 @@ CREATE TABLE IF NOT EXISTS bonus_transactions (
 CREATE INDEX IF NOT EXISTS idx_tasks_grade_subject ON tasks (grade, subject);
 CREATE INDEX IF NOT EXISTS idx_homework_student ON homework (student_id);
 CREATE INDEX IF NOT EXISTS idx_attempts_student ON attempts (student_id);
+CREATE INDEX IF NOT EXISTS idx_student_mistakes_priority ON student_mistakes (student_id, subject, last_wrong_at DESC);
 CREATE INDEX IF NOT EXISTS idx_bonus_student ON bonus_transactions (student_id);
 CREATE INDEX IF NOT EXISTS idx_student_topics_student ON student_topics (student_id);
 CREATE INDEX IF NOT EXISTS idx_telegram_contacts_seen ON telegram_contacts (last_seen_at DESC);

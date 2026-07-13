@@ -24,6 +24,7 @@ export default function AppLayout() {
   const { pathname } = useLocation();
   const [loadError, setLoadError] = useState("");
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const [statInfo, setStatInfo] = useState(null);
   // Practice/diagnostic run in a focused mode — hide chrome distractions there.
   const focus = pathname.startsWith("/app/practice/run") || pathname.startsWith("/app/diagnostic/run");
   const todayISO = new Date().toISOString().slice(0, 10);
@@ -106,10 +107,38 @@ export default function AppLayout() {
           </div>
           {isActive && <div className="app__stats">
             <StreakPill value={profile.streak} doneToday={doneToday} />
-            <div className="app__coins" title="Монеты"><Coins size={16} aria-hidden="true" /><b>{profile.coins}</b></div>
-            <div className="app__level" title={`Уровень ${profile.level}`}>
+            <div className="app__stat-wrap">
+              <button
+                type="button"
+                className="app__coins"
+                onClick={() => setStatInfo((value) => value === "coins" ? null : "coins")}
+                aria-expanded={statInfo === "coins"}
+                aria-label={`${profile.coins} монет: как заработать`}
+              >
+                <Coins size={16} aria-hidden="true" /><b>{profile.coins}</b>
+              </button>
+              {statInfo === "coins" && (
+                <div className="app__stat-popover" role="status">
+                  Монеты начисляются за верные ответы в практике, диагностике и домашке. Больше сложность и меньше подсказок — больше награда.
+                </div>
+              )}
+            </div>
+            <div className="app__stat-wrap app__stat-wrap--level">
+            <button
+              type="button"
+              className="app__level"
+              onClick={() => setStatInfo((value) => value === "level" ? null : "level")}
+              aria-expanded={statInfo === "level"}
+              aria-label={`Уровень ${profile.level}, осталось ${Math.max(0, xpNeeded - xpInLevel)} XP`}
+            >
               <span className="app__level-copy"><span className="app__level-tag">ур. {profile.level}</span><span className="app__level-sep">·</span><span className="app__level-num font-display">{profile.xp} XP</span></span>
               <span className="app__level-track" aria-label={`Осталось ${Math.max(0, xpNeeded - xpInLevel)} XP`}><i style={{ width: `${xpProgress}%` }} /></span>
+            </button>
+              {statInfo === "level" && (
+                <div className="app__stat-popover app__stat-popover--right" role="status">
+                  Уровень растёт от XP. XP дают за верные задания; подсказки и повторные попытки уменьшают награду.
+                </div>
+              )}
             </div>
           </div>}
         </header>}

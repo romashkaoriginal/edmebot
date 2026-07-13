@@ -17,6 +17,7 @@ function profileDefaults() {
     streak: 0,
     streakFreezeUsed: false,
     pet: { species: "fox", name: "Рыжик" },
+    petBond: 0,
     ownedItems: [],
     wornItems: {},
     diagnosticDone: false,
@@ -40,6 +41,7 @@ function toProfile(row, student) {
     streakLastDoneOn: row.streak_last_done_on ? row.streak_last_done_on.toISOString?.().slice(0, 10) ?? String(row.streak_last_done_on) : null,
     streakFreezeUsed: row.streak_freeze_used,
     pet: { species: row.pet_species, name: row.pet_name },
+    petBond: row.pet_bond ?? 0,
     petSelected: row.pet_selected,
     onboardingStep: row.onboarding_step,
     ownedItems: row.owned_items ?? [],
@@ -112,6 +114,7 @@ async function submitDiagnostic(student, answers, subject, questions = null) {
     stat.total += 1;
     if (answer.selected === question.correct) stat.correct += 1;
     byTopic.set(question.topic, stat);
+    await recordMistake(student.id, question, answer.selected, answer.selected === question.correct);
   }
   await ensure(student);
   await updateTopics(student.id, activeSubject, [...byTopic].map(([topicId, stat]) => ({
@@ -122,6 +125,28 @@ async function submitDiagnostic(student, answers, subject, questions = null) {
   return getState(student, activeSubject);
 }
 
+async function recordMistake(studentId, task, selected, correct) {
+  if (correct) {
+    await db.query(
+      `UPDATE student_mistakes
+       SET correct_count = correct_count + 1, updated_at = now()
+       WHERE student_id = $1 AND task_id = $2`,
+      [studentId, task.id]
+    );
+    return;
+  }
+  await db.query(
+    `INSERT INTO student_mistakes
+       (student_id, task_id, subject, topic, wrong_count, last_selected)
+     VALUES ($1, $2, $3, $4, 1, $5)
+     ON CONFLICT (student_id, task_id) DO UPDATE
+       SET wrong_count = student_mistakes.wrong_count + 1,
+           last_selected = EXCLUDED.last_selected,
+           last_wrong_at = now(), updated_at = now()`,
+    [studentId, task.id, task.subject, task.topic, Number.isInteger(selected) ? selected : null]
+  );
+}
+
 async function gradePractice(student, task, selected, hintsUsed, attempts) {
   await ensure(student);
   const correct = selected === task.correct;
@@ -129,6 +154,7 @@ async function gradePractice(student, task, selected, hintsUsed, attempts) {
     "INSERT INTO attempts (student_id, task_id, selected, correct) VALUES ($1,$2,$3,$4)",
     [student.id, task.id, selected, correct]
   );
+  await recordMistake(student.id, task, selected, correct);
   const state = await getState(student, task.subject);
   const topic = state.topics.find((item) => item.id === task.topic);
   const nextMastery = Math.max(0, Math.min(100, (topic?.mastery ?? 0) + (correct ? 6 - hintsUsed : -4)));
@@ -157,9 +183,10 @@ async function gradePractice(student, task, selected, hintsUsed, attempts) {
     await db.query(
       `UPDATE student_profiles
        SET xp=$2, coins=coins+$3, level=$4, xp_from_level=$5, xp_for_next=$6,
-           streak=$7, streak_last_done_on=$8, updated_at=now()
+           streak=$7, streak_last_done_on=$8,
+           pet_bond=pet_bond+$9, updated_at=now()
        WHERE student_id=$1`,
-      [student.id, xp, coins, level, xpFromLevel, xpForNext, streak, today]
+      [student.id, xp, coins, level, xpFromLevel, xpForNext, streak, today, { easy: 1, medium: 2, hard: 3 }[task.difficulty] ?? 1]
     );
     award = { gained, coins, leveledUp };
   }
@@ -189,7 +216,7 @@ async function renamePet(student, name) {
   return { state: await getState(student) };
 }
 
-async function updatePet(student, { species, wornItems } = {}) {
+async function updatePet(student, { species, wornItems, name } = {}) {
   const allowedSpecies = new Set(["fox", "raccoon", "squirrel", "owl", "cat"]);
   if (species !== undefined && !allowedSpecies.has(species)) return { error: "invalid_species" };
   const state = await getState(student);
@@ -197,6 +224,8 @@ async function updatePet(student, { species, wornItems } = {}) {
   const changesSpecies = species !== undefined && species !== state.profile.pet.species;
   const changePrice = state.profile.petSelected && changesSpecies ? 100 : 0;
   if (changePrice && state.profile.coins < changePrice) return { error: "not_enough_coins" };
+  const nextName = name === undefined ? state.profile.pet.name : String(name).trim().slice(0, 24);
+  if (!nextName) return { error: "name_required" };
   let nextWorn = state.profile.wornItems;
   if (wornItems && typeof wornItems === "object" && !Array.isArray(wornItems)) {
     const ownedLooks = seed.shopItems.filter((item) =>
@@ -210,12 +239,12 @@ async function updatePet(student, { species, wornItems } = {}) {
   }
   await db.query(
     `UPDATE student_profiles
-     SET pet_species = $2, worn_items = $3,
-         pet_selected = pet_selected OR $4,
-         onboarding_step = CASE WHEN $4 THEN 'complete' ELSE onboarding_step END,
-         coins = coins - $5, updated_at = now()
+     SET pet_species = $2, worn_items = $3, pet_name = $4,
+         pet_selected = pet_selected OR $5,
+         onboarding_step = CASE WHEN $5 THEN 'complete' ELSE onboarding_step END,
+         coins = coins - $6, updated_at = now()
      WHERE student_id = $1`,
-    [student.id, nextSpecies, JSON.stringify(nextWorn), species !== undefined, changePrice]
+    [student.id, nextSpecies, JSON.stringify(nextWorn), nextName, species !== undefined, changePrice]
   );
   return { state: await getState(student) };
 }

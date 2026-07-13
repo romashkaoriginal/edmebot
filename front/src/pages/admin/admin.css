@@ -1529,13 +1529,20 @@
   .awizard__step.is-done:hover { background: color-mix(in oklch, var(--success-soft) 70%, var(--surface-solid)); }
 }
 
-.apick-grid { gap: var(--sp-3); }
-.apick {
-  min-height: 124px;
-  border: 0;
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-sm);
+.apick-grid {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--sp-2);
 }
+.apick {
+  min-height: 82px;
+  border: 0;
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+}
+.apick__icon { width: 44px; height: 44px; }
+.apick__label { font-size: var(--text-md); }
 .apick--primary { background: var(--primary-strong); }
 .apick--primary .apick__label,
 .apick--primary .apick__go { color: var(--on-primary); }

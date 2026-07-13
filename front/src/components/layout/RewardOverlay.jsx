@@ -1,11 +1,12 @@
 import { useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Zap, Coins, ArrowUp } from "lucide-react";
 import { useApp } from "../../store/AppStore";
 import "./RewardOverlay.css";
 
 export default function RewardOverlay() {
   const { reward, clearReward, profile } = useApp();
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     if (!reward) return;
@@ -14,34 +15,28 @@ export default function RewardOverlay() {
   }, [reward, clearReward]);
 
   return (
-    <AnimatePresence>
+    <AnimatePresence initial={false}>
       {reward && (
         <motion.div
           className="reward"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -28 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -18 }}
+          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
           onClick={clearReward}
           role="status"
           aria-live="polite"
         >
-          <motion.div
-            className={`reward__card reward__card--${reward.type}`}
-            initial={{ scale: 0.85, y: 12, opacity: 0 }}
-            animate={{ scale: 1, y: 0, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            transition={{ type: "spring", duration: 0.5, bounce: 0.35 }}
-          >
+          <div className={`reward__card reward__card--${reward.type}`}>
             {reward.type === "levelup" ? (
               <>
                 <div className="reward__burst">
-                  <ArrowUp size={40} strokeWidth={3} />
+                  <ArrowUp size={20} strokeWidth={3} />
                 </div>
-                <div className="reward__title font-display">Новый уровень!</div>
-                <div className="reward__level font-display">{profile.level}</div>
+                <div className="reward__copy"><div className="reward__title">Новый уровень</div><div className="reward__subtitle">Теперь у тебя {profile.level} уровень</div></div>
               </>
             ) : (
-              <div className="reward__title font-display">Отлично!</div>
+              <div className="reward__copy"><div className="reward__title">Награда начислена</div><div className="reward__subtitle">Верный ответ укрепил прогресс</div></div>
             )}
             <div className="reward__gains">
               <span className="reward__gain reward__gain--xp">
@@ -53,7 +48,7 @@ export default function RewardOverlay() {
                 </span>
               )}
             </div>
-          </motion.div>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>

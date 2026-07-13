@@ -25,6 +25,8 @@ export default function PetAvatar({
   eating = null,
   size = 120,
   className = "",
+  animated = true,
+  decorative = false,
 }) {
   const uid = useId().replace(/[:]/g, "");
   const Body = SPECIES[species] ?? SPECIES.fox;
@@ -32,7 +34,7 @@ export default function PetAvatar({
   const anchor = ANCHOR[species] ?? ANCHOR.fox;
   return (
     <div
-      className={`pet pet--${mood} ${reaction ? `pet--${reaction}` : ""} ${eating ? "pet--eating" : ""} ${className}`}
+      className={`pet pet--${species} pet--${mood} ${animated ? "" : "pet--static"} ${reaction ? `pet--${reaction}` : ""} ${eating ? "pet--eating" : ""} ${className}`}
       style={{ width: size, height: size }}
       data-mood={mood}
     >
@@ -40,8 +42,9 @@ export default function PetAvatar({
         viewBox="0 0 120 120"
         width={size}
         height={size}
-        role="img"
-        aria-label={`Питомец: ${LABEL[species]}, настроение ${MOOD_LABEL[mood]}`}
+        role={decorative ? undefined : "img"}
+        aria-hidden={decorative || undefined}
+        aria-label={decorative ? undefined : `Питомец: ${LABEL[species]}, настроение ${MOOD_LABEL[mood]}`}
       >
         <ellipse className="pet__shadow" cx="60" cy="113" rx="30" ry="5" />
         <g className="pet__scene">

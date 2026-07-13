@@ -14,6 +14,7 @@ const EMPTY_PROFILE = {
   status: "pending",
   pet: { species: "fox", name: "Рыжик" },
   petSelected: false,
+  petBond: 0,
   onboardingStep: "subject",
   coins: 0,
   xp: 0,
@@ -104,6 +105,14 @@ export function AppProvider({ children }) {
   }, []);
 
   const clearReward = useCallback(() => setReward(null), []);
+  const showReward = useCallback((award) => {
+    if (!award?.gained && !award?.coins) return;
+    setReward({
+      type: award.leveledUp ? "levelup" : "xp",
+      amount: award.gained ?? 0,
+      coins: award.coins ?? 0,
+    });
+  }, []);
 
   const hydrate = useCallback((data) => {
     if (data.profile) {
@@ -131,9 +140,10 @@ export function AppProvider({ children }) {
       setPetSpecies,
       setPetName,
       clearReward,
+      showReward,
       hydrate,
     }),
-    [profile, topics, homework, ownedItems, reward, hydrated, awardXp, spendCoins, buyItem, bumpStreak, setTopicMastery, completeHomework, setPetSpecies, setPetName, clearReward, hydrate]
+    [profile, topics, homework, ownedItems, reward, hydrated, awardXp, spendCoins, buyItem, bumpStreak, setTopicMastery, completeHomework, setPetSpecies, setPetName, clearReward, showReward, hydrate]
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

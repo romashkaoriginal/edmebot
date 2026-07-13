@@ -31,6 +31,11 @@
   animation: none;
   opacity: 0.7;
 }
+.pet--static .pet__body,
+.pet--static .pet__shadow {
+  animation: none;
+  will-change: auto;
+}
 
 @keyframes pet-float {
   0% {
@@ -93,6 +98,10 @@
 .pet--cheer .pet__body {
   animation: pet-cheer 700ms var(--ease-emphasis);
 }
+.pet--cheer.pet--raccoon .pet__body { animation-name: pet-raccoon-cheer; }
+.pet--cheer.pet--squirrel .pet__body { animation-name: pet-squirrel-cheer; }
+.pet--cheer.pet--owl .pet__body { animation-name: pet-owl-cheer; }
+.pet--cheer.pet--cat .pet__body { animation-name: pet-cat-cheer; }
 @keyframes pet-cheer {
   0% {
     transform: translateY(0) rotate(0);
@@ -109,6 +118,26 @@
   100% {
     transform: translateY(0) rotate(0) scale(1);
   }
+}
+@keyframes pet-raccoon-cheer {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  32% { transform: translateX(-5px) rotate(-5deg); }
+  64% { transform: translateX(5px) rotate(5deg); }
+}
+@keyframes pet-squirrel-cheer {
+  0%, 100% { transform: translateY(0) scale(1); }
+  35% { transform: translateY(-11px) scale(1.04, 0.98); }
+  62% { transform: translateY(-3px) scale(0.98, 1.03); }
+}
+@keyframes pet-owl-cheer {
+  0%, 100% { transform: rotate(0); }
+  35% { transform: rotate(-7deg); }
+  70% { transform: rotate(5deg); }
+}
+@keyframes pet-cat-cheer {
+  0%, 100% { transform: scale(1); }
+  38% { transform: translateY(2px) scale(1.08, 0.92); }
+  68% { transform: translateY(-5px) scale(0.98, 1.04); }
 }
 
 .pet__sparkles .spk {

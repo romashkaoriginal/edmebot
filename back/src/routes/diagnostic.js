@@ -24,12 +24,38 @@ router.get("/", async (req, res, next) => {
     const grade = enrollments[0]?.grade ?? req.student.grade;
     if (!grade) return res.json({ subject, questions: [] });
     const { rows } = await db.query(
-      `SELECT id, topic, subject, prompt, options, correct
+      `SELECT id, topic, subject, prompt, options
        FROM tasks WHERE grade = $1 AND subject = $2
        ORDER BY random() LIMIT 10`,
       [grade, subject]
     );
-    res.json({ subject, questions: rows.map(({ correct, ...question }) => question) });
+    res.json({ subject, questions: rows });
+  } catch (e) { next(e); }
+});
+
+router.post("/check", async (req, res, next) => {
+  try {
+    const taskId = Number(req.body?.taskId);
+    const selected = req.body?.selected;
+    if (!Number.isInteger(taskId) || (selected !== null && !Number.isInteger(selected))) {
+      return res.status(400).json({ error: "taskId_and_selected_required" });
+    }
+    const { rows } = await db.query(
+      "SELECT id, subject, correct, explanation FROM tasks WHERE id = $1",
+      [taskId]
+    );
+    if (!rows.length) return res.status(404).json({ error: "task_not_found" });
+    const task = rows[0];
+    const { rows: enrolled } = await db.query(
+      "SELECT 1 FROM student_subjects WHERE student_id = $1 AND subject = $2",
+      [req.student.id, task.subject]
+    );
+    if (!enrolled.length) return res.status(403).json({ error: "not_enrolled_in_subject" });
+    res.json({
+      correct: selected === task.correct,
+      correctIndex: task.correct,
+      explanation: task.explanation,
+    });
   } catch (e) { next(e); }
 });
 
