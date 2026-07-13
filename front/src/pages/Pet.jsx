@@ -426,7 +426,7 @@ function PetFirstChoice({ hydrate }) {
       <header className="pet-choice__head">
         <span className="pet-choice__step"><Check size={15} strokeWidth={3} /> Диагностика готова</span>
         <h1 id="pet-choice-title">Выбери своего питомца</h1>
-        <p>Он останется с тобой во время обучения. Первый выбор бесплатный.</p>
+        <p>Первый выбор бесплатный. Сменить питомца позже можно за 100 монет.</p>
       </header>
 
       <div className="pet-choice__list" role="radiogroup" aria-label="Вид питомца">
@@ -445,14 +445,12 @@ function PetFirstChoice({ hydrate }) {
               if (event.key === "ArrowLeft" || event.key === "ArrowUp") { event.preventDefault(); moveSelection(-1); }
             }}
           >
-            <PetAvatar species={item.id} mood="happy" size={94} animated={false} decorative />
+            <PetAvatar species={item.id} mood="happy" size={72} animated={false} decorative />
             <span>{item.name}</span>
             {species === item.id && <i><Check size={14} strokeWidth={3} /></i>}
           </button>
         ))}
       </div>
-
-      <div className="pet-choice__summary" role="status"><strong>{species ? `${petSpecies.find((item) => item.id === species)?.name} · ${name.trim() || "Без имени"}` : "Сначала выбери питомца"}</strong><span>Первый выбор бесплатный · сменить позже — 100 монет</span></div>
 
       <div className="pet-choice__name">
         <label htmlFor="pet-first-name">Как его будут звать?</label>

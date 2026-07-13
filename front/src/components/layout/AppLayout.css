@@ -233,6 +233,10 @@
 }
 .app--onboarding.app { grid-template-columns: 1fr; min-height: 100dvh; }
 .app--onboarding .app__content { min-height: 100dvh; display: grid; place-items: center; }
+.app--pet-choice.app,
+.app--pet-choice .app__main,
+.app--pet-choice .app__content { height: 100dvh; min-height: 0; overflow: hidden; }
+.app--pet-choice .app__content { padding: 0; }
 /* If a very small screen can't fit the intro card, let it scroll rather than
    clip вЂ” but the default is a fixed, centered, unscrolled screen. */
 @media (max-height: 640px) {
@@ -240,6 +244,7 @@
     overflow-y: auto;
     align-content: start;
   }
+  .app--pet-choice .app__content { overflow: hidden; align-content: stretch; }
 }
 
 /* ---------- Responsive ---------- */

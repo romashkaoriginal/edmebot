@@ -82,7 +82,7 @@ export default function AppLayout() {
   }
 
   return (
-    <div className={`app ${focus ? "app--focus" : ""} ${onboardingIncomplete ? "app--onboarding" : ""} ${!isActive ? "app--pending" : ""}`}>
+    <div className={`app ${focus ? "app--focus" : ""} ${onboardingIncomplete ? "app--onboarding" : ""} ${onboardingStep === "pet" ? "app--pet-choice" : ""} ${!isActive ? "app--pending" : ""}`}>
       {!onboardingIncomplete && <aside className="app__sidebar">
         <div className="app__brand">
           <Logo height={34} />
