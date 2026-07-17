@@ -44,10 +44,10 @@ export default function StudentOnboarding() {
         <section className="sonboard__panel">
           <div>
             <h1>Что будем изучать?</h1>
-            <p>Предмет определит вопросы во входной диагностике.</p>
+            <p>Выбери предмет для занятий. Сначала проверим, какие темы ты уже знаешь, а какие стоит повторить.</p>
           </div>
           <div className="sonboard__subjects">
-            <button className="sonboard__subject is-selected" type="button" aria-pressed="true" onClick={() => setSubject("Математика")}>
+            <button className="sonboard__subject is-selected" type="button" aria-pressed="true" onClick={() => { setSubject("Математика"); setStep("grade"); }}>
               <Calculator size={28} /><strong>Математика</strong><span>Доступно</span>
             </button>
             <button className="sonboard__subject" type="button" disabled>
@@ -60,7 +60,6 @@ export default function StudentOnboarding() {
         <section className="sonboard__panel">
           <div>
             <h1>В каком ты классе?</h1>
-            <p>Подберём десять вопросов по программе твоего класса.</p>
           </div>
           <div className="sonboard__grades" role="radiogroup" aria-label="Класс">
             {GRADES.map((value) => (

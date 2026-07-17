@@ -152,7 +152,9 @@ async function submitDiagnostic(student, answers, subject, questions = null) {
   for (const answer of answers) {
     const question = source.find((item) => String(item.id) === String(answer.id));
     if (!question || question.subject !== activeSubject) continue;
-    const correct = answer.selected === question.correct;
+    // A remembered rule is useful learning support, but it also signals that
+    // this topic should stay in the student's practice route.
+    const correct = answer.selected === question.correct && !answer.usedHelp;
     // Diagnostic only discovers gaps. A correct one-off answer is not enough
     // evidence to add a topic to the knowledge map; practice builds mastery.
     if (!correct) {

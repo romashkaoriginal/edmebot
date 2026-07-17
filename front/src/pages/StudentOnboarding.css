@@ -4,11 +4,13 @@
 .sonboard__panel h1 { margin-bottom: var(--sp-2); }
 .sonboard__panel p { color: var(--muted); }
 .sonboard__subjects { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
-.sonboard__subject { min-height: 150px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: var(--sp-2); padding: var(--sp-4); border-radius: var(--r-md); background: var(--surface-2); text-align: left; }
+.sonboard__subject { min-height: 150px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: var(--sp-2); padding: var(--sp-4); border-radius: var(--r-md); background: var(--surface-2); text-align: left; transition: transform var(--dur-press) var(--ease-out), background-color var(--dur-pop) var(--ease-out); }
 .sonboard__subject strong { font-size: var(--text-lg); }
 .sonboard__subject span { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: var(--text-sm); font-weight: 700; }
 .sonboard__subject.is-selected { background: var(--primary); color: var(--on-primary); }
 .sonboard__subject.is-selected span { color: color-mix(in oklch, white 78%, var(--primary)); }
+.sonboard__subject:not(:disabled):active { transform: scale(.98); }
+.sonboard__subject:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .sonboard__subject:disabled { cursor: not-allowed; opacity: .56; }
 .sonboard__grades { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3); }
 .sonboard__grades button { aspect-ratio: 1; display: grid; place-content: center; border-radius: var(--r-md); background: var(--surface-2); color: var(--ink); }

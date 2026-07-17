@@ -40,6 +40,7 @@ BEGIN
     WHERE table_schema = 'public' AND table_name = 'students' AND column_name = 'full_name'
   ) THEN
     UPDATE students SET name = full_name WHERE name IS NULL;
+    ALTER TABLE students ALTER COLUMN full_name DROP NOT NULL;
   END IF;
 END $$;
 UPDATE students SET name = 'Без имени' WHERE name IS NULL;
@@ -49,6 +50,15 @@ ALTER TABLE students ALTER COLUMN name SET NOT NULL;
 -- before a subject/grade is chosen, so both must be nullable.
 ALTER TABLE students ALTER COLUMN grade DROP NOT NULL;
 ALTER TABLE students ALTER COLUMN subject DROP NOT NULL;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'students' AND column_name = 'tutor_id'
+  ) THEN
+    ALTER TABLE students ALTER COLUMN tutor_id DROP NOT NULL;
+  END IF;
+END $$;
 
 -- First/last name split. The name column stays populated ("Имя Фамилия") for
 -- back-compat with everything that reads students.name (pet, homework joins,

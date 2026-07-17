@@ -6,6 +6,8 @@ const { requireStudent } = require("../middleware/auth");
 const router = express.Router();
 router.use(requireStudent);
 
+const WEEKDAYS_RU = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+
 // Achievements are computed from REAL signals — never pre-granted. Each has a
 // predicate over the student's actual profile/stats, so a new student sees an
 // honest list with locked conditions that fills in as they earn things.
@@ -73,7 +75,7 @@ router.get("/analytics", async (req, res, next) => {
       [req.student.id]
     );
     const { rows: activity } = await db.query(
-      `SELECT to_char(created_at, 'Dy') AS day, COUNT(*)::int AS tasks
+      `SELECT EXTRACT(ISODOW FROM created_at)::int AS weekday, COUNT(*)::int AS tasks
          FROM attempts WHERE student_id = $1 AND created_at >= now() - interval '6 days'
          GROUP BY 1, date_trunc('day', created_at) ORDER BY date_trunc('day', created_at)`,
       [req.student.id]
@@ -94,7 +96,7 @@ router.get("/analytics", async (req, res, next) => {
     res.json({
       ...current,
       stats,
-      weekActivity: activity.map((item) => ({ day: item.day.trim(), tasks: item.tasks })),
+      weekActivity: activity.map((item) => ({ day: WEEKDAYS_RU[Number(item.weekday) - 1], tasks: item.tasks })),
       achievements,
       recommendations: { review: weak.map((topic) => topic.name), strong: strong.map((topic) => topic.name) },
     });

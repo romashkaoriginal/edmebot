@@ -13,6 +13,14 @@ import { studentApi } from "../api/student";
 import { plural } from "../utils/format";
 import "./Profile.css";
 
+const WEEKDAY_LABELS = {
+  Mon: "Пн", Tue: "Вт", Wed: "Ср", Thu: "Чт", Fri: "Пт", Sat: "Сб", Sun: "Вс",
+};
+
+function localizeWeekday(day) {
+  return WEEKDAY_LABELS[String(day).slice(0, 3)] ?? day;
+}
+
 export default function Profile() {
   const { profile, topics } = useApp();
   const xpInLevel = profile.xp - profile.xpFromLevel;
@@ -123,7 +131,7 @@ export default function Profile() {
           <Card pad="md">
             <div className="prof__chart" role="list" aria-label="Количество решённых заданий по дням">
               {weekActivity.map((d) => (
-                <div key={d.day} className="prof__bar-col" role="listitem" aria-label={`${d.day}: ${d.tasks} заданий`}>
+                <div key={d.day} className="prof__bar-col" role="listitem" aria-label={`${localizeWeekday(d.day)}: ${d.tasks} заданий`}>
                   <div className="prof__bar-wrap">
                     <div
                       className="prof__bar"
@@ -133,7 +141,7 @@ export default function Profile() {
                       <span className="prof__bar-val">{d.tasks}</span>
                     </div>
                   </div>
-                  <span className="prof__bar-day">{d.day}</span>
+                  <span className="prof__bar-day">{localizeWeekday(d.day)}</span>
                 </div>
               ))}
             </div>

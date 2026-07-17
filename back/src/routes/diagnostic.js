@@ -24,7 +24,7 @@ router.get("/", async (req, res, next) => {
     const grade = enrollments[0]?.grade ?? req.student.grade;
     if (!grade) return res.json({ subject, questions: [] });
     const { rows } = await db.query(
-      `SELECT id, topic, subject, prompt, options,
+      `SELECT id, topic, subject, prompt, options, hints,
               correct AS "correctIndex", explanation
        FROM tasks WHERE grade = $1 AND subject = $2
        ORDER BY random() LIMIT 10`,
