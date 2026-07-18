@@ -6,6 +6,7 @@ const multer = require("multer");
 const ExcelJS = require("exceljs");
 const db = require("../db");
 const { requireAuth, requireRole } = require("../middleware/auth");
+const { normalizeSubject } = require("../subjects");
 
 const router = express.Router();
 router.use(requireAuth);
@@ -68,7 +69,7 @@ router.post("/tasks/import", requireRole("admin", "tutor"), upload.single("file"
     if (!sheet) return res.status(400).json({ error: "empty_workbook" });
 
     const header = sheet.getRow(1).values.slice(1).map((h) => String(h || "").trim().toLowerCase());
-    const results = { imported: 0, skipped: 0, errors: [] };
+    const results = { imported: 0, skipped: 0, errors: [], importedBySubject: {} };
 
     for (let rowNumber = 2; rowNumber <= sheet.rowCount; rowNumber++) {
       const row = sheet.getRow(rowNumber);
@@ -84,7 +85,8 @@ router.post("/tasks/import", requireRole("admin", "tutor"), upload.single("file"
       const correctLetter = String(obj.correct ?? "").trim().toLowerCase();
       const correct = LETTER_TO_INDEX[correctLetter];
 
-      if (!obj.grade || !obj.subject || !obj.topic || !obj.prompt) {
+      const subject = normalizeSubject(obj.subject);
+      if (!obj.grade || !subject || !obj.topic || !obj.prompt) {
         results.errors.push({ row: rowNumber, reason: "grade_subject_topic_prompt_required" });
         results.skipped++;
         continue;
@@ -118,7 +120,7 @@ router.post("/tasks/import", requireRole("admin", "tutor"), upload.single("file"
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
         [
           grade,
-          String(obj.subject).trim(),
+          subject,
           String(obj.topic).trim(),
           String(obj.prompt).trim(),
           JSON.stringify(options),
@@ -129,6 +131,7 @@ router.post("/tasks/import", requireRole("admin", "tutor"), upload.single("file"
         ]
       );
       results.imported++;
+      results.importedBySubject[subject] = (results.importedBySubject[subject] ?? 0) + 1;
     }
 
     res.json(results);

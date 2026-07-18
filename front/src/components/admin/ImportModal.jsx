@@ -74,8 +74,15 @@ export default function ImportModal({ title, eyebrow, fields, onDownload, onImpo
 
           {error && <p className="aerror">{error}</p>}
           {result && (
-            <div className="anotice">
+            <div className="anotice" role="status">
               Добавлено: {result.imported}. Пропущено: {result.skipped}.
+              {Object.keys(result.importedBySubject ?? {}).length > 0 && (
+                <div className="import-summary">
+                  {Object.entries(result.importedBySubject).map(([subject, count]) => (
+                    <span key={subject}>{subject}: {count}</span>
+                  ))}
+                </div>
+              )}
               {result.errors?.length ? (
                 <div className="import-errors">
                   {result.errors.map((item, i) => (

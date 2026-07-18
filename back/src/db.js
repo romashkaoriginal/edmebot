@@ -2,6 +2,7 @@
 // Schema is migrated on startup (CREATE TABLE IF NOT EXISTS) and seeded idempotently.
 const { Pool } = require("pg");
 const seed = require("./data/seed");
+const { SUBJECT_VARIANTS } = require("./subjects");
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -280,6 +281,19 @@ async function seedIfEmpty() {
   }
 }
 
+async function normalizeTaskSubjects() {
+  for (const { canonical, aliases } of SUBJECT_VARIANTS) {
+    const { rowCount } = await query(
+      `UPDATE tasks
+          SET subject = $1
+        WHERE lower(trim(subject)) = ANY($2::text[])
+          AND subject <> $1`,
+      [canonical, aliases]
+    );
+    if (rowCount) console.log(`Normalized ${rowCount} task subject value(s) to ${canonical}.`);
+  }
+}
+
 // The demo student is the fallback identity when no real Telegram id is bound.
 async function getDemoStudent() {
   const { rows } = await query("SELECT * FROM students ORDER BY id ASC LIMIT 1");
@@ -293,6 +307,7 @@ async function init() {
     );
   }
   await query(SCHEMA);
+  await normalizeTaskSubjects();
   await seedIfEmpty();
   console.log("Database ready.");
 }
