@@ -23,11 +23,19 @@ const ACHIEVEMENTS = [
 
 router.get("/", async (req, res, next) => {
   try {
-    res.json(await state.getState(req.student));
+    const subject = typeof req.query.subject === "string" ? req.query.subject : null;
+    if (subject) {
+      const { rows } = await db.query(
+        "SELECT 1 FROM student_subjects WHERE student_id = $1 AND subject = $2",
+        [req.student.id, subject]
+      );
+      if (!rows.length) return res.status(403).json({ error: "not_enrolled_in_subject" });
+    }
+    res.json(await state.getState(req.student, subject));
   } catch (e) { next(e); }
 });
 
-const ONBOARD_SUBJECTS = ["Математика"];
+const ONBOARD_SUBJECTS = ["Математика", "Русский"];
 
 // Self-serve onboarding: a brand-new (auto-provisioned "pending") student
 // picks a subject + grade so they can take that subject's diagnostic. This

@@ -20,6 +20,9 @@ export default function PracticeRun() {
   const { hydrate, topics, profile } = useApp();
   const settingsString = searchParams.toString();
   const isEndless = searchParams.get("mode") === "endless";
+  const practicePath = searchParams.get("subject")
+    ? `/app/practice?subject=${encodeURIComponent(searchParams.get("subject"))}`
+    : "/app/practice";
   const sessionKey = useMemo(() => {
     const student = localStorage.getItem("edme_student_id") || "telegram";
     return `edme:practice:${student}:${settingsString || "auto"}`;
@@ -89,7 +92,7 @@ export default function PracticeRun() {
 
   function exitRun() {
     if (hasProgress && !window.confirm("Выйти из практики? Прогресс сохранится, и ты сможешь продолжить позже.")) return;
-    navigate("/app/practice");
+    navigate(practicePath);
   }
 
   function restoreQuestion(target) {
@@ -109,7 +112,7 @@ export default function PracticeRun() {
   }
 
   if (tasks.length === 0) {
-    return <div className="run"><div className="run__body"><Card pad="lg" className="run__state-card"><h1 className="run__prompt">Для этих настроек заданий нет</h1><p>Выбери другой уровень или режим. Если задания не появляются без фильтров, сообщи учителю.</p><Button icon={Home} onClick={() => navigate("/app/practice")}>Изменить настройки</Button></Card></div></div>;
+    return <div className="run"><div className="run__body"><Card pad="lg" className="run__state-card"><h1 className="run__prompt">Для этих настроек заданий нет</h1><p>Выбери другой уровень или режим. Если задания не появляются без фильтров, сообщи учителю.</p><Button icon={Home} onClick={() => navigate(practicePath)}>Изменить настройки</Button></Card></div></div>;
   }
 
   if (done) return <Summary results={results} onExit={() => navigate("/app")} />;

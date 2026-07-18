@@ -512,7 +512,7 @@ router.get("/homework", requireRole("admin", "tutor"), async (req, res, next) =>
 
 router.post("/homework", requireRole("admin", "tutor"), async (req, res, next) => {
   try {
-    const { studentId, title, description, due, taskIds } = req.body ?? {};
+    const { studentId, title, description, due, taskIds, subject: requestedSubject } = req.body ?? {};
     if (!studentId || !title) return bad(res, "studentId_and_title_required");
     const cleanTitle = String(title).trim();
     if (!cleanTitle) return bad(res, "studentId_and_title_required");
@@ -530,6 +530,13 @@ router.post("/homework", requireRole("admin", "tutor"), async (req, res, next) =
     );
     if (!studentRows.length) return bad(res, "student_not_found", 404);
     const student = studentRows[0];
+    const subject = requestedSubject || student.subject;
+    const { rows: enrollmentRows } = await db.query(
+      "SELECT grade FROM student_subjects WHERE student_id = $1 AND subject = $2",
+      [studentId, subject]
+    );
+    if (!enrollmentRows.length) return bad(res, "student_not_enrolled_in_subject");
+    const grade = enrollmentRows[0].grade;
 
     if (cleanTaskIds.length) {
       const { rows: taskRows } = await db.query(
@@ -537,15 +544,15 @@ router.post("/homework", requireRole("admin", "tutor"), async (req, res, next) =
           WHERE id = ANY($1::bigint[])
             AND grade = $2
             AND subject = $3`,
-        [cleanTaskIds, student.grade, student.subject]
+        [cleanTaskIds, grade, subject]
       );
       if (taskRows.length !== cleanTaskIds.length) return bad(res, "tasks_do_not_match_student");
     }
 
     const { rows } = await db.query(
-      `INSERT INTO homework (student_id, title, description, due, task_ids)
-       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-      [studentId, cleanTitle, String(description ?? "").trim() || null, due || null, JSON.stringify(cleanTaskIds)]
+      `INSERT INTO homework (student_id, subject, title, description, due, task_ids)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+      [studentId, subject, cleanTitle, String(description ?? "").trim() || null, due || null, JSON.stringify(cleanTaskIds)]
     );
     res.status(201).json({ homework: rows[0] });
   } catch (e) {

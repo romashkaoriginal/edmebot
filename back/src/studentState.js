@@ -128,7 +128,20 @@ async function getState(student, subject = null) {
     mastery: row.mastery,
     status: row.status,
   }));
-  return { profile: toProfile(profileRow, student), topics };
+  const { rows: subjectRows } = await db.query(
+    "SELECT subject, grade FROM student_subjects WHERE student_id = $1 ORDER BY created_at ASC",
+    [student.id]
+  );
+  const profile = toProfile(profileRow, student);
+  return {
+    profile: {
+      ...profile,
+      // The legacy subject/grade fields remain the student's primary subject.
+      // `subjects` is the source of truth for navigation in multi-subject accounts.
+      subjects: subjectRows.length ? subjectRows : profile.subject ? [{ subject: profile.subject, grade: profile.grade }] : [],
+    },
+    topics,
+  };
 }
 
 async function updateTopics(studentId, subject, updates) {

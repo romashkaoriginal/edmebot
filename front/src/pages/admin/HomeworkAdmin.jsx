@@ -9,7 +9,7 @@ import "./admin.css";
 
 const SUBJECTS = ["Математика", "Русский"];
 const GRADES = [6, 7, 8, 9, 10, 11];
-const EMPTY = { title: "", description: "", due: "", taskIds: [] };
+const EMPTY = { title: "", description: "", due: "", subject: "", taskIds: [] };
 
 const HW_IMPORT_FIELDS = [
   { key: "student_tg_id", desc: "Telegram ID ученика (обязательно)" },
@@ -62,7 +62,7 @@ export default function HomeworkAdmin() {
       ]);
       setTasks(tasks);
       setHomework(homework);
-      setForm(EMPTY);
+      setForm({ ...EMPTY, subject: student.subject });
     } catch (e) {
       setError(e.message);
     }
@@ -89,6 +89,7 @@ export default function HomeworkAdmin() {
         description: form.description,
         due: form.due ? new Date(form.due).toISOString() : null,
         taskIds: form.taskIds,
+        subject: form.subject,
       });
       await loadForStudent();
       setFormOpen(false);
@@ -230,8 +231,28 @@ export default function HomeworkAdmin() {
                 />
               </label>
 
+              <label className="afield">
+                <span>Предмет</span>
+                <select
+                  className="aselect"
+                  value={form.subject}
+                  onChange={async (e) => {
+                    const subject = e.target.value;
+                    setForm((current) => ({ ...current, subject, taskIds: [] }));
+                    try {
+                      const { tasks: nextTasks } = await adminApi.listTasks({ grade: student.grade, subject });
+                      setTasks(nextTasks);
+                    } catch (e) {
+                      setError(e.message);
+                    }
+                  }}
+                >
+                  {SUBJECTS.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </label>
+
               <div className="afield">
-                <span>Задания из базы ({student.grade} класс · {student.subject})</span>
+                <span>Задания из базы ({student.grade} класс · {form.subject})</span>
                 {tasks.length === 0 ? (
                   <p className="arow__meta">Нет заданий для этого класса/предмета — создайте в разделе «Задания».</p>
                 ) : (
@@ -286,6 +307,7 @@ export default function HomeworkAdmin() {
                       </div>
                       <div className="arow__meta">
                         {h.due ? `до ${new Date(h.due).toLocaleString("ru-RU")}` : "без срока"}
+                        {h.subject ? ` · ${h.subject}` : ""}
                         {Array.isArray(h.task_ids) && h.task_ids.length ? ` · ${h.task_ids.length} заданий` : ""}
                       </div>
                     </div>

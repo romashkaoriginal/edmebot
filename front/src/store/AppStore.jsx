@@ -9,6 +9,7 @@ const EMPTY_PROFILE = {
   name: "",
   grade: null,
   subject: "",
+  subjects: [],
   // Safe default: treat an unhydrated profile as not-yet-active so nothing
   // flashes the full nav before the real status is known.
   status: "pending",

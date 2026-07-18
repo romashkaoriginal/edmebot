@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { BookOpen, Check, CircleAlert, Clock, RefreshCw, RotateCcw } from "lucide-react";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
 import { studentApi } from "../api/student";
+import { useApp } from "../store/AppStore";
+import SubjectPicker from "../components/shared/SubjectPicker";
+import { enrolledSubjects, subjectLabel } from "../utils/subjects";
 import { plural } from "../utils/format";
 import "./Homework.css";
 
@@ -14,7 +18,24 @@ const FILTERS = [
 ];
 
 export default function Homework() {
-  const cachedHomework = studentApi.peekHomework();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { profile } = useApp();
+  const subjects = enrolledSubjects(profile);
+  const subject = searchParams.get("subject");
+  const selectedSubject = subjects.find((item) => item.subject === subject);
+
+  if (subjects.length > 1 && !selectedSubject) {
+    return <SubjectPicker subjects={subjects} section="домашнее задание" onSelect={(nextSubject) => navigate(`/app/homework?subject=${encodeURIComponent(nextSubject)}`)} />;
+  }
+  if (!selectedSubject && subjects.length === 1) {
+    return <HomeworkList key={subjects[0].subject} subject={subjects[0].subject} />;
+  }
+  return selectedSubject ? <HomeworkList key={selectedSubject.subject} subject={selectedSubject.subject} /> : null;
+}
+
+function HomeworkList({ subject }) {
+  const cachedHomework = studentApi.peekHomework(subject);
   const [homework, setHomework] = useState(() => cachedHomework?.homework ?? []);
   const [counts, setCounts] = useState(() => cachedHomework?.counts ?? { active: 0, overdue: 0 });
   const [filter, setFilter] = useState("all");
@@ -27,7 +48,7 @@ export default function Homework() {
     if (!quiet) setLoading(true);
     setError("");
     try {
-      const data = await studentApi.homework();
+      const data = await studentApi.homework({ subject });
       const next = { homework: data.homework ?? [], counts: data.counts ?? { active: 0, overdue: 0 } };
       setHomework(next.homework);
       setCounts(next.counts);
@@ -36,7 +57,7 @@ export default function Homework() {
     } finally {
       if (!quiet) setLoading(false);
     }
-  }, []);
+  }, [subject]);
 
   useEffect(() => {
     load({ quiet: Boolean(studentApi.peekHomework()) });
@@ -85,6 +106,7 @@ export default function Homework() {
         <div>
           <h1>Домашние задания</h1>
           <p className="hw__sub">
+            {subjectLabel(subject)} · {" "}
             {counts.active} {plural(counts.active, "активное задание", "активных задания", "активных заданий")}
             {counts.overdue > 0 && <span className="hw__sub-warn"> · {counts.overdue} просрочено</span>}
           </p>

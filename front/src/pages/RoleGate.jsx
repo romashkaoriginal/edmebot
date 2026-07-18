@@ -97,8 +97,8 @@ export default function RoleGate() {
           <p className="gate__sub">Сначала выбери предмет, затем свой класс.</p>
           <form className="gate__onboard-form" onSubmit={submitOnboarding}>
             <div className="gate__subject-options" role="radiogroup" aria-label="Предмет">
-              <button type="button" className="gate__subject-option is-selected" aria-pressed="true" onClick={() => setOnboardSubject("Математика")}> <strong>Математика</strong><span>Доступно</span> </button>
-              <button type="button" className="gate__subject-option" disabled aria-disabled="true"> <strong>Русский язык</strong><span>Скоро</span> </button>
+              <button type="button" className={`gate__subject-option ${onboardSubject === "Математика" ? "is-selected" : ""}`} aria-pressed={onboardSubject === "Математика"} onClick={() => setOnboardSubject("Математика")}> <strong>Математика</strong><span>Доступно</span> </button>
+              <button type="button" className={`gate__subject-option ${onboardSubject === "Русский" ? "is-selected" : ""}`} aria-pressed={onboardSubject === "Русский"} onClick={() => setOnboardSubject("Русский")}> <strong>Русский язык</strong><span>Доступно</span> </button>
             </div>
             <label className="gate__onboard-field">
               <span>Класс</span>

@@ -118,6 +118,14 @@ CREATE TABLE IF NOT EXISTS homework (
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Homework must belong to a subject so that multi-subject students do not
+-- see Russian and Mathematics assignments mixed in one list.
+ALTER TABLE homework ADD COLUMN IF NOT EXISTS subject TEXT;
+UPDATE homework hw
+   SET subject = s.subject
+  FROM students s
+ WHERE hw.student_id = s.id AND hw.subject IS NULL;
+
 CREATE TABLE IF NOT EXISTS attempts (
   id           BIGSERIAL PRIMARY KEY,
   student_id   BIGINT NOT NULL REFERENCES students(id) ON DELETE CASCADE,

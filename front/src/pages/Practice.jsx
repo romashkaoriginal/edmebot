@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Lightbulb, AlertCircle, Infinity as InfinityIcon, ListTree, Play } from "lucide-react";
 import Button from "../components/ui/Button";
 import SectionTitle from "../components/ui/SectionTitle";
 import { useApp } from "../store/AppStore";
+import { studentApi } from "../api/student";
+import SubjectPicker from "../components/shared/SubjectPicker";
+import { enrolledSubjects, subjectLabel } from "../utils/subjects";
 import "./Practice.css";
 
 const MODES = [
@@ -39,9 +42,32 @@ const LEVELS = [
 
 export default function Practice() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { profile, hydrate } = useApp();
+  const subjects = enrolledSubjects(profile);
+  const subject = searchParams.get("subject");
+  const selectedSubject = subjects.find((item) => item.subject === subject);
+  const selectedSubjectName = selectedSubject?.subject;
+
+  useEffect(() => {
+    if (!selectedSubjectName) return;
+    studentApi.profile({ subject: selectedSubjectName }).then(hydrate).catch(() => {});
+  }, [hydrate, selectedSubjectName]);
+
+  if (subjects.length > 1 && !selectedSubject) {
+    return <SubjectPicker subjects={subjects} section="практика" onSelect={(nextSubject) => navigate(`/app/practice?subject=${encodeURIComponent(nextSubject)}`)} />;
+  }
+  if (!selectedSubject && subjects.length === 1) {
+    return <PracticeSettings key={subjects[0].subject} subject={subjects[0].subject} />;
+  }
+  return selectedSubject ? <PracticeSettings key={selectedSubject.subject} subject={selectedSubject.subject} /> : null;
+}
+
+function PracticeSettings({ subject }) {
+  const navigate = useNavigate();
   const { topics } = useApp();
   const hasTopics = topics.length > 0;
-  const stored = readPracticePrefs();
+  const stored = readPracticePrefs(subject);
   const [mode, setMode] = useState(stored.mode ?? "endless");
   const [level, setLevel] = useState(stored.level ?? "auto");
   const [topic, setTopic] = useState(stored.topic ?? topics[0]?.id ?? null);
@@ -51,11 +77,12 @@ export default function Practice() {
   }, [topic, topics]);
 
   useEffect(() => {
-    localStorage.setItem("edme:practice:prefs", JSON.stringify({ mode, level, topic }));
-  }, [level, mode, topic]);
+    localStorage.setItem(`edme:practice:prefs:${subject}`, JSON.stringify({ mode, level, topic }));
+  }, [level, mode, subject, topic]);
 
   function start() {
     const params = new URLSearchParams({ mode, level });
+    params.set("subject", subject);
     if (mode === "topic" && topic) params.set("topic", topic);
     navigate(`/app/practice/run?${params}`);
   }
@@ -68,7 +95,7 @@ export default function Practice() {
         </div>
         <div>
           <h1>Практика</h1>
-          <p className="prac__sub">Настрой тренировку под себя</p>
+          <p className="prac__sub">{subjectLabel(subject)} · настрой тренировку под себя</p>
         </div>
       </header>
 
@@ -153,9 +180,9 @@ export default function Practice() {
   );
 }
 
-function readPracticePrefs() {
+function readPracticePrefs(subject) {
   try {
-    return JSON.parse(localStorage.getItem("edme:practice:prefs") || "{}");
+    return JSON.parse(localStorage.getItem(`edme:practice:prefs:${subject}`) || "{}");
   } catch {
     return {};
   }

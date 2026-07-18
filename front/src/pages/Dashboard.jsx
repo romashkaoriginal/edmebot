@@ -45,7 +45,9 @@ export default function Dashboard() {
   const xpNeeded = Math.max(1, profile.xpForNext - profile.xpFromLevel);
   const xpProgress = Math.min(100, Math.round((xpInLevel / xpNeeded) * 100));
   const needsDiagnostic = !profile.diagnosticDone || topics.length === 0;
-  const primaryPath = needsDiagnostic ? "/app/diagnostic" : "/app/practice/run";
+  // Practice opens its subject picker when the student studies more than one
+  // subject, instead of silently starting a series in their primary subject.
+  const primaryPath = needsDiagnostic ? "/app/diagnostic" : "/app/practice";
   const primaryLabel = needsDiagnostic ? "Пройти диагностику" : "Начать практику";
   const firstName = profile.name?.trim().split(/\s+/)[0];
 

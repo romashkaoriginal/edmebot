@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Calculator, LockKeyhole, PenLine } from "lucide-react";
+import { ArrowLeft, ArrowRight, Calculator, PenLine } from "lucide-react";
 import Button from "../components/ui/Button";
 import Logo from "../components/brand/Logo";
 import { studentApi } from "../api/student";
@@ -44,14 +44,14 @@ export default function StudentOnboarding() {
         <section className="sonboard__panel">
           <div>
             <h1>Что будем изучать?</h1>
-            <p>Выбери предмет, с которого начнём занятия. Сейчас доступна математика, остальные предметы добавим позже.</p>
+            <p>Выбери предмет, с которого начнём занятия.</p>
           </div>
           <div className="sonboard__subjects">
-            <button className="sonboard__subject is-selected" type="button" aria-pressed="true" onClick={() => { setSubject("Математика"); setStep("grade"); }}>
+            <button className={`sonboard__subject ${subject === "Математика" ? "is-selected" : ""}`} type="button" aria-pressed={subject === "Математика"} onClick={() => { setSubject("Математика"); setStep("grade"); }}>
               <Calculator size={28} /><strong>Математика</strong><span>Доступно</span>
             </button>
-            <button className="sonboard__subject" type="button" disabled>
-              <PenLine size={28} /><strong>Русский язык</strong><span><LockKeyhole size={13} /> Скоро</span>
+            <button className={`sonboard__subject ${subject === "Русский" ? "is-selected" : ""}`} type="button" aria-pressed={subject === "Русский"} onClick={() => { setSubject("Русский"); setStep("grade"); }}>
+              <PenLine size={28} /><strong>Русский язык</strong><span>Доступно</span>
             </button>
           </div>
           <Button size="lg" full iconRight={ArrowRight} onClick={() => setStep("grade")}>Продолжить</Button>

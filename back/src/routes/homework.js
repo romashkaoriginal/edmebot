@@ -19,10 +19,21 @@ function deadlineNotice(hw) {
 router.get("/", async (req, res, next) => {
   try {
     const { status } = req.query;
+    const subject = typeof req.query.subject === "string" ? req.query.subject : null;
+
+    if (subject) {
+      const { rows: enrolled } = await db.query(
+        "SELECT 1 FROM student_subjects WHERE student_id = $1 AND subject = $2",
+        [req.student.id, subject]
+      );
+      if (!enrolled.length) return res.status(403).json({ error: "not_enrolled_in_subject" });
+    }
 
     const { rows } = await db.query(
-      "SELECT * FROM homework WHERE student_id = $1 ORDER BY id DESC",
-      [req.student.id]
+      `SELECT * FROM homework
+        WHERE student_id = $1 ${subject ? "AND subject = $2" : ""}
+        ORDER BY id DESC`,
+      subject ? [req.student.id, subject] : [req.student.id]
     );
 
     let list = rows;
