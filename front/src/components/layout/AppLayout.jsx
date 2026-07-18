@@ -1,6 +1,6 @@
 import { NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
-import { Target, BrainCircuit, PawPrint, BookOpen, User, RefreshCw, Coins } from "lucide-react";
+import { Target, Lightbulb, PawPrint, BookOpen, User, RefreshCw, Coins } from "lucide-react";
 import Button from "../ui/Button";
 import Logo from "../brand/Logo";
 import { StreakPill } from "../ui/StatPill";
@@ -10,7 +10,7 @@ import { studentApi } from "../../api/student";
 import "./AppLayout.css";
 
 const FULL_NAV = [
-  { to: "/app/practice", label: "Практика", icon: BrainCircuit },
+  { to: "/app/practice", label: "Практика", icon: Lightbulb },
   { to: "/app/homework", label: "Домашка", icon: BookOpen },
   { to: "/app/pet", label: "Питомец", icon: PawPrint },
   { to: "/app/profile", label: "Профиль", icon: User },

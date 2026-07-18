@@ -44,7 +44,7 @@ export default function StudentOnboarding() {
         <section className="sonboard__panel">
           <div>
             <h1>Что будем изучать?</h1>
-            <p>Выбери предмет для занятий. Сначала проверим, какие темы ты уже знаешь, а какие стоит повторить.</p>
+            <p>Выбери предмет, с которого начнём занятия. Сейчас доступна математика, остальные предметы добавим позже.</p>
           </div>
           <div className="sonboard__subjects">
             <button className="sonboard__subject is-selected" type="button" aria-pressed="true" onClick={() => { setSubject("Математика"); setStep("grade"); }}>

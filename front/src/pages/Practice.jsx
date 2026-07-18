@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { BrainCircuit, AlertCircle, Infinity as InfinityIcon, ListTree, Play } from "lucide-react";
+import { Lightbulb, AlertCircle, Infinity as InfinityIcon, ListTree, Play } from "lucide-react";
 import Button from "../components/ui/Button";
 import SectionTitle from "../components/ui/SectionTitle";
 import { useApp } from "../store/AppStore";
@@ -64,7 +64,7 @@ export default function Practice() {
     <div className="prac">
       <header className="prac__head">
         <div className="prac__head-icon">
-          <BrainCircuit size={26} strokeWidth={2.4} />
+          <Lightbulb size={26} strokeWidth={2.4} />
         </div>
         <div>
           <h1>Практика</h1>
