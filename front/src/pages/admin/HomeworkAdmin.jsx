@@ -44,7 +44,7 @@ export default function HomeworkAdmin() {
   const [loadingTopic, setLoadingTopic] = useState(null);
   const [expandedTopics, setExpandedTopics] = useState(() => new Set());
   const [tasksPanelOpen, setTasksPanelOpen] = useState(false);
-  const [newTaskTopic, setNewTaskTopic] = useState(null);
+  const [newTaskOpen, setNewTaskOpen] = useState(false);
   const [newTaskForm, setNewTaskForm] = useState(null);
   const [newTaskError, setNewTaskError] = useState("");
   const [homework, setHomework] = useState([]);
@@ -97,7 +97,8 @@ export default function HomeworkAdmin() {
       setTasksByTopic({});
       setExpandedTopics(new Set());
       setTasksPanelOpen(false);
-      setNewTaskTopic(null);
+      setNewTaskOpen(false);
+      setNewTaskForm(null);
       setForm({ ...EMPTY, subject: student.subject });
     } catch (e) {
       setError(e.message);
@@ -136,10 +137,15 @@ export default function HomeworkAdmin() {
     });
   }
 
-  function openNewTask(topicName) {
-    setNewTaskTopic(topicName);
-    setNewTaskError("");
-    setNewTaskForm(emptyTaskForm(student.grade, form.subject, topicName));
+  function toggleNewTask() {
+    setNewTaskOpen((v) => {
+      const next = !v;
+      if (next) {
+        setNewTaskError("");
+        setNewTaskForm(emptyTaskForm(student.grade, form.subject, ""));
+      }
+      return next;
+    });
   }
 
   function setNewTaskOption(i, value) {
@@ -166,22 +172,28 @@ export default function HomeworkAdmin() {
   async function submitNewTask(e) {
     e.preventDefault();
     setNewTaskError("");
+    const topicName = newTaskForm.topic.trim();
+    if (!topicName) {
+      setNewTaskError("Укажите тему вопроса");
+      return;
+    }
     const options = newTaskForm.options.map((o) => o.trim());
     if (options.some((o) => !o)) {
       setNewTaskError("Заполните все варианты ответа");
       return;
     }
     try {
-      const { task } = await adminApi.createTask({ ...newTaskForm, options });
-      setTasksByTopic((cur) => ({ ...cur, [newTaskTopic]: [task, ...(cur[newTaskTopic] ?? [])] }));
+      const { task } = await adminApi.createTask({ ...newTaskForm, topic: topicName, options });
+      setTasksByTopic((cur) => ({ ...cur, [topicName]: [task, ...(cur[topicName] ?? [])] }));
+      setExpandedTopics((cur) => new Set(cur).add(topicName));
       setTopics((cur) => {
-        const exists = cur.some((t) => t.topic === newTaskTopic);
+        const exists = cur.some((t) => t.topic === topicName);
         return exists
-          ? cur.map((t) => (t.topic === newTaskTopic ? { ...t, count: t.count + 1 } : t))
-          : [...cur, { topic: newTaskTopic, count: 1 }];
+          ? cur.map((t) => (t.topic === topicName ? { ...t, count: t.count + 1 } : t))
+          : [...cur, { topic: topicName, count: 1 }];
       });
       setForm((f) => ({ ...f, taskIds: [...f.taskIds, task.id] }));
-      setNewTaskTopic(null);
+      setNewTaskOpen(false);
       setNewTaskForm(null);
     } catch (e) {
       setNewTaskError(e.message);
@@ -443,6 +455,9 @@ export default function HomeworkAdmin() {
                                       <p className="arow__meta">Загрузка…</p>
                                     ) : (
                                       <>
+                                        {(topicTasks ?? []).length === 0 && (
+                                          <p className="arow__meta">В этой теме пока нет вопросов.</p>
+                                        )}
                                         {(topicTasks ?? []).map((task) => (
                                           <label className="arow" key={task.id} style={{ cursor: "pointer" }}>
                                             <input
@@ -457,24 +472,6 @@ export default function HomeworkAdmin() {
                                             </div>
                                           </label>
                                         ))}
-                                        {newTaskTopic === t.topic ? (
-                                          <NewTaskForm
-                                            form={newTaskForm}
-                                            error={newTaskError}
-                                            onOption={setNewTaskOption}
-                                            onAddOption={addNewTaskOption}
-                                            onRemoveOption={removeNewTaskOption}
-                                            onDifficulty={(difficulty) => setNewTaskForm((f) => ({ ...f, difficulty }))}
-                                            onPrompt={(prompt) => setNewTaskForm((f) => ({ ...f, prompt }))}
-                                            onCorrect={(correct) => setNewTaskForm((f) => ({ ...f, correct }))}
-                                            onSubmit={submitNewTask}
-                                            onCancel={() => { setNewTaskTopic(null); setNewTaskForm(null); }}
-                                          />
-                                        ) : (
-                                          <Button type="button" variant="soft" size="sm" icon={Plus} onClick={() => openNewTask(t.topic)}>
-                                            Новый вопрос в этой теме
-                                          </Button>
-                                        )}
                                       </>
                                     )}
                                   </div>
@@ -484,6 +481,45 @@ export default function HomeworkAdmin() {
                           })}
                         </div>
                       )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="arow arow--card arow--q" style={{ marginTop: "var(--sp-2)" }}>
+                  <button
+                    type="button"
+                    className="arow__main hwtopic__toggle"
+                    onClick={toggleNewTask}
+                    aria-expanded={newTaskOpen}
+                    style={{ display: "flex", alignItems: "center", gap: "var(--sp-2)", width: "100%", textAlign: "left", cursor: "pointer" }}
+                  >
+                    <Plus size={18} strokeWidth={2.4} style={{ flexShrink: 0, color: "var(--primary)" }} />
+                    <span style={{ flex: 1 }}>
+                      <span className="arow__title">Создание вопроса</span>
+                      <span className="arow__meta">Добавить новый вопрос в базу для {form.subject}</span>
+                    </span>
+                    <ChevronDown
+                      size={18}
+                      strokeWidth={2.6}
+                      style={{ flexShrink: 0, transition: "transform 160ms ease", transform: newTaskOpen ? "rotate(180deg)" : "none" }}
+                    />
+                  </button>
+                  {newTaskOpen && newTaskForm && (
+                    <div className="aq__detail" style={{ width: "100%" }}>
+                      <NewTaskForm
+                        form={newTaskForm}
+                        topics={topics}
+                        error={newTaskError}
+                        onTopic={(topic) => setNewTaskForm((f) => ({ ...f, topic }))}
+                        onOption={setNewTaskOption}
+                        onAddOption={addNewTaskOption}
+                        onRemoveOption={removeNewTaskOption}
+                        onDifficulty={(difficulty) => setNewTaskForm((f) => ({ ...f, difficulty }))}
+                        onPrompt={(prompt) => setNewTaskForm((f) => ({ ...f, prompt }))}
+                        onCorrect={(correct) => setNewTaskForm((f) => ({ ...f, correct }))}
+                        onSubmit={submitNewTask}
+                        onCancel={() => { setNewTaskOpen(false); setNewTaskForm(null); }}
+                      />
                     </div>
                   )}
                 </div>
@@ -551,10 +587,25 @@ function initials(name) {
 
 // Compact question-creation form embedded inside the homework picker, so the
 // tutor doesn't have to leave homework creation and go to "Задания" just
-// because the bank is missing a question for this topic.
-function NewTaskForm({ form, error, onOption, onAddOption, onRemoveOption, onDifficulty, onPrompt, onCorrect, onSubmit, onCancel }) {
+// because the bank is missing a question.
+function NewTaskForm({ form, topics, error, onTopic, onOption, onAddOption, onRemoveOption, onDifficulty, onPrompt, onCorrect, onSubmit, onCancel }) {
   return (
     <form className="aform" onSubmit={onSubmit} style={{ padding: "var(--sp-3)", background: "var(--surface-2)", borderRadius: "var(--r-md)" }}>
+      <label className="afield">
+        <span>Тема</span>
+        <input
+          className="ainput"
+          list="hwq-topics"
+          value={form.topic}
+          onChange={(e) => onTopic(e.target.value)}
+          placeholder="Выберите существующую или введите новую"
+          required
+          autoFocus
+        />
+        <datalist id="hwq-topics">
+          {topics.map((t) => <option key={t.topic} value={t.topic} />)}
+        </datalist>
+      </label>
       <label className="afield">
         <span>Условие вопроса</span>
         <textarea
@@ -563,7 +614,6 @@ function NewTaskForm({ form, error, onOption, onAddOption, onRemoveOption, onDif
           onChange={(e) => onPrompt(e.target.value)}
           placeholder="Сложи дроби: 1/4 + 1/4"
           required
-          autoFocus
         />
       </label>
       <label className="afield">
