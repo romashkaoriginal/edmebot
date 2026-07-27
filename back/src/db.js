@@ -144,6 +144,21 @@ CREATE TABLE IF NOT EXISTS homework_attempts (
 );
 CREATE INDEX IF NOT EXISTS idx_homework_attempts_homework ON homework_attempts (homework_id);
 
+-- Questions written specifically for one homework assignment — separate from
+-- the shared practice task bank (tasks). No topic/subject/grade: they only
+-- ever exist within their homework and never appear in the practice picker.
+CREATE TABLE IF NOT EXISTS homework_questions (
+  id           BIGSERIAL PRIMARY KEY,
+  homework_id  BIGINT NOT NULL REFERENCES homework(id) ON DELETE CASCADE,
+  prompt       TEXT NOT NULL,
+  options      JSONB NOT NULL,
+  correct      INTEGER NOT NULL,
+  explanation  TEXT,
+  position     INTEGER NOT NULL DEFAULT 0,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_homework_questions_homework ON homework_questions (homework_id, position);
+
 CREATE TABLE IF NOT EXISTS attempts (
   id           BIGSERIAL PRIMARY KEY,
   student_id   BIGINT NOT NULL REFERENCES students(id) ON DELETE CASCADE,

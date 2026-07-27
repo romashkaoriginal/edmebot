@@ -77,7 +77,9 @@ router.post("/:id/reopen", async (req, res, next) => {
   }
 });
 
-// Questions for a homework run — same shape as practice/series, minus answers.
+// Questions for a homework run: task-bank picks (same shape as
+// practice/series, minus answers) followed by homework-only questions
+// (written just for this assignment, no topic/subject/hints).
 router.get("/:id/tasks", async (req, res, next) => {
   try {
     const { rows: hwRows } = await db.query(
@@ -87,17 +89,36 @@ router.get("/:id/tasks", async (req, res, next) => {
     if (!hwRows.length) return res.status(404).json({ error: "not_found" });
     const hw = hwRows[0];
     const taskIds = Array.isArray(hw.task_ids) ? hw.task_ids : [];
-    if (!taskIds.length) return res.json({ homework: hw, tasks: [] });
 
-    const { rows } = await db.query(
-      `SELECT id, topic, subject, prompt, options, difficulty, hints
-         FROM tasks WHERE id = ANY($1::bigint[])`,
-      [taskIds]
+    let bankTasks = [];
+    if (taskIds.length) {
+      const { rows } = await db.query(
+        `SELECT id, topic, subject, prompt, options, difficulty, hints
+           FROM tasks WHERE id = ANY($1::bigint[])`,
+        [taskIds]
+      );
+      const byId = new Map(rows.map((t) => [String(t.id), t]));
+      // Preserve the order the tutor picked the tasks in.
+      bankTasks = taskIds.map((id) => byId.get(String(id))).filter(Boolean).map((t) => ({ ...t, id: String(t.id), source: "bank" }));
+    }
+
+    const { rows: ownRows } = await db.query(
+      `SELECT id, prompt, options, difficulty
+         FROM homework_questions WHERE homework_id = $1 ORDER BY position ASC, id ASC`,
+      [hw.id]
     );
-    const byId = new Map(rows.map((t) => [String(t.id), t]));
-    // Preserve the order the tutor picked the tasks in.
-    const tasks = taskIds.map((id) => byId.get(String(id))).filter(Boolean).map((t) => ({ ...t, id: String(t.id) }));
-    res.json({ homework: hw, tasks });
+    const ownTasks = ownRows.map((q) => ({
+      id: `hq-${q.id}`,
+      topic: null,
+      subject: hw.subject,
+      prompt: q.prompt,
+      options: q.options,
+      difficulty: "medium",
+      hints: [],
+      source: "own",
+    }));
+
+    res.json({ homework: hw, tasks: [...bankTasks, ...ownTasks] });
   } catch (e) {
     next(e);
   }
@@ -126,16 +147,24 @@ router.post("/:id/submit", async (req, res, next) => {
     );
     const byId = new Map(taskRows.map((t) => [String(t.id), t]));
 
+    const { rows: ownRows } = await db.query(
+      "SELECT id, correct, explanation FROM homework_questions WHERE homework_id = $1",
+      [hw.id]
+    );
+    const ownById = new Map(ownRows.map((q) => [`hq-${q.id}`, q]));
+
     const graded = answers.map(({ taskId, selected }) => {
-      const task = byId.get(String(taskId));
+      const key = String(taskId);
+      const isOwn = key.startsWith("hq-");
+      const task = isOwn ? ownById.get(key) : byId.get(key);
       const correct = !!task && task.correct === selected;
       return {
-        taskId: String(taskId),
+        taskId: key,
         selected,
         correct,
         correctIndex: task?.correct ?? null,
         explanation: task?.explanation ?? null,
-        topic: task?.topic ?? null,
+        topic: isOwn ? null : task?.topic ?? null,
       };
     });
     const correctCount = graded.filter((g) => g.correct).length;

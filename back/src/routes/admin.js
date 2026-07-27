@@ -498,7 +498,8 @@ router.get("/homework", requireRole("admin", "tutor"), async (req, res, next) =>
       where = `WHERE hw.student_id = $1`;
     }
     const { rows } = await db.query(
-      `SELECT hw.*, s.name AS student_name
+      `SELECT hw.*, s.name AS student_name,
+              (SELECT COUNT(*)::int FROM homework_questions hq WHERE hq.homework_id = hw.id) AS own_question_count
          FROM homework hw JOIN students s ON s.id = hw.student_id
          ${where}
          ORDER BY hw.id DESC`,
@@ -510,9 +511,25 @@ router.get("/homework", requireRole("admin", "tutor"), async (req, res, next) =>
   }
 });
 
+// Validate the shape of a homework-only question (no topic/subject — those
+// only exist on shared task-bank rows).
+function cleanQuestions(questions) {
+  if (!Array.isArray(questions)) return { error: "invalid_questions" };
+  const clean = [];
+  for (const q of questions) {
+    const prompt = String(q?.prompt ?? "").trim();
+    const options = Array.isArray(q?.options) ? q.options.map((o) => String(o ?? "").trim()) : [];
+    const correct = Number(q?.correct);
+    if (!prompt || options.length < 2 || options.some((o) => !o)) return { error: "invalid_questions" };
+    if (!Number.isInteger(correct) || correct < 0 || correct >= options.length) return { error: "invalid_questions" };
+    clean.push({ prompt, options, correct, explanation: String(q?.explanation ?? "").trim() || null });
+  }
+  return { clean };
+}
+
 router.post("/homework", requireRole("admin", "tutor"), async (req, res, next) => {
   try {
-    const { studentId, title, description, due, taskIds, subject: requestedSubject, maxAttempts } = req.body ?? {};
+    const { studentId, title, description, due, taskIds, questions, subject: requestedSubject, maxAttempts } = req.body ?? {};
     if (!studentId || !title) return bad(res, "studentId_and_title_required");
     const cleanTitle = String(title).trim();
     if (!cleanTitle) return bad(res, "studentId_and_title_required");
@@ -528,6 +545,11 @@ router.post("/homework", requireRole("admin", "tutor"), async (req, res, next) =
     if (cleanTaskIds.some((id) => !Number.isInteger(id) || id <= 0)) {
       return bad(res, "invalid_task_ids");
     }
+
+    const { clean: cleanQuestionList, error: questionsError } = cleanQuestions(questions ?? []);
+    if (questionsError) return bad(res, questionsError);
+
+    if (!cleanTaskIds.length && !cleanQuestionList.length) return bad(res, "at_least_one_question_required");
 
     const { rows: studentRows } = await db.query(
       "SELECT id, grade, subject FROM students WHERE id = $1 AND status = 'active'",
@@ -559,7 +581,18 @@ router.post("/homework", requireRole("admin", "tutor"), async (req, res, next) =
        VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
       [studentId, subject, cleanTitle, String(description ?? "").trim() || null, due || null, JSON.stringify(cleanTaskIds), cleanMaxAttempts]
     );
-    res.status(201).json({ homework: rows[0] });
+    const homework = rows[0];
+
+    for (let i = 0; i < cleanQuestionList.length; i++) {
+      const q = cleanQuestionList[i];
+      await db.query(
+        `INSERT INTO homework_questions (homework_id, prompt, options, correct, explanation, position)
+         VALUES ($1,$2,$3,$4,$5,$6)`,
+        [homework.id, q.prompt, JSON.stringify(q.options), q.correct, q.explanation, i]
+      );
+    }
+
+    res.status(201).json({ homework });
   } catch (e) {
     if (e.code === "23503") return bad(res, "student_not_found", 404);
     next(e);

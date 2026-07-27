@@ -9,15 +9,10 @@ import "./admin.css";
 
 const SUBJECTS = ["Математика", "Русский"];
 const GRADES = [6, 7, 8, 9, 10, 11];
-const DIFFICULTIES = [
-  { id: "easy", label: "Лёгкое" },
-  { id: "medium", label: "Среднее" },
-  { id: "hard", label: "Сложное" },
-];
-const EMPTY = { title: "", description: "", due: "", subject: "", taskIds: [], maxAttempts: 1 };
+const EMPTY = { title: "", description: "", due: "", subject: "", taskIds: [], questions: [], maxAttempts: 1 };
 
-function emptyTaskForm(grade, subject, topic) {
-  return { grade, subject, topic, prompt: "", options: ["", ""], correct: 0, explanation: "", difficulty: "medium" };
+function emptyOwnQuestion() {
+  return { prompt: "", options: ["", ""], correct: 0, explanation: "" };
 }
 
 function plural(n, one, few, many) {
@@ -44,9 +39,9 @@ export default function HomeworkAdmin() {
   const [loadingTopic, setLoadingTopic] = useState(null);
   const [expandedTopics, setExpandedTopics] = useState(() => new Set());
   const [tasksPanelOpen, setTasksPanelOpen] = useState(false);
-  const [newTaskOpen, setNewTaskOpen] = useState(false);
-  const [newTaskForm, setNewTaskForm] = useState(null);
-  const [newTaskError, setNewTaskError] = useState("");
+  const [newQuestionOpen, setNewQuestionOpen] = useState(false);
+  const [newQuestionForm, setNewQuestionForm] = useState(() => emptyOwnQuestion());
+  const [newQuestionError, setNewQuestionError] = useState("");
   const [homework, setHomework] = useState([]);
   const [form, setForm] = useState(EMPTY);
   const [formOpen, setFormOpen] = useState(false);
@@ -97,8 +92,8 @@ export default function HomeworkAdmin() {
       setTasksByTopic({});
       setExpandedTopics(new Set());
       setTasksPanelOpen(false);
-      setNewTaskOpen(false);
-      setNewTaskForm(null);
+      setNewQuestionOpen(false);
+      setNewQuestionForm(emptyOwnQuestion());
       setForm({ ...EMPTY, subject: student.subject });
     } catch (e) {
       setError(e.message);
@@ -137,29 +132,29 @@ export default function HomeworkAdmin() {
     });
   }
 
-  function toggleNewTask() {
-    setNewTaskOpen((v) => {
+  function toggleNewQuestion() {
+    setNewQuestionOpen((v) => {
       const next = !v;
       if (next) {
-        setNewTaskError("");
-        setNewTaskForm(emptyTaskForm(student.grade, form.subject, ""));
+        setNewQuestionError("");
+        setNewQuestionForm(emptyOwnQuestion());
       }
       return next;
     });
   }
 
-  function setNewTaskOption(i, value) {
-    setNewTaskForm((f) => {
+  function setNewQuestionOption(i, value) {
+    setNewQuestionForm((f) => {
       const options = [...f.options];
       options[i] = value;
       return { ...f, options };
     });
   }
-  function addNewTaskOption() {
-    setNewTaskForm((f) => (f.options.length >= 6 ? f : { ...f, options: [...f.options, ""] }));
+  function addNewQuestionOption() {
+    setNewQuestionForm((f) => (f.options.length >= 6 ? f : { ...f, options: [...f.options, ""] }));
   }
-  function removeNewTaskOption(i) {
-    setNewTaskForm((f) => {
+  function removeNewQuestionOption(i) {
+    setNewQuestionForm((f) => {
       if (f.options.length <= 2) return f;
       const options = f.options.filter((_, idx) => idx !== i);
       let correct = f.correct;
@@ -169,35 +164,31 @@ export default function HomeworkAdmin() {
     });
   }
 
-  async function submitNewTask(e) {
+  // Homework-only questions aren't saved via the task-bank API — they have no
+  // topic/subject/grade of their own, so they're collected here and sent as
+  // part of the homework-creation request itself (see submit()).
+  function addQuestionToHomework(e) {
     e.preventDefault();
-    setNewTaskError("");
-    const topicName = newTaskForm.topic.trim();
-    if (!topicName) {
-      setNewTaskError("Укажите тему вопроса");
+    setNewQuestionError("");
+    const options = newQuestionForm.options.map((o) => o.trim());
+    if (!newQuestionForm.prompt.trim()) {
+      setNewQuestionError("Заполните условие вопроса");
       return;
     }
-    const options = newTaskForm.options.map((o) => o.trim());
     if (options.some((o) => !o)) {
-      setNewTaskError("Заполните все варианты ответа");
+      setNewQuestionError("Заполните все варианты ответа");
       return;
     }
-    try {
-      const { task } = await adminApi.createTask({ ...newTaskForm, topic: topicName, options });
-      setTasksByTopic((cur) => ({ ...cur, [topicName]: [task, ...(cur[topicName] ?? [])] }));
-      setExpandedTopics((cur) => new Set(cur).add(topicName));
-      setTopics((cur) => {
-        const exists = cur.some((t) => t.topic === topicName);
-        return exists
-          ? cur.map((t) => (t.topic === topicName ? { ...t, count: t.count + 1 } : t))
-          : [...cur, { topic: topicName, count: 1 }];
-      });
-      setForm((f) => ({ ...f, taskIds: [...f.taskIds, task.id] }));
-      setNewTaskOpen(false);
-      setNewTaskForm(null);
-    } catch (e) {
-      setNewTaskError(e.message);
-    }
+    setForm((f) => ({
+      ...f,
+      questions: [...f.questions, { ...newQuestionForm, prompt: newQuestionForm.prompt.trim(), options }],
+    }));
+    setNewQuestionOpen(false);
+    setNewQuestionForm(emptyOwnQuestion());
+  }
+
+  function removeOwnQuestion(index) {
+    setForm((f) => ({ ...f, questions: f.questions.filter((_, i) => i !== index) }));
   }
 
   const selectedCountByTopic = Object.fromEntries(
@@ -218,6 +209,7 @@ export default function HomeworkAdmin() {
         description: form.description,
         due: form.due ? new Date(form.due).toISOString() : null,
         taskIds: form.taskIds,
+        questions: form.questions,
         subject: form.subject,
         maxAttempts: form.maxAttempts,
       });
@@ -489,36 +481,47 @@ export default function HomeworkAdmin() {
                   <button
                     type="button"
                     className="arow__main hwtopic__toggle"
-                    onClick={toggleNewTask}
-                    aria-expanded={newTaskOpen}
+                    onClick={toggleNewQuestion}
+                    aria-expanded={newQuestionOpen}
                     style={{ display: "flex", alignItems: "center", gap: "var(--sp-2)", width: "100%", textAlign: "left", cursor: "pointer" }}
                   >
                     <Plus size={18} strokeWidth={2.4} style={{ flexShrink: 0, color: "var(--primary)" }} />
                     <span style={{ flex: 1 }}>
                       <span className="arow__title">Создание вопроса</span>
-                      <span className="arow__meta">Добавить новый вопрос в базу для {form.subject}</span>
+                      <span className="arow__meta">
+                        Свой вопрос для этой домашки
+                        {form.questions.length > 0 && ` · добавлено ${form.questions.length}`}
+                      </span>
                     </span>
                     <ChevronDown
                       size={18}
                       strokeWidth={2.6}
-                      style={{ flexShrink: 0, transition: "transform 160ms ease", transform: newTaskOpen ? "rotate(180deg)" : "none" }}
+                      style={{ flexShrink: 0, transition: "transform 160ms ease", transform: newQuestionOpen ? "rotate(180deg)" : "none" }}
                     />
                   </button>
-                  {newTaskOpen && newTaskForm && (
+                  {newQuestionOpen && (
                     <div className="aq__detail" style={{ width: "100%" }}>
-                      <NewTaskForm
-                        form={newTaskForm}
-                        topics={topics}
-                        error={newTaskError}
-                        onTopic={(topic) => setNewTaskForm((f) => ({ ...f, topic }))}
-                        onOption={setNewTaskOption}
-                        onAddOption={addNewTaskOption}
-                        onRemoveOption={removeNewTaskOption}
-                        onDifficulty={(difficulty) => setNewTaskForm((f) => ({ ...f, difficulty }))}
-                        onPrompt={(prompt) => setNewTaskForm((f) => ({ ...f, prompt }))}
-                        onCorrect={(correct) => setNewTaskForm((f) => ({ ...f, correct }))}
-                        onSubmit={submitNewTask}
-                        onCancel={() => { setNewTaskOpen(false); setNewTaskForm(null); }}
+                      {form.questions.map((q, i) => (
+                        <div className="arow" key={i}>
+                          <div className="arow__main">
+                            <div className="arow__title">{q.prompt}</div>
+                            <div className="arow__meta">{q.options.length} вариантов</div>
+                          </div>
+                          <button type="button" className="aicon-btn aicon-btn--delete" onClick={() => removeOwnQuestion(i)} aria-label="Убрать вопрос">
+                            <Trash2 size={16} strokeWidth={2.4} />
+                          </button>
+                        </div>
+                      ))}
+                      <NewQuestionForm
+                        form={newQuestionForm}
+                        error={newQuestionError}
+                        onOption={setNewQuestionOption}
+                        onAddOption={addNewQuestionOption}
+                        onRemoveOption={removeNewQuestionOption}
+                        onPrompt={(prompt) => setNewQuestionForm((f) => ({ ...f, prompt }))}
+                        onExplanation={(explanation) => setNewQuestionForm((f) => ({ ...f, explanation }))}
+                        onCorrect={(correct) => setNewQuestionForm((f) => ({ ...f, correct }))}
+                        onSubmit={addQuestionToHomework}
                       />
                     </div>
                   )}
@@ -556,7 +559,8 @@ export default function HomeworkAdmin() {
                       <div className="arow__meta">
                         {h.due ? `до ${new Date(h.due).toLocaleString("ru-RU")}` : "без срока"}
                         {h.subject ? ` · ${h.subject}` : ""}
-                        {Array.isArray(h.task_ids) && h.task_ids.length ? ` · ${h.task_ids.length} заданий` : ""}
+                        {Array.isArray(h.task_ids) && h.task_ids.length ? ` · ${h.task_ids.length} из практики` : ""}
+                        {h.own_question_count > 0 ? ` · ${h.own_question_count} своих` : ""}
                         {` · ${h.attempts_used ?? 0}/${h.max_attempts ?? 1} попыток`}
                       </div>
                     </div>
@@ -585,27 +589,12 @@ function initials(name) {
     .join("");
 }
 
-// Compact question-creation form embedded inside the homework picker, so the
-// tutor doesn't have to leave homework creation and go to "Задания" just
-// because the bank is missing a question.
-function NewTaskForm({ form, topics, error, onTopic, onOption, onAddOption, onRemoveOption, onDifficulty, onPrompt, onCorrect, onSubmit, onCancel }) {
+// Compact question-creation form embedded inside the homework picker. These
+// questions belong to this homework only (no topic/subject/difficulty) — the
+// tutor doesn't leave homework creation to add one.
+function NewQuestionForm({ form, error, onOption, onAddOption, onRemoveOption, onPrompt, onExplanation, onCorrect, onSubmit }) {
   return (
     <form className="aform" onSubmit={onSubmit} style={{ padding: "var(--sp-3)", background: "var(--surface-2)", borderRadius: "var(--r-md)" }}>
-      <label className="afield">
-        <span>Тема</span>
-        <input
-          className="ainput"
-          list="hwq-topics"
-          value={form.topic}
-          onChange={(e) => onTopic(e.target.value)}
-          placeholder="Выберите существующую или введите новую"
-          required
-          autoFocus
-        />
-        <datalist id="hwq-topics">
-          {topics.map((t) => <option key={t.topic} value={t.topic} />)}
-        </datalist>
-      </label>
       <label className="afield">
         <span>Условие вопроса</span>
         <textarea
@@ -613,14 +602,7 @@ function NewTaskForm({ form, topics, error, onTopic, onOption, onAddOption, onRe
           value={form.prompt}
           onChange={(e) => onPrompt(e.target.value)}
           placeholder="Сложи дроби: 1/4 + 1/4"
-          required
         />
-      </label>
-      <label className="afield">
-        <span>Сложность</span>
-        <select className="aselect" value={form.difficulty} onChange={(e) => onDifficulty(e.target.value)}>
-          {DIFFICULTIES.map((d) => <option key={d.id} value={d.id}>{d.label}</option>)}
-        </select>
       </label>
       <div className="afield">
         <span>Варианты ответа (отметьте правильный)</span>
@@ -634,7 +616,6 @@ function NewTaskForm({ form, topics, error, onTopic, onOption, onAddOption, onRe
               value={opt}
               onChange={(e) => onOption(i, e.target.value)}
               placeholder={`Вариант ${i + 1}`}
-              required
             />
             {form.options.length > 2 && (
               <button type="button" className="aopt__del" onClick={() => onRemoveOption(i)} aria-label="Убрать вариант">
@@ -647,10 +628,18 @@ function NewTaskForm({ form, topics, error, onTopic, onOption, onAddOption, onRe
           <Button type="button" variant="soft" size="sm" icon={Plus} onClick={onAddOption}>Добавить вариант</Button>
         )}
       </div>
+      <label className="afield">
+        <span>Объяснение (необязательно)</span>
+        <textarea
+          className="atextarea"
+          value={form.explanation}
+          onChange={(e) => onExplanation(e.target.value)}
+          placeholder="Почему этот ответ верный…"
+        />
+      </label>
       {error && <p className="aerror">{error}</p>}
       <div className="aform__actions">
-        <Button type="submit" size="sm" icon={Plus}>Создать вопрос</Button>
-        <Button type="button" variant="soft" size="sm" onClick={onCancel}>Отмена</Button>
+        <Button type="submit" size="sm" icon={Plus}>Добавить вопрос</Button>
       </div>
     </form>
   );
