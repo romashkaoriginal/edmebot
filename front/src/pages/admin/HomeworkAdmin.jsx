@@ -592,9 +592,13 @@ function initials(name) {
 // Compact question-creation form embedded inside the homework picker. These
 // questions belong to this homework only (no topic/subject/difficulty) — the
 // tutor doesn't leave homework creation to add one.
+// Rendered as a <div>, not a <form> — this sits inside the outer homework
+// <form>, and a nested <form> is invalid HTML: the browser flattens it, so a
+// submit-type button in here would submit the outer homework form instead of
+// just adding the question.
 function NewQuestionForm({ form, error, onOption, onAddOption, onRemoveOption, onPrompt, onExplanation, onCorrect, onSubmit }) {
   return (
-    <form className="aform" onSubmit={onSubmit} style={{ padding: "var(--sp-3)", background: "var(--surface-2)", borderRadius: "var(--r-md)" }}>
+    <div className="aform" style={{ padding: "var(--sp-3)", background: "var(--surface-2)", borderRadius: "var(--r-md)" }}>
       <label className="afield">
         <span>Условие вопроса</span>
         <textarea
@@ -639,8 +643,8 @@ function NewQuestionForm({ form, error, onOption, onAddOption, onRemoveOption, o
       </label>
       {error && <p className="aerror">{error}</p>}
       <div className="aform__actions">
-        <Button type="submit" size="sm" icon={Plus}>Добавить вопрос</Button>
+        <Button type="button" size="sm" icon={Plus} onClick={onSubmit}>Добавить вопрос</Button>
       </div>
-    </form>
+    </div>
   );
 }
