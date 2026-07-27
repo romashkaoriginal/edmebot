@@ -1,0 +1,73 @@
+.hwrun__breakdown {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  text-align: left;
+}
+.hwrun__item {
+  padding: var(--sp-3);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+.hwrun__item--correct {
+  background: var(--success-soft);
+}
+.hwrun__item--wrong {
+  background: var(--danger-soft);
+}
+.hwrun__item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  font-weight: 800;
+  font-size: var(--text-sm);
+}
+.hwrun__item--correct .hwrun__item-mark {
+  color: oklch(0.42 0.13 150);
+}
+.hwrun__item--wrong .hwrun__item-mark {
+  color: var(--danger);
+}
+.hwrun__item-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.hwrun__item-explain {
+  margin-top: var(--sp-2);
+  font-size: var(--text-sm);
+  color: var(--ink);
+  line-height: 1.5;
+}
+.hwrun__attempts-left {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* Results screen is portrait-only: rotating the phone sideways swaps the
+   score card for a full-screen "please rotate" notice instead of letting the
+   breakdown render squeezed into a short landscape viewport. */
+.hwrun__rotate-notice {
+  display: none;
+}
+@media (orientation: landscape) {
+  .hwrun__result-lock > .run__result-card {
+    display: none;
+  }
+  .hwrun__rotate-notice {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    text-align: center;
+    padding: var(--sp-5);
+  }
+  .hwrun__rotate-notice p {
+    max-width: 40ch;
+    font-weight: 700;
+    color: var(--muted);
+  }
+}

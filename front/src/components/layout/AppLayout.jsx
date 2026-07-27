@@ -26,7 +26,7 @@ export default function AppLayout() {
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [statInfo, setStatInfo] = useState(null);
   // Practice/diagnostic run in a focused mode — hide chrome distractions there.
-  const focus = pathname.startsWith("/app/practice/run") || pathname.startsWith("/app/diagnostic/run");
+  const focus = pathname.startsWith("/app/practice/run") || pathname.startsWith("/app/diagnostic/run") || pathname.startsWith("/app/homework/run");
   const todayISO = new Date().toISOString().slice(0, 10);
   const doneToday = profile.streakLastDoneOn === todayISO;
   const isActive = profile.status === "active";
@@ -57,7 +57,10 @@ export default function AppLayout() {
         import("../../pages/Homework"),
         import("../../pages/Pet"),
       ]);
-      void studentApi.prefetchStudentSections();
+      const enrolledSubjectNames = (profile.subjects?.length ? profile.subjects : [{ subject: profile.subject }])
+        .map((item) => item?.subject)
+        .filter(Boolean);
+      void studentApi.prefetchStudentSections(enrolledSubjectNames);
     };
     if ("requestIdleCallback" in window) {
       const id = window.requestIdleCallback(preload, { timeout: 900 });
@@ -65,7 +68,7 @@ export default function AppLayout() {
     }
     const id = window.setTimeout(preload, 120);
     return () => window.clearTimeout(id);
-  }, [hydrated, isActive, pathname]);
+  }, [hydrated, isActive, pathname, profile]);
 
   if (loadError && !hydrated) {
     return (

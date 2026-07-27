@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { BookOpen, Check, CircleAlert, Clock, RefreshCw, RotateCcw } from "lucide-react";
+import { BookOpen, Check, CircleAlert, Clock, Pencil, RefreshCw } from "lucide-react";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
@@ -10,6 +10,18 @@ import SubjectPicker from "../components/shared/SubjectPicker";
 import { enrolledSubjects, subjectLabel } from "../utils/subjects";
 import { plural } from "../utils/format";
 import "./Homework.css";
+
+function filterByCachedAll(allData, subject) {
+  if (!allData || !subject) return null;
+  const homework = (allData.homework ?? []).filter((item) => item.subject === subject);
+  return {
+    homework,
+    counts: {
+      active: homework.filter((item) => item.status === "active").length,
+      overdue: homework.filter((item) => item.due && new Date(item.due) < new Date() && item.status !== "done").length,
+    },
+  };
+}
 
 const FILTERS = [
   { id: "all", label: "Все" },
@@ -35,20 +47,23 @@ export default function Homework() {
 }
 
 function HomeworkList({ subject }) {
-  const cachedHomework = studentApi.peekHomework(subject);
+  const navigate = useNavigate();
+  // Prefer the cache keyed by this exact subject; fall back to the
+  // all-subjects prefetch (filtered client-side) so a student who only sees
+  // this one subject in the sidebar doesn't hit a blank first paint just
+  // because the two caches were populated separately.
+  const cachedHomework = studentApi.peekHomework(subject) ?? filterByCachedAll(studentApi.peekHomework(), subject);
   const [homework, setHomework] = useState(() => cachedHomework?.homework ?? []);
   const [counts, setCounts] = useState(() => cachedHomework?.counts ?? { active: 0, overdue: 0 });
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(() => !cachedHomework);
   const [error, setError] = useState("");
-  const [busyId, setBusyId] = useState(null);
-  const [undoItem, setUndoItem] = useState(null);
 
   const load = useCallback(async ({ quiet = false } = {}) => {
     if (!quiet) setLoading(true);
     setError("");
     try {
-      const data = await studentApi.homework({ subject });
+      const data = await studentApi.homework({ subject, fresh: true });
       const next = { homework: data.homework ?? [], counts: data.counts ?? { active: 0, overdue: 0 } };
       setHomework(next.homework);
       setCounts(next.counts);
@@ -60,37 +75,9 @@ function HomeworkList({ subject }) {
   }, [subject]);
 
   useEffect(() => {
-    load({ quiet: Boolean(studentApi.peekHomework()) });
+    load({ quiet: Boolean(cachedHomework) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load]);
-
-  async function complete(item) {
-    setBusyId(item.id);
-    setError("");
-    try {
-      await studentApi.completeHomework(item.id);
-      setUndoItem(item);
-      await load({ quiet: true });
-    } catch {
-      setError(`Не удалось отметить «${item.title}» выполненным. Попробуй ещё раз.`);
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  async function undoComplete() {
-    if (!undoItem) return;
-    setBusyId(undoItem.id);
-    setError("");
-    try {
-      await studentApi.reopenHomework(undoItem.id);
-      setUndoItem(null);
-      await load({ quiet: true });
-    } catch {
-      setError("Не удалось вернуть задание в активные. Попробуй ещё раз.");
-    } finally {
-      setBusyId(null);
-    }
-  }
 
   const list = filter === "all" ? homework : homework.filter((item) => item.status === filter);
   const emptyCopy = filter === "done"
@@ -127,16 +114,6 @@ function HomeworkList({ subject }) {
         ))}
       </div>
 
-      {undoItem && (
-        <div className="hw__undo" role="status">
-          <Check size={18} aria-hidden="true" />
-          <span>«{undoItem.title}» отмечено выполненным.</span>
-          <Button size="sm" variant="ghost" icon={RotateCcw} loading={busyId === undoItem.id} onClick={undoComplete}>
-            Отменить
-          </Button>
-        </div>
-      )}
-
       {error && (
         <div className="hw__error" role="alert">
           <CircleAlert size={18} aria-hidden="true" />
@@ -165,8 +142,7 @@ function HomeworkList({ subject }) {
             <HomeworkCard
               key={item.id}
               hw={item}
-              busy={busyId === item.id}
-              onComplete={() => complete(item)}
+              onOpen={() => navigate(`/app/homework/run?id=${item.id}`)}
             />
           ))}
         </div>
@@ -175,9 +151,13 @@ function HomeworkList({ subject }) {
   );
 }
 
-function HomeworkCard({ hw, busy, onComplete }) {
+function HomeworkCard({ hw, onOpen }) {
   const notice = deadlineNotice(hw);
   const taskCount = Array.isArray(hw.task_ids) ? hw.task_ids.length : 0;
+  const maxAttempts = hw.max_attempts ?? 1;
+  const attemptsUsed = hw.attempts_used ?? 0;
+  const attemptsLeft = Math.max(0, maxAttempts - attemptsUsed);
+  const canRun = hw.status !== "done" && taskCount > 0 && attemptsLeft > 0;
   return (
     <Card className={`hwcard hwcard--${hw.status}`} pad="md">
       <div className="hwcard__top">
@@ -186,11 +166,22 @@ function HomeworkCard({ hw, busy, onComplete }) {
       </div>
       <h2 className="hwcard__title">{hw.title}</h2>
       {hw.description && <p className="hwcard__desc">{hw.description}</p>}
+      {taskCount > 0 && (
+        <p className="hwcard__attempts">
+          Попытки: {attemptsUsed}/{maxAttempts}
+        </p>
+      )}
       {hw.status === "done" ? (
         <div className="hwcard__done"><Check size={16} strokeWidth={3} /> Выполнено</div>
       ) : (
         <div className="hwcard__actions">
-          <Button size="sm" icon={Check} loading={busy} onClick={onComplete}>Отметить выполненным</Button>
+          {taskCount > 0 ? (
+            <Button size="sm" icon={Pencil} disabled={!canRun} onClick={onOpen}>
+              {attemptsLeft > 0 ? "Сделать домашку" : "Попытки закончились"}
+            </Button>
+          ) : (
+            <span className="hwcard__desc">В этой домашке пока нет заданий.</span>
+          )}
         </div>
       )}
     </Card>

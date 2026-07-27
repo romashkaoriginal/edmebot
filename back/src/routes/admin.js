@@ -512,11 +512,16 @@ router.get("/homework", requireRole("admin", "tutor"), async (req, res, next) =>
 
 router.post("/homework", requireRole("admin", "tutor"), async (req, res, next) => {
   try {
-    const { studentId, title, description, due, taskIds, subject: requestedSubject } = req.body ?? {};
+    const { studentId, title, description, due, taskIds, subject: requestedSubject, maxAttempts } = req.body ?? {};
     if (!studentId || !title) return bad(res, "studentId_and_title_required");
     const cleanTitle = String(title).trim();
     if (!cleanTitle) return bad(res, "studentId_and_title_required");
     if (due && Number.isNaN(new Date(due).getTime())) return bad(res, "invalid_due_date");
+
+    const cleanMaxAttempts = maxAttempts == null || maxAttempts === "" ? 1 : Number(maxAttempts);
+    if (!Number.isInteger(cleanMaxAttempts) || cleanMaxAttempts < 1 || cleanMaxAttempts > 20) {
+      return bad(res, "invalid_max_attempts");
+    }
 
     const submittedTaskIds = Array.isArray(taskIds) ? taskIds : [];
     const cleanTaskIds = [...new Set(submittedTaskIds.map(Number))];
@@ -550,9 +555,9 @@ router.post("/homework", requireRole("admin", "tutor"), async (req, res, next) =
     }
 
     const { rows } = await db.query(
-      `INSERT INTO homework (student_id, subject, title, description, due, task_ids)
-       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [studentId, subject, cleanTitle, String(description ?? "").trim() || null, due || null, JSON.stringify(cleanTaskIds)]
+      `INSERT INTO homework (student_id, subject, title, description, due, task_ids, max_attempts)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [studentId, subject, cleanTitle, String(description ?? "").trim() || null, due || null, JSON.stringify(cleanTaskIds), cleanMaxAttempts]
     );
     res.status(201).json({ homework: rows[0] });
   } catch (e) {

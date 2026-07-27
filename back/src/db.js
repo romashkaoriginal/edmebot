@@ -126,6 +126,24 @@ UPDATE homework hw
   FROM students s
  WHERE hw.student_id = s.id AND hw.subject IS NULL;
 
+-- Homework is now solved question-by-question (like practice) instead of a
+-- manual "mark as done" toggle, so it needs its own attempt budget/counter.
+ALTER TABLE homework ADD COLUMN IF NOT EXISTS max_attempts INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE homework ADD COLUMN IF NOT EXISTS attempts_used INTEGER NOT NULL DEFAULT 0;
+
+-- One row per homework submission attempt, storing the per-question outcome
+-- so the results screen can show right/wrong + explanation after the fact.
+CREATE TABLE IF NOT EXISTS homework_attempts (
+  id           BIGSERIAL PRIMARY KEY,
+  homework_id  BIGINT NOT NULL REFERENCES homework(id) ON DELETE CASCADE,
+  student_id   BIGINT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  answers      JSONB NOT NULL DEFAULT '[]',
+  correct      INTEGER NOT NULL DEFAULT 0,
+  total        INTEGER NOT NULL DEFAULT 0,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_homework_attempts_homework ON homework_attempts (homework_id);
+
 CREATE TABLE IF NOT EXISTS attempts (
   id           BIGSERIAL PRIMARY KEY,
   student_id   BIGINT NOT NULL REFERENCES students(id) ON DELETE CASCADE,

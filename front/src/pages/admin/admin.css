@@ -1753,3 +1753,27 @@
   .apage__head--compact .apage__head-text h1 { overflow-wrap: normal; word-break: normal; white-space: nowrap; font-size: var(--text-lg); }
   .apage__head--compact .apage__sub { display: none; }
 }
+
+/* Below 620px the compact header is a 3-column grid (icon / title / actions),
+   but that grid only applied from 620px down while .apage__head-actions still
+   carried its flex-wrap: wrap default, so at the top of this range a long
+   title ("Домашка") and the actions ("К списку") could end up sharing the
+   same visual row with no guaranteed gap. Force the action column to its own
+   row on narrower phones instead of letting it wrap inline with the title. */
+@media (max-width: 480px) {
+  .apage__head--compact,
+  .awizard__top.apage__head--compact {
+    grid-template-columns: auto minmax(0, 1fr);
+    row-gap: var(--sp-2);
+  }
+  .apage__head--compact .apage__head-actions,
+  .awizard__top.apage__head--compact .apage__head-actions {
+    grid-column: 1 / -1;
+    margin-left: 0;
+    justify-content: stretch;
+  }
+  .apage__head--compact .apage__head-actions .btn,
+  .awizard__top.apage__head--compact .apage__head-actions .btn {
+    flex: 1;
+  }
+}

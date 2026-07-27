@@ -13,6 +13,7 @@ const PracticeRun = lazy(() => import("./pages/PracticeRun"));
 const Diagnostic = lazy(() => import("./pages/Diagnostic"));
 const DiagnosticRun = lazy(() => import("./pages/DiagnosticRun"));
 const Homework = lazy(() => import("./pages/Homework"));
+const HomeworkRun = lazy(() => import("./pages/HomeworkRun"));
 const Pet = lazy(() => import("./pages/Pet"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Students = lazy(() => import("./pages/admin/Students"));
@@ -37,6 +38,7 @@ export default function App() {
         <Route path="diagnostic" element={<Diagnostic />} />
         <Route path="diagnostic/run" element={<DiagnosticRun />} />
         <Route path="homework" element={<Homework />} />
+        <Route path="homework/run" element={<HomeworkRun />} />
         <Route path="pet" element={<Pet />} />
         <Route path="profile" element={<Profile />} />
       </Route>

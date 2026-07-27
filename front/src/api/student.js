@@ -67,6 +67,13 @@ export const studentApi = {
     invalidateResource("analytics");
     return result;
   },
+  homeworkTasks: (id) => studentFetch(`/api/homework/${id}/tasks`),
+  submitHomework: async (id, answers) => {
+    const result = await studentFetch(`/api/homework/${id}/submit`, { method: "POST", body: JSON.stringify({ answers }) });
+    [...resourceCache.keys()].filter((key) => key.startsWith("homework:")).forEach(invalidateResource);
+    invalidateResource("analytics");
+    return result;
+  },
   practiceSeries: (settings = {}) => {
     const query = new URLSearchParams({ length: "5" });
     Object.entries(settings).forEach(([key, value]) => {
@@ -93,9 +100,12 @@ export const studentApi = {
   renamePet: (name) => studentFetch("/api/pet/rename", { method: "POST", body: JSON.stringify({ name }) }),
   updatePet: (payload) => studentFetch("/api/pet", { method: "PATCH", body: JSON.stringify(payload) }),
   onboard: (body) => studentFetch("/api/profile/onboard", { method: "POST", body: JSON.stringify(body) }),
-  prefetchStudentSections: () => Promise.allSettled([
+  prefetchStudentSections: (subjects = []) => Promise.allSettled([
     cachedStudentFetch("analytics", "/api/profile/analytics"),
     cachedStudentFetch("homework:all", "/api/homework"),
+    ...subjects.map((subject) =>
+      cachedStudentFetch(`homework:${subject}`, `/api/homework?${new URLSearchParams({ subject })}`)
+    ),
   ]),
   peekAnalytics: () => resourceCache.get("analytics")?.data ?? null,
   peekHomework: (subject) => resourceCache.get(`homework:${subject ?? "all"}`)?.data ?? null,

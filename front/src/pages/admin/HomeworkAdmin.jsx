@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { BookOpen, Plus, Trash2, Upload, CheckCircle2, Search, ChevronRight, ChevronLeft } from "lucide-react";
+import { BookOpen, Plus, Trash2, Upload, CheckCircle2, Search, ChevronRight, ChevronLeft, ChevronDown, Folder } from "lucide-react";
 import Button from "../../components/ui/Button";
 import SectionTitle from "../../components/ui/SectionTitle";
 import ImportModal from "../../components/admin/ImportModal";
@@ -9,7 +9,15 @@ import "./admin.css";
 
 const SUBJECTS = ["Математика", "Русский"];
 const GRADES = [6, 7, 8, 9, 10, 11];
-const EMPTY = { title: "", description: "", due: "", subject: "", taskIds: [] };
+const EMPTY = { title: "", description: "", due: "", subject: "", taskIds: [], maxAttempts: 1 };
+
+function plural(n, one, few, many) {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return one;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
+  return many;
+}
 
 const HW_IMPORT_FIELDS = [
   { key: "student_tg_id", desc: "Telegram ID ученика (обязательно)" },
@@ -22,7 +30,10 @@ const HW_IMPORT_FIELDS = [
 export default function HomeworkAdmin() {
   const [students, setStudents] = useState([]);
   const [studentId, setStudentId] = useState("");
-  const [tasks, setTasks] = useState([]);
+  const [topics, setTopics] = useState([]);
+  const [tasksByTopic, setTasksByTopic] = useState({});
+  const [loadingTopic, setLoadingTopic] = useState(null);
+  const [expandedTopics, setExpandedTopics] = useState(() => new Set());
   const [homework, setHomework] = useState([]);
   const [form, setForm] = useState(EMPTY);
   const [formOpen, setFormOpen] = useState(false);
@@ -53,24 +64,55 @@ export default function HomeworkAdmin() {
     return `${s.name} ${s.subject ?? ""} ${s.tg_id ?? ""}`.toLowerCase().includes(search.trim().toLowerCase());
   });
 
+  const loadTopicsFor = useCallback(async (grade, subject) => {
+    try {
+      const { topics } = await adminApi.taskTopics({ grade, subject });
+      setTopics(topics);
+    } catch (e) {
+      setError(e.message);
+    }
+  }, []);
+
   const loadForStudent = useCallback(async () => {
     if (!student) return;
     try {
-      const [{ tasks }, { homework }] = await Promise.all([
-        adminApi.listTasks({ grade: student.grade, subject: student.subject }),
+      const [, { homework }] = await Promise.all([
+        loadTopicsFor(student.grade, student.subject),
         adminApi.listHomework(student.id),
       ]);
-      setTasks(tasks);
       setHomework(homework);
+      setTasksByTopic({});
+      setExpandedTopics(new Set());
       setForm({ ...EMPTY, subject: student.subject });
     } catch (e) {
       setError(e.message);
     }
-  }, [student]);
+  }, [student, loadTopicsFor]);
 
   useEffect(() => {
     loadForStudent();
   }, [loadForStudent]);
+
+  // Topics are collapsed by default — the question list for a topic (and the
+  // full task bank behind it) only loads once the tutor actually expands it.
+  async function toggleTopic(topicName) {
+    setExpandedTopics((cur) => {
+      const next = new Set(cur);
+      if (next.has(topicName)) next.delete(topicName);
+      else next.add(topicName);
+      return next;
+    });
+    if (tasksByTopic[topicName] || !student) return;
+    setLoadingTopic(topicName);
+    try {
+      const { tasks } = await adminApi.listTasks({ grade: student.grade, subject: form.subject, topic: topicName });
+      setTasksByTopic((cur) => ({ ...cur, [topicName]: tasks }));
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoadingTopic(null);
+    }
+  }
 
   function toggleTask(id) {
     setForm((f) => {
@@ -78,6 +120,14 @@ export default function HomeworkAdmin() {
       return { ...f, taskIds: has ? f.taskIds.filter((x) => x !== id) : [...f.taskIds, id] };
     });
   }
+
+  const selectedCountByTopic = Object.fromEntries(
+    Object.entries(tasksByTopic).map(([topic, tasks]) => [
+      topic,
+      tasks.filter((t) => form.taskIds.includes(t.id)).length,
+    ])
+  );
+  const totalSelected = form.taskIds.length;
 
   async function submit(e) {
     e.preventDefault();
@@ -90,6 +140,7 @@ export default function HomeworkAdmin() {
         due: form.due ? new Date(form.due).toISOString() : null,
         taskIds: form.taskIds,
         subject: form.subject,
+        maxAttempts: form.maxAttempts,
       });
       await loadForStudent();
       setFormOpen(false);
@@ -221,15 +272,28 @@ export default function HomeworkAdmin() {
                   placeholder="Что нужно сделать…"
                 />
               </label>
-              <label className="afield">
-                <span>Срок сдачи</span>
-                <input
-                  className="ainput"
-                  type="date"
-                  value={form.due}
-                  onChange={(e) => setForm({ ...form, due: e.target.value })}
-                />
-              </label>
+              <div className="aform__row">
+                <label className="afield">
+                  <span>Срок сдачи</span>
+                  <input
+                    className="ainput"
+                    type="datetime-local"
+                    value={form.due}
+                    onChange={(e) => setForm({ ...form, due: e.target.value })}
+                  />
+                </label>
+                <label className="afield">
+                  <span>Попыток на прохождение</span>
+                  <input
+                    className="ainput"
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={form.maxAttempts}
+                    onChange={(e) => setForm({ ...form, maxAttempts: Math.max(1, Math.min(20, Number(e.target.value) || 1)) })}
+                  />
+                </label>
+              </div>
 
               <label className="afield">
                 <span>Предмет</span>
@@ -239,12 +303,9 @@ export default function HomeworkAdmin() {
                   onChange={async (e) => {
                     const subject = e.target.value;
                     setForm((current) => ({ ...current, subject, taskIds: [] }));
-                    try {
-                      const { tasks: nextTasks } = await adminApi.listTasks({ grade: student.grade, subject });
-                      setTasks(nextTasks);
-                    } catch (e) {
-                      setError(e.message);
-                    }
+                    setTasksByTopic({});
+                    setExpandedTopics(new Set());
+                    await loadTopicsFor(student.grade, subject);
                   }}
                 >
                   {SUBJECTS.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -252,27 +313,66 @@ export default function HomeworkAdmin() {
               </label>
 
               <div className="afield">
-                <span>Задания из базы ({student.grade} класс · {form.subject})</span>
-                {tasks.length === 0 ? (
-                  <p className="arow__meta">Нет заданий для этого класса/предмета — создайте в разделе «Задания».</p>
+                <span>
+                  Задания из практики ({student.grade} класс · {form.subject})
+                  {totalSelected > 0 && ` · выбрано ${totalSelected}`}
+                </span>
+                {topics.length === 0 ? (
+                  <p className="arow__meta">Нет тем для этого класса/предмета — создайте в разделе «Задания».</p>
                 ) : (
                   <div className="alist">
-                    {tasks.map((t) => (
-                      <label className="arow" key={t.id} style={{ cursor: "pointer" }}>
-                        <input
-                          type="checkbox"
-                          checked={form.taskIds.includes(t.id)}
-                          onChange={() => toggleTask(t.id)}
-                          style={{ width: 18, height: 18, accentColor: "var(--primary)" }}
-                        />
-                        <div className="arow__main">
-                          <div className="arow__title">{t.prompt}</div>
-                          <div className="arow__meta">
-                            <span className="achip">{t.topic}</span> {t.difficulty}
-                          </div>
+                    {topics.map((t) => {
+                      const open = expandedTopics.has(t.topic);
+                      const topicTasks = tasksByTopic[t.topic];
+                      const picked = selectedCountByTopic[t.topic] || 0;
+                      return (
+                        <div className="arow arow--card arow--q" key={t.topic}>
+                          <button
+                            type="button"
+                            className="arow__main hwtopic__toggle"
+                            onClick={() => toggleTopic(t.topic)}
+                            aria-expanded={open}
+                            style={{ display: "flex", alignItems: "center", gap: "var(--sp-2)", width: "100%", textAlign: "left", cursor: "pointer" }}
+                          >
+                            <Folder size={18} strokeWidth={2.2} style={{ flexShrink: 0, color: "var(--primary)" }} />
+                            <span style={{ flex: 1 }}>
+                              <span className="arow__title">{t.topic}</span>
+                              <span className="arow__meta">
+                                {t.count} {plural(t.count, "вопрос", "вопроса", "вопросов")}
+                                {picked > 0 && ` · выбрано ${picked}`}
+                              </span>
+                            </span>
+                            <ChevronDown
+                              size={18}
+                              strokeWidth={2.6}
+                              style={{ flexShrink: 0, transition: "transform 160ms ease", transform: open ? "rotate(180deg)" : "none" }}
+                            />
+                          </button>
+                          {open && (
+                            <div className="aq__detail" style={{ width: "100%" }}>
+                              {loadingTopic === t.topic ? (
+                                <p className="arow__meta">Загрузка…</p>
+                              ) : (
+                                (topicTasks ?? []).map((task) => (
+                                  <label className="arow" key={task.id} style={{ cursor: "pointer" }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={form.taskIds.includes(task.id)}
+                                      onChange={() => toggleTask(task.id)}
+                                      style={{ width: 18, height: 18, accentColor: "var(--primary)" }}
+                                    />
+                                    <div className="arow__main">
+                                      <div className="arow__title">{task.prompt}</div>
+                                      <div className="arow__meta">{task.difficulty}</div>
+                                    </div>
+                                  </label>
+                                ))
+                              )}
+                            </div>
+                          )}
                         </div>
-                      </label>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -309,6 +409,7 @@ export default function HomeworkAdmin() {
                         {h.due ? `до ${new Date(h.due).toLocaleString("ru-RU")}` : "без срока"}
                         {h.subject ? ` · ${h.subject}` : ""}
                         {Array.isArray(h.task_ids) && h.task_ids.length ? ` · ${h.task_ids.length} заданий` : ""}
+                        {` · ${h.attempts_used ?? 0}/${h.max_attempts ?? 1} попыток`}
                       </div>
                     </div>
                     <div className="arow__actions">

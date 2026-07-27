@@ -77,4 +77,98 @@ router.post("/:id/reopen", async (req, res, next) => {
   }
 });
 
+// Questions for a homework run — same shape as practice/series, minus answers.
+router.get("/:id/tasks", async (req, res, next) => {
+  try {
+    const { rows: hwRows } = await db.query(
+      "SELECT * FROM homework WHERE id = $1 AND student_id = $2",
+      [req.params.id, req.student.id]
+    );
+    if (!hwRows.length) return res.status(404).json({ error: "not_found" });
+    const hw = hwRows[0];
+    const taskIds = Array.isArray(hw.task_ids) ? hw.task_ids : [];
+    if (!taskIds.length) return res.json({ homework: hw, tasks: [] });
+
+    const { rows } = await db.query(
+      `SELECT id, topic, subject, prompt, options, difficulty, hints
+         FROM tasks WHERE id = ANY($1::bigint[])`,
+      [taskIds]
+    );
+    const byId = new Map(rows.map((t) => [String(t.id), t]));
+    // Preserve the order the tutor picked the tasks in.
+    const tasks = taskIds.map((id) => byId.get(String(id))).filter(Boolean).map((t) => ({ ...t, id: String(t.id) }));
+    res.json({ homework: hw, tasks });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Submit a full run: grades every answer, records the attempt, and marks the
+// homework done once it's solved (or attempts run out).
+router.post("/:id/submit", async (req, res, next) => {
+  try {
+    const { answers } = req.body ?? {};
+    if (!Array.isArray(answers) || !answers.length) return res.status(400).json({ error: "answers_required" });
+
+    const { rows: hwRows } = await db.query(
+      "SELECT * FROM homework WHERE id = $1 AND student_id = $2",
+      [req.params.id, req.student.id]
+    );
+    if (!hwRows.length) return res.status(404).json({ error: "not_found" });
+    const hw = hwRows[0];
+    if (hw.status === "done") return res.status(409).json({ error: "already_done" });
+    if (hw.attempts_used >= hw.max_attempts) return res.status(409).json({ error: "no_attempts_left" });
+
+    const taskIds = Array.isArray(hw.task_ids) ? hw.task_ids : [];
+    const { rows: taskRows } = await db.query(
+      "SELECT id, correct, explanation, topic FROM tasks WHERE id = ANY($1::bigint[])",
+      [taskIds]
+    );
+    const byId = new Map(taskRows.map((t) => [String(t.id), t]));
+
+    const graded = answers.map(({ taskId, selected }) => {
+      const task = byId.get(String(taskId));
+      const correct = !!task && task.correct === selected;
+      return {
+        taskId: String(taskId),
+        selected,
+        correct,
+        correctIndex: task?.correct ?? null,
+        explanation: task?.explanation ?? null,
+        topic: task?.topic ?? null,
+      };
+    });
+    const correctCount = graded.filter((g) => g.correct).length;
+    const attemptsUsed = hw.attempts_used + 1;
+    const solved = correctCount === graded.length;
+    const doneNow = solved || attemptsUsed >= hw.max_attempts;
+
+    const { rows } = await db.query(
+      `UPDATE homework
+          SET attempts_used = $2,
+              status = CASE WHEN $3 THEN 'done' ELSE status END
+        WHERE id = $1 RETURNING *`,
+      [hw.id, attemptsUsed, doneNow]
+    );
+    await db.query(
+      `INSERT INTO homework_attempts (homework_id, student_id, answers, correct, total)
+       VALUES ($1,$2,$3,$4,$5)`,
+      [hw.id, req.student.id, JSON.stringify(graded), correctCount, graded.length]
+    );
+
+    res.json({
+      ok: true,
+      homework: rows[0],
+      results: graded,
+      correct: correctCount,
+      total: graded.length,
+      attemptsUsed,
+      attemptsLeft: Math.max(0, hw.max_attempts - attemptsUsed),
+      solved,
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
 module.exports = router;
