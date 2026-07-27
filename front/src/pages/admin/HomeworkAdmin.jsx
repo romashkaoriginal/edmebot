@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { BookOpen, Plus, Trash2, Upload, CheckCircle2, Search, ChevronRight, ChevronLeft, ChevronDown, Folder } from "lucide-react";
+import { BookOpen, Plus, Trash2, Upload, CheckCircle2, Search, ChevronRight, ChevronLeft, ChevronDown, Folder, ListChecks, X } from "lucide-react";
 import Button from "../../components/ui/Button";
 import SectionTitle from "../../components/ui/SectionTitle";
 import ImportModal from "../../components/admin/ImportModal";
@@ -9,7 +9,16 @@ import "./admin.css";
 
 const SUBJECTS = ["Математика", "Русский"];
 const GRADES = [6, 7, 8, 9, 10, 11];
+const DIFFICULTIES = [
+  { id: "easy", label: "Лёгкое" },
+  { id: "medium", label: "Среднее" },
+  { id: "hard", label: "Сложное" },
+];
 const EMPTY = { title: "", description: "", due: "", subject: "", taskIds: [], maxAttempts: 1 };
+
+function emptyTaskForm(grade, subject, topic) {
+  return { grade, subject, topic, prompt: "", options: ["", ""], correct: 0, explanation: "", difficulty: "medium" };
+}
 
 function plural(n, one, few, many) {
   const mod10 = n % 10;
@@ -34,6 +43,10 @@ export default function HomeworkAdmin() {
   const [tasksByTopic, setTasksByTopic] = useState({});
   const [loadingTopic, setLoadingTopic] = useState(null);
   const [expandedTopics, setExpandedTopics] = useState(() => new Set());
+  const [tasksPanelOpen, setTasksPanelOpen] = useState(false);
+  const [newTaskTopic, setNewTaskTopic] = useState(null);
+  const [newTaskForm, setNewTaskForm] = useState(null);
+  const [newTaskError, setNewTaskError] = useState("");
   const [homework, setHomework] = useState([]);
   const [form, setForm] = useState(EMPTY);
   const [formOpen, setFormOpen] = useState(false);
@@ -83,6 +96,8 @@ export default function HomeworkAdmin() {
       setHomework(homework);
       setTasksByTopic({});
       setExpandedTopics(new Set());
+      setTasksPanelOpen(false);
+      setNewTaskTopic(null);
       setForm({ ...EMPTY, subject: student.subject });
     } catch (e) {
       setError(e.message);
@@ -119,6 +134,58 @@ export default function HomeworkAdmin() {
       const has = f.taskIds.includes(id);
       return { ...f, taskIds: has ? f.taskIds.filter((x) => x !== id) : [...f.taskIds, id] };
     });
+  }
+
+  function openNewTask(topicName) {
+    setNewTaskTopic(topicName);
+    setNewTaskError("");
+    setNewTaskForm(emptyTaskForm(student.grade, form.subject, topicName));
+  }
+
+  function setNewTaskOption(i, value) {
+    setNewTaskForm((f) => {
+      const options = [...f.options];
+      options[i] = value;
+      return { ...f, options };
+    });
+  }
+  function addNewTaskOption() {
+    setNewTaskForm((f) => (f.options.length >= 6 ? f : { ...f, options: [...f.options, ""] }));
+  }
+  function removeNewTaskOption(i) {
+    setNewTaskForm((f) => {
+      if (f.options.length <= 2) return f;
+      const options = f.options.filter((_, idx) => idx !== i);
+      let correct = f.correct;
+      if (i === correct) correct = 0;
+      else if (i < correct) correct -= 1;
+      return { ...f, options, correct };
+    });
+  }
+
+  async function submitNewTask(e) {
+    e.preventDefault();
+    setNewTaskError("");
+    const options = newTaskForm.options.map((o) => o.trim());
+    if (options.some((o) => !o)) {
+      setNewTaskError("Заполните все варианты ответа");
+      return;
+    }
+    try {
+      const { task } = await adminApi.createTask({ ...newTaskForm, options });
+      setTasksByTopic((cur) => ({ ...cur, [newTaskTopic]: [task, ...(cur[newTaskTopic] ?? [])] }));
+      setTopics((cur) => {
+        const exists = cur.some((t) => t.topic === newTaskTopic);
+        return exists
+          ? cur.map((t) => (t.topic === newTaskTopic ? { ...t, count: t.count + 1 } : t))
+          : [...cur, { topic: newTaskTopic, count: 1 }];
+      });
+      setForm((f) => ({ ...f, taskIds: [...f.taskIds, task.id] }));
+      setNewTaskTopic(null);
+      setNewTaskForm(null);
+    } catch (e) {
+      setNewTaskError(e.message);
+    }
   }
 
   const selectedCountByTopic = Object.fromEntries(
@@ -272,7 +339,7 @@ export default function HomeworkAdmin() {
                   placeholder="Что нужно сделать…"
                 />
               </label>
-              <div className="aform__row">
+              <div className="aform__row aform__row--due">
                 <label className="afield">
                   <span>Срок сдачи</span>
                   <input
@@ -313,68 +380,113 @@ export default function HomeworkAdmin() {
               </label>
 
               <div className="afield">
-                <span>
-                  Задания из практики ({student.grade} класс · {form.subject})
-                  {totalSelected > 0 && ` · выбрано ${totalSelected}`}
-                </span>
-                {topics.length === 0 ? (
-                  <p className="arow__meta">Нет тем для этого класса/предмета — создайте в разделе «Задания».</p>
-                ) : (
-                  <div className="alist">
-                    {topics.map((t) => {
-                      const open = expandedTopics.has(t.topic);
-                      const topicTasks = tasksByTopic[t.topic];
-                      const picked = selectedCountByTopic[t.topic] || 0;
-                      return (
-                        <div className="arow arow--card arow--q" key={t.topic}>
-                          <button
-                            type="button"
-                            className="arow__main hwtopic__toggle"
-                            onClick={() => toggleTopic(t.topic)}
-                            aria-expanded={open}
-                            style={{ display: "flex", alignItems: "center", gap: "var(--sp-2)", width: "100%", textAlign: "left", cursor: "pointer" }}
-                          >
-                            <Folder size={18} strokeWidth={2.2} style={{ flexShrink: 0, color: "var(--primary)" }} />
-                            <span style={{ flex: 1 }}>
-                              <span className="arow__title">{t.topic}</span>
-                              <span className="arow__meta">
-                                {t.count} {plural(t.count, "вопрос", "вопроса", "вопросов")}
-                                {picked > 0 && ` · выбрано ${picked}`}
-                              </span>
-                            </span>
-                            <ChevronDown
-                              size={18}
-                              strokeWidth={2.6}
-                              style={{ flexShrink: 0, transition: "transform 160ms ease", transform: open ? "rotate(180deg)" : "none" }}
-                            />
-                          </button>
-                          {open && (
-                            <div className="aq__detail" style={{ width: "100%" }}>
-                              {loadingTopic === t.topic ? (
-                                <p className="arow__meta">Загрузка…</p>
-                              ) : (
-                                (topicTasks ?? []).map((task) => (
-                                  <label className="arow" key={task.id} style={{ cursor: "pointer" }}>
-                                    <input
-                                      type="checkbox"
-                                      checked={form.taskIds.includes(task.id)}
-                                      onChange={() => toggleTask(task.id)}
-                                      style={{ width: 18, height: 18, accentColor: "var(--primary)" }}
-                                    />
-                                    <div className="arow__main">
-                                      <div className="arow__title">{task.prompt}</div>
-                                      <div className="arow__meta">{task.difficulty}</div>
-                                    </div>
-                                  </label>
-                                ))
-                              )}
-                            </div>
-                          )}
+                <span>Задания домашки</span>
+                <div className="arow arow--card arow--q">
+                  <button
+                    type="button"
+                    className="arow__main hwtopic__toggle"
+                    onClick={() => setTasksPanelOpen((v) => !v)}
+                    aria-expanded={tasksPanelOpen}
+                    style={{ display: "flex", alignItems: "center", gap: "var(--sp-2)", width: "100%", textAlign: "left", cursor: "pointer" }}
+                  >
+                    <ListChecks size={18} strokeWidth={2.2} style={{ flexShrink: 0, color: "var(--primary)" }} />
+                    <span style={{ flex: 1 }}>
+                      <span className="arow__title">Задания из практики</span>
+                      <span className="arow__meta">
+                        {student.grade} класс · {form.subject}
+                        {totalSelected > 0 && ` · выбрано ${totalSelected}`}
+                      </span>
+                    </span>
+                    <ChevronDown
+                      size={18}
+                      strokeWidth={2.6}
+                      style={{ flexShrink: 0, transition: "transform 160ms ease", transform: tasksPanelOpen ? "rotate(180deg)" : "none" }}
+                    />
+                  </button>
+
+                  {tasksPanelOpen && (
+                    <div className="aq__detail" style={{ width: "100%" }}>
+                      {topics.length === 0 ? (
+                        <p className="arow__meta">Нет тем для этого класса/предмета — создайте в разделе «Задания».</p>
+                      ) : (
+                        <div className="alist">
+                          {topics.map((t) => {
+                            const open = expandedTopics.has(t.topic);
+                            const topicTasks = tasksByTopic[t.topic];
+                            const picked = selectedCountByTopic[t.topic] || 0;
+                            return (
+                              <div className="arow arow--card arow--q" key={t.topic}>
+                                <button
+                                  type="button"
+                                  className="arow__main hwtopic__toggle"
+                                  onClick={() => toggleTopic(t.topic)}
+                                  aria-expanded={open}
+                                  style={{ display: "flex", alignItems: "center", gap: "var(--sp-2)", width: "100%", textAlign: "left", cursor: "pointer" }}
+                                >
+                                  <Folder size={18} strokeWidth={2.2} style={{ flexShrink: 0, color: "var(--primary)" }} />
+                                  <span style={{ flex: 1 }}>
+                                    <span className="arow__title">{t.topic}</span>
+                                    <span className="arow__meta">
+                                      {t.count} {plural(t.count, "вопрос", "вопроса", "вопросов")}
+                                      {picked > 0 && ` · выбрано ${picked}`}
+                                    </span>
+                                  </span>
+                                  <ChevronDown
+                                    size={18}
+                                    strokeWidth={2.6}
+                                    style={{ flexShrink: 0, transition: "transform 160ms ease", transform: open ? "rotate(180deg)" : "none" }}
+                                  />
+                                </button>
+                                {open && (
+                                  <div className="aq__detail" style={{ width: "100%" }}>
+                                    {loadingTopic === t.topic ? (
+                                      <p className="arow__meta">Загрузка…</p>
+                                    ) : (
+                                      <>
+                                        {(topicTasks ?? []).map((task) => (
+                                          <label className="arow" key={task.id} style={{ cursor: "pointer" }}>
+                                            <input
+                                              type="checkbox"
+                                              checked={form.taskIds.includes(task.id)}
+                                              onChange={() => toggleTask(task.id)}
+                                              style={{ width: 18, height: 18, accentColor: "var(--primary)" }}
+                                            />
+                                            <div className="arow__main">
+                                              <div className="arow__title">{task.prompt}</div>
+                                              <div className="arow__meta">{task.difficulty}</div>
+                                            </div>
+                                          </label>
+                                        ))}
+                                        {newTaskTopic === t.topic ? (
+                                          <NewTaskForm
+                                            form={newTaskForm}
+                                            error={newTaskError}
+                                            onOption={setNewTaskOption}
+                                            onAddOption={addNewTaskOption}
+                                            onRemoveOption={removeNewTaskOption}
+                                            onDifficulty={(difficulty) => setNewTaskForm((f) => ({ ...f, difficulty }))}
+                                            onPrompt={(prompt) => setNewTaskForm((f) => ({ ...f, prompt }))}
+                                            onCorrect={(correct) => setNewTaskForm((f) => ({ ...f, correct }))}
+                                            onSubmit={submitNewTask}
+                                            onCancel={() => { setNewTaskTopic(null); setNewTaskForm(null); }}
+                                          />
+                                        ) : (
+                                          <Button type="button" variant="soft" size="sm" icon={Plus} onClick={() => openNewTask(t.topic)}>
+                                            Новый вопрос в этой теме
+                                          </Button>
+                                        )}
+                                      </>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {error && <p className="aerror">{error}</p>}
@@ -435,4 +547,61 @@ function initials(name) {
     .slice(0, 2)
     .map((w) => w[0].toUpperCase())
     .join("");
+}
+
+// Compact question-creation form embedded inside the homework picker, so the
+// tutor doesn't have to leave homework creation and go to "Задания" just
+// because the bank is missing a question for this topic.
+function NewTaskForm({ form, error, onOption, onAddOption, onRemoveOption, onDifficulty, onPrompt, onCorrect, onSubmit, onCancel }) {
+  return (
+    <form className="aform" onSubmit={onSubmit} style={{ padding: "var(--sp-3)", background: "var(--surface-2)", borderRadius: "var(--r-md)" }}>
+      <label className="afield">
+        <span>Условие вопроса</span>
+        <textarea
+          className="atextarea"
+          value={form.prompt}
+          onChange={(e) => onPrompt(e.target.value)}
+          placeholder="Сложи дроби: 1/4 + 1/4"
+          required
+          autoFocus
+        />
+      </label>
+      <label className="afield">
+        <span>Сложность</span>
+        <select className="aselect" value={form.difficulty} onChange={(e) => onDifficulty(e.target.value)}>
+          {DIFFICULTIES.map((d) => <option key={d.id} value={d.id}>{d.label}</option>)}
+        </select>
+      </label>
+      <div className="afield">
+        <span>Варианты ответа (отметьте правильный)</span>
+        {form.options.map((opt, i) => (
+          <div className="aopt" key={i}>
+            <label className="aopt__radio">
+              <input type="radio" name="hwq-correct" checked={form.correct === i} onChange={() => onCorrect(i)} />
+            </label>
+            <input
+              className="ainput"
+              value={opt}
+              onChange={(e) => onOption(i, e.target.value)}
+              placeholder={`Вариант ${i + 1}`}
+              required
+            />
+            {form.options.length > 2 && (
+              <button type="button" className="aopt__del" onClick={() => onRemoveOption(i)} aria-label="Убрать вариант">
+                <X size={16} strokeWidth={2.6} />
+              </button>
+            )}
+          </div>
+        ))}
+        {form.options.length < 6 && (
+          <Button type="button" variant="soft" size="sm" icon={Plus} onClick={onAddOption}>Добавить вариант</Button>
+        )}
+      </div>
+      {error && <p className="aerror">{error}</p>}
+      <div className="aform__actions">
+        <Button type="submit" size="sm" icon={Plus}>Создать вопрос</Button>
+        <Button type="button" variant="soft" size="sm" onClick={onCancel}>Отмена</Button>
+      </div>
+    </form>
+  );
 }

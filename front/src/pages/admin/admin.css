@@ -1381,6 +1381,18 @@
 .aform__row--student > .afield:last-child {
   grid-column: 1 / -1;
 }
+/* datetime-local's native widget (date + time + calendar icon) doesn't shrink
+   below its own content width, so pairing it 1fr/1fr with a narrow number
+   field let the two overlap instead of wrapping. Give the date its own row
+   on anything narrower than a wide desktop form. */
+.aform__row--due {
+  grid-template-columns: minmax(220px, 2fr) minmax(120px, 1fr);
+}
+@media (max-width: 640px) {
+  .aform__row--due {
+    grid-template-columns: 1fr;
+  }
+}
 .ainput,
 .aselect,
 .atextarea {
