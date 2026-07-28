@@ -4,6 +4,7 @@
 const express = require("express");
 const multer = require("multer");
 const ExcelJS = require("exceljs");
+const { parseMoscowDeadline } = require("../utils/deadline");
 const db = require("../db");
 const { requireAuth, requireRole } = require("../middleware/auth");
 const { normalizeSubject } = require("../subjects");
@@ -213,14 +214,13 @@ router.post("/homework/import", requireRole("admin", "tutor"), upload.single("fi
         continue;
       }
 
-      // Excel dates arrive as Date objects; text dates as strings.
-      let due = null;
       const rawDue = obj.due;
-      if (rawDue instanceof Date) {
-        due = rawDue.toISOString();
-      } else if (String(rawDue ?? "").trim()) {
-        const parsed = new Date(String(rawDue).trim().replace(" ", "T"));
-        if (!Number.isNaN(parsed.getTime())) due = parsed.toISOString();
+      const hasDue = rawDue instanceof Date || String(rawDue ?? "").trim();
+      const due = hasDue ? parseMoscowDeadline(rawDue) : null;
+      if (hasDue && !due) {
+        results.errors.push({ row: rowNumber, reason: "invalid_due_date" });
+        results.skipped++;
+        continue;
       }
 
       const taskIds = String(obj.task_ids ?? "")

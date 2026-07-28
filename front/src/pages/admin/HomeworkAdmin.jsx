@@ -10,6 +10,11 @@ import "./admin.css";
 const SUBJECTS = ["Математика", "Русский"];
 const GRADES = [6, 7, 8, 9, 10, 11];
 const EMPTY = { title: "", description: "", due: "", subject: "", taskIds: [], questions: [], maxAttempts: 1 };
+const MOSCOW_UTC_OFFSET = "+03:00";
+
+function moscowDeadlineToIso(value) {
+  return new Date(`${value}:00${MOSCOW_UTC_OFFSET}`).toISOString();
+}
 
 function emptyOwnQuestion() {
   return { prompt: "", options: ["", ""], correct: 0, explanation: "" };
@@ -207,7 +212,7 @@ export default function HomeworkAdmin() {
         studentId: student.id,
         title: form.title,
         description: form.description,
-        due: form.due ? new Date(form.due).toISOString() : null,
+        due: form.due ? moscowDeadlineToIso(form.due) : null,
         taskIds: form.taskIds,
         questions: form.questions,
         subject: form.subject,
@@ -352,6 +357,7 @@ export default function HomeworkAdmin() {
                     value={form.due}
                     onChange={(e) => setForm({ ...form, due: e.target.value })}
                   />
+                  <small>Время московское (МСК)</small>
                 </label>
                 <label className="afield">
                   <span>Попыток на прохождение</span>
