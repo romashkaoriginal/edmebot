@@ -1,6 +1,7 @@
 const express = require("express");
 const db = require("../db");
 const { requireStudent, requireActiveStudent } = require("../middleware/auth");
+const { assembleHomeworkTasks, gradeHomeworkAnswers } = require("../homeworkQuestions");
 
 const router = express.Router();
 router.use(requireStudent, requireActiveStudent);
@@ -30,9 +31,14 @@ router.get("/", async (req, res, next) => {
     }
 
     const { rows } = await db.query(
-      `SELECT * FROM homework
+      `SELECT hw.*,
+              (
+                jsonb_array_length(COALESCE(hw.task_ids, '[]'::jsonb)) +
+                (SELECT COUNT(*)::int FROM homework_questions hq WHERE hq.homework_id = hw.id)
+              )::int AS question_count
+         FROM homework hw
         WHERE student_id = $1 ${subject ? "AND subject = $2" : ""}
-        ORDER BY id DESC`,
+        ORDER BY hw.id DESC`,
       subject ? [req.student.id, subject] : [req.student.id]
     );
 
@@ -90,35 +96,23 @@ router.get("/:id/tasks", async (req, res, next) => {
     const hw = hwRows[0];
     const taskIds = Array.isArray(hw.task_ids) ? hw.task_ids : [];
 
-    let bankTasks = [];
+    let bankRows = [];
     if (taskIds.length) {
       const { rows } = await db.query(
-        `SELECT id, topic, subject, prompt, options, difficulty, hints
+        `SELECT id, topic, subject, prompt, options, difficulty, hints,
+                correct AS "correctIndex", explanation
            FROM tasks WHERE id = ANY($1::bigint[])`,
         [taskIds]
       );
-      const byId = new Map(rows.map((t) => [String(t.id), t]));
-      // Preserve the order the tutor picked the tasks in.
-      bankTasks = taskIds.map((id) => byId.get(String(id))).filter(Boolean).map((t) => ({ ...t, id: String(t.id), source: "bank" }));
+      bankRows = rows;
     }
 
     const { rows: ownRows } = await db.query(
-      `SELECT id, prompt, options, difficulty
+      `SELECT id, prompt, options, correct AS "correctIndex", explanation
          FROM homework_questions WHERE homework_id = $1 ORDER BY position ASC, id ASC`,
       [hw.id]
     );
-    const ownTasks = ownRows.map((q) => ({
-      id: `hq-${q.id}`,
-      topic: null,
-      subject: hw.subject,
-      prompt: q.prompt,
-      options: q.options,
-      difficulty: "medium",
-      hints: [],
-      source: "own",
-    }));
-
-    res.json({ homework: hw, tasks: [...bankTasks, ...ownTasks] });
+    res.json({ homework: hw, tasks: assembleHomeworkTasks(hw, bankRows, ownRows) });
   } catch (e) {
     next(e);
   }
@@ -142,31 +136,20 @@ router.post("/:id/submit", async (req, res, next) => {
 
     const taskIds = Array.isArray(hw.task_ids) ? hw.task_ids : [];
     const { rows: taskRows } = await db.query(
-      "SELECT id, correct, explanation, topic FROM tasks WHERE id = ANY($1::bigint[])",
+      `SELECT id, prompt, options, correct AS "correctIndex", explanation, topic,
+              subject, difficulty, hints
+         FROM tasks WHERE id = ANY($1::bigint[])`,
       [taskIds]
     );
-    const byId = new Map(taskRows.map((t) => [String(t.id), t]));
 
     const { rows: ownRows } = await db.query(
-      "SELECT id, correct, explanation FROM homework_questions WHERE homework_id = $1",
+      `SELECT id, prompt, options, correct AS "correctIndex", explanation
+         FROM homework_questions WHERE homework_id = $1 ORDER BY position ASC, id ASC`,
       [hw.id]
     );
-    const ownById = new Map(ownRows.map((q) => [`hq-${q.id}`, q]));
-
-    const graded = answers.map(({ taskId, selected }) => {
-      const key = String(taskId);
-      const isOwn = key.startsWith("hq-");
-      const task = isOwn ? ownById.get(key) : byId.get(key);
-      const correct = !!task && task.correct === selected;
-      return {
-        taskId: key,
-        selected,
-        correct,
-        correctIndex: task?.correct ?? null,
-        explanation: task?.explanation ?? null,
-        topic: isOwn ? null : task?.topic ?? null,
-      };
-    });
+    const tasks = assembleHomeworkTasks(hw, taskRows, ownRows);
+    const { graded, error } = gradeHomeworkAnswers(tasks, answers);
+    if (error) return res.status(400).json({ error });
     const correctCount = graded.filter((g) => g.correct).length;
     const attemptsUsed = hw.attempts_used + 1;
     const solved = correctCount === graded.length;

@@ -499,7 +499,11 @@ router.get("/homework", requireRole("admin", "tutor"), async (req, res, next) =>
     }
     const { rows } = await db.query(
       `SELECT hw.*, s.name AS student_name,
-              (SELECT COUNT(*)::int FROM homework_questions hq WHERE hq.homework_id = hw.id) AS own_question_count
+              (SELECT COUNT(*)::int FROM homework_questions hq WHERE hq.homework_id = hw.id) AS own_question_count,
+              (
+                jsonb_array_length(COALESCE(hw.task_ids, '[]'::jsonb)) +
+                (SELECT COUNT(*)::int FROM homework_questions hq WHERE hq.homework_id = hw.id)
+              )::int AS question_count
          FROM homework hw JOIN students s ON s.id = hw.student_id
          ${where}
          ORDER BY hw.id DESC`,
@@ -576,20 +580,31 @@ router.post("/homework", requireRole("admin", "tutor"), async (req, res, next) =
       if (taskRows.length !== cleanTaskIds.length) return bad(res, "tasks_do_not_match_student");
     }
 
-    const { rows } = await db.query(
-      `INSERT INTO homework (student_id, subject, title, description, due, task_ids, max_attempts)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [studentId, subject, cleanTitle, String(description ?? "").trim() || null, due || null, JSON.stringify(cleanTaskIds), cleanMaxAttempts]
-    );
-    const homework = rows[0];
-
-    for (let i = 0; i < cleanQuestionList.length; i++) {
-      const q = cleanQuestionList[i];
-      await db.query(
-        `INSERT INTO homework_questions (homework_id, prompt, options, correct, explanation, position)
-         VALUES ($1,$2,$3,$4,$5,$6)`,
-        [homework.id, q.prompt, JSON.stringify(q.options), q.correct, q.explanation, i]
+    const client = await db.pool.connect();
+    let homework;
+    try {
+      await client.query("BEGIN");
+      const { rows } = await client.query(
+        `INSERT INTO homework (student_id, subject, title, description, due, task_ids, max_attempts)
+         VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+        [studentId, subject, cleanTitle, String(description ?? "").trim() || null, due || null, JSON.stringify(cleanTaskIds), cleanMaxAttempts]
       );
+      homework = rows[0];
+
+      for (let i = 0; i < cleanQuestionList.length; i++) {
+        const q = cleanQuestionList[i];
+        await client.query(
+          `INSERT INTO homework_questions (homework_id, prompt, options, correct, explanation, position)
+           VALUES ($1,$2,$3,$4,$5,$6)`,
+          [homework.id, q.prompt, JSON.stringify(q.options), q.correct, q.explanation, i]
+        );
+      }
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
     }
 
     res.status(201).json({ homework });

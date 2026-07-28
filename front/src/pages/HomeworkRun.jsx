@@ -55,7 +55,7 @@ export default function HomeworkRun() {
     const saved = answers[target];
     setIdx(target);
     setSelected(saved?.selected ?? null);
-    setGraded(saved ? (saved.selected === tasks[target].correct ? "correct" : "wrong") : null);
+    setGraded(saved ? (saved.selected === tasks[target].correctIndex ? "correct" : "wrong") : null);
     setShowExplanation(false);
   }
 
@@ -80,7 +80,7 @@ export default function HomeworkRun() {
   function selectAnswer(answer) {
     if (graded) return;
     setSelected(answer);
-    const correct = answer === task.correct;
+    const correct = answer === task.correctIndex;
     setGraded(correct ? "correct" : "wrong");
     setAnswers((cur) => ({ ...cur, [idx]: { taskId: task.id, selected: answer } }));
   }
@@ -122,7 +122,7 @@ export default function HomeworkRun() {
 
           {submitError && <div className="run__notices"><div className="run__action-error" role="alert"><span>{submitError}</span></div></div>}
 
-          <OptionList options={task.options} selected={selected} onSelect={selectAnswer} state={graded} correctIndex={task.correct} disabled={!!graded} />
+          <OptionList options={task.options} selected={selected} onSelect={selectAnswer} state={graded} correctIndex={task.correctIndex} disabled={!!graded} />
           <div className="run__question-actions">
             {idx > 0 && <Button variant="soft" icon={ArrowLeft} onClick={() => restoreQuestion(idx - 1)}>Назад</Button>}
             {graded && (

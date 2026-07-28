@@ -153,7 +153,9 @@ function HomeworkList({ subject }) {
 
 function HomeworkCard({ hw, onOpen }) {
   const notice = deadlineNotice(hw);
-  const taskCount = Array.isArray(hw.task_ids) ? hw.task_ids.length : 0;
+  const taskCount = Number.isInteger(hw.question_count)
+    ? hw.question_count
+    : (Array.isArray(hw.task_ids) ? hw.task_ids.length : 0) + (Number(hw.own_question_count) || 0);
   const maxAttempts = hw.max_attempts ?? 1;
   const attemptsUsed = hw.attempts_used ?? 0;
   const attemptsLeft = Math.max(0, maxAttempts - attemptsUsed);
