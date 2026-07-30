@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "../router";
 import { Flame, Zap, Target, CheckCircle2, Lightbulb, Trophy, RefreshCw, ChevronDown, ListChecks } from "lucide-react";
 import Card from "../components/ui/Card";
 import ProgressBar from "../components/ui/ProgressBar";
@@ -102,11 +102,11 @@ export default function Profile() {
       <Card pad="md">
         <div className="prof__xp-head">
           <span className="prof__xp-title">
-            <Zap size={16} strokeWidth={2.6} /> {profile.xp} XP
+            <Zap size={16} strokeWidth={2.6} /> {profile.xp} опыта
           </span>
-          <span className="prof__xp-sub">до уровня {profile.level + 1}: {xpNeeded - xpInLevel} XP</span>
+          <span className="prof__xp-sub">до уровня {profile.level + 1}: {xpNeeded - xpInLevel} опыта</span>
         </div>
-        <ProgressBar value={xpInLevel} max={xpNeeded} tone="xp" ariaLabel={`Прогресс уровня: ${xpInLevel} из ${xpNeeded} XP`} />
+        <ProgressBar value={xpInLevel} max={xpNeeded} tone="xp" ariaLabel={`Прогресс уровня: ${xpInLevel} из ${xpNeeded} опыта`} />
       </Card>
 
       {analyticsState.status === "loading" ? (

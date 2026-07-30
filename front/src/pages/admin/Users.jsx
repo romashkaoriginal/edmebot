@@ -198,7 +198,7 @@ export default function Users() {
         <div className="asection__head">
           <SectionTitle>Список ({visibleUsers.length})</SectionTitle>
           <div className="alist__filters">
-            <label className="asearch"><Search size={16} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Поиск по имени или Telegram ID" /></label>
+            <label className="asearch"><Search size={16} aria-hidden="true" /><input aria-label="Поиск пользователей" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Поиск по имени или Telegram ID" /></label>
             <select className="aselect afilter" value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)} aria-label="Роль пользователя">
               <option value="all">Все роли</option>
               <option value="admin">Админы</option>

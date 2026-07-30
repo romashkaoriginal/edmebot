@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "../router";
 import {
   ArrowRight,
   BookOpen,
+  CalendarDays,
   ChevronRight,
   Flame,
+  Coins,
   Play,
   RefreshCw,
   Target,
-  Zap,
 } from "lucide-react";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
@@ -53,6 +54,15 @@ export default function Dashboard() {
 
   return (
     <div className="dash">
+      {profile.accessKind === "trial" && profile.accessUntil && (
+        <div className="dash__trial" role="status">
+          <CalendarDays size={19} aria-hidden="true" />
+          <span>
+            <b>Пробный доступ активен</b>
+            До {new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" }).format(new Date(profile.accessUntil))}. Автопродления нет.
+          </span>
+        </div>
+      )}
       <header className="dash__heading">
         <div>
           <p className="dash__welcome">{firstName ? `Привет, ${firstName}` : "Привет"}</p>
@@ -86,7 +96,7 @@ export default function Dashboard() {
         <div className="dash__today-progress" aria-label={`Уровень ${profile.level}, прогресс ${xpProgress}%`}>
           <div className="dash__level-row">
             <span>Уровень {profile.level}</span>
-            <strong>{profile.xp} XP</strong>
+            <strong>{profile.xp} опыта</strong>
           </div>
           <div className="dash__xp-track" aria-hidden="true">
             <span style={{ width: `${xpProgress}%` }} />
@@ -104,9 +114,9 @@ export default function Dashboard() {
         </div>
         <div className="dash__pet-copy">
           <span className="dash__pet-title">{profile.pet.name} — твоя награда за учёбу</span>
-          <span className="dash__pet-text">Зарабатывай баллы в практике и открывай предметы для питомца.</span>
+          <span className="dash__pet-text">Зарабатывай монеты в практике и открывай предметы для питомца.</span>
         </div>
-        <span className="dash__coins"><Zap size={15} aria-hidden="true" /> {profile.coins}</span>
+        <span className="dash__coins"><Coins size={15} aria-hidden="true" /> {profile.coins}</span>
         <ArrowRight className="dash__pet-arrow" size={20} aria-hidden="true" />
       </Link>
 

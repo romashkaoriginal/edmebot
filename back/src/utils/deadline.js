@@ -1,4 +1,5 @@
 const MOSCOW_OFFSET = "+03:00";
+const APP_TIME_ZONE = process.env.APP_TIME_ZONE || "Europe/Moscow";
 
 function partsToMoscowIso(year, month, day, hour, minute) {
   const iso = `${year}-${month}-${day}T${hour}:${minute}:00${MOSCOW_OFFSET}`;
@@ -37,4 +38,31 @@ function parseMoscowDeadline(value) {
   return partsToMoscowIso(year, month, day, hour, minute);
 }
 
-module.exports = { parseMoscowDeadline };
+function dateParts(value, timeZone = APP_TIME_ZONE) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(value);
+  const get = (type) => parts.find((part) => part.type === type)?.value;
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+function deadlineNotice(homework, now = new Date(), timeZone = APP_TIME_ZONE) {
+  if (homework.status === "done") return { tone: "done", text: "сдано" };
+  if (!homework.due) return { tone: "muted", text: "без срока" };
+  const due = new Date(homework.due);
+  if (Number.isNaN(due.getTime())) return { tone: "muted", text: "без срока" };
+  if (due < now) return { tone: "danger", text: "просрочено" };
+  const todayKey = dateParts(now, timeZone);
+  const dueKey = dateParts(due, timeZone);
+  const dayDifference = Math.round(
+    (Date.parse(`${dueKey}T00:00:00Z`) - Date.parse(`${todayKey}T00:00:00Z`)) / 86400000
+  );
+  if (dayDifference === 0) return { tone: "danger", text: "сдать сегодня" };
+  if (dayDifference === 1) return { tone: "warning", text: "завтра дедлайн" };
+  return { tone: "muted", text: "предстоит" };
+}
+
+module.exports = { parseMoscowDeadline, deadlineNotice, dateParts };

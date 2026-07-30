@@ -2,27 +2,22 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, MessageCircle, Search, X } from "lucide-react";
 import Button from "../ui/Button";
 import useBodyScrollLock from "../../hooks/useBodyScrollLock";
+import useModalFocus from "../../hooks/useModalFocus";
 
 export default function ContactPickerModal({ contacts, isOpen, onClose, onSelect, title = "Выберите контакт" }) {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState("");
   const inputRef = useRef(null);
+  const dialogRef = useRef(null);
   useBodyScrollLock(isOpen);
+  useModalFocus(dialogRef, { active: isOpen, onClose, initialFocusRef: inputRef });
 
   useEffect(() => {
     if (!isOpen) return undefined;
     setQuery("");
     setSelectedId("");
-    const timer = window.setTimeout(() => inputRef.current?.focus(), 0);
-    const onKeyDown = (event) => {
-      if (event.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.clearTimeout(timer);
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [isOpen, onClose]);
+    return undefined;
+  }, [isOpen]);
 
   const filteredContacts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -40,7 +35,7 @@ export default function ContactPickerModal({ contacts, isOpen, onClose, onSelect
 
   return (
     <div className="contact-picker" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <section className="contact-picker__dialog" role="dialog" aria-modal="true" aria-labelledby="contact-picker-title">
+      <section ref={dialogRef} tabIndex={-1} className="contact-picker__dialog" role="dialog" aria-modal="true" aria-labelledby="contact-picker-title">
         <header className="contact-picker__head">
           <div>
             <p className="contact-picker__eyebrow"><MessageCircle size={15} /> Контакты Telegram</p>

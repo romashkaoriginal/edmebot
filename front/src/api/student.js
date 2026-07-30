@@ -1,5 +1,5 @@
 import { initData } from "./admin";
-import { apiUrl } from "./base";
+import { apiUrl, fetchWithTimeout } from "./base";
 
 export async function studentFetch(path, options = {}) {
   const headers = new Headers(options.headers);
@@ -7,7 +7,7 @@ export async function studentFetch(path, options = {}) {
   const demoStudentId = localStorage.getItem("edme_student_id");
   if (demoStudentId) headers.set("x-demo-student-id", demoStudentId);
   if (options.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
-  const response = await fetch(apiUrl(path), { ...options, headers });
+  const response = await fetchWithTimeout(apiUrl(path), { ...options, headers });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
   return data;
@@ -55,21 +55,12 @@ export const studentApi = {
     const query = subject ? `?${new URLSearchParams({ subject })}` : "";
     return cachedStudentFetch(`homework:${subject ?? "all"}`, `/api/homework${query}`, { fresh });
   },
-  completeHomework: async (id) => {
-    const result = await studentFetch(`/api/homework/${id}/complete`, { method: "POST" });
-    [...resourceCache.keys()].filter((key) => key.startsWith("homework:")).forEach(invalidateResource);
-    invalidateResource("analytics");
-    return result;
-  },
-  reopenHomework: async (id) => {
-    const result = await studentFetch(`/api/homework/${id}/reopen`, { method: "POST" });
-    [...resourceCache.keys()].filter((key) => key.startsWith("homework:")).forEach(invalidateResource);
-    invalidateResource("analytics");
-    return result;
-  },
   homeworkTasks: (id) => studentFetch(`/api/homework/${id}/tasks`),
-  submitHomework: async (id, answers) => {
-    const result = await studentFetch(`/api/homework/${id}/submit`, { method: "POST", body: JSON.stringify({ answers }) });
+  submitHomework: async (id, attemptId, answers) => {
+    const result = await studentFetch(`/api/homework/${id}/submit`, {
+      method: "POST",
+      body: JSON.stringify({ attemptId, answers }),
+    });
     [...resourceCache.keys()].filter((key) => key.startsWith("homework:")).forEach(invalidateResource);
     invalidateResource("analytics");
     return result;
@@ -86,11 +77,15 @@ export const studentApi = {
     invalidateResource("analytics");
     return result;
   },
+  revealPracticeHint: (instanceId) => studentFetch("/api/practice/hint", {
+    method: "POST",
+    body: JSON.stringify({ instanceId }),
+  }),
   diagnostic: ({ fresh = false } = {}) => loadDiagnostic(fresh),
   prefetchDiagnostic: () => loadDiagnostic(false),
-  checkDiagnostic: (taskId, selected) => studentFetch("/api/diagnostic/check", { method: "POST", body: JSON.stringify({ taskId, selected }) }),
-  submitDiagnostic: async (answers) => {
-    const result = await studentFetch("/api/diagnostic/submit", { method: "POST", body: JSON.stringify({ answers }) });
+  checkDiagnostic: (sessionId, taskId, selected) => studentFetch("/api/diagnostic/check", { method: "POST", body: JSON.stringify({ sessionId, taskId, selected }) }),
+  submitDiagnostic: async (sessionId, answers) => {
+    const result = await studentFetch("/api/diagnostic/submit", { method: "POST", body: JSON.stringify({ sessionId, answers }) });
     diagnosticRequest = null;
     return result;
   },
@@ -100,6 +95,7 @@ export const studentApi = {
   renamePet: (name) => studentFetch("/api/pet/rename", { method: "POST", body: JSON.stringify({ name }) }),
   updatePet: (payload) => studentFetch("/api/pet", { method: "PATCH", body: JSON.stringify(payload) }),
   onboard: (body) => studentFetch("/api/profile/onboard", { method: "POST", body: JSON.stringify(body) }),
+  startTrial: () => studentFetch("/api/profile/trial/start", { method: "POST" }),
   prefetchStudentSections: (subjects = []) => Promise.allSettled([
     cachedStudentFetch("analytics", "/api/profile/analytics"),
     cachedStudentFetch("homework:all", "/api/homework"),

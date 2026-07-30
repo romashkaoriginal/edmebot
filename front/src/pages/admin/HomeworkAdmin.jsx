@@ -33,7 +33,9 @@ const HW_IMPORT_FIELDS = [
   { key: "title", desc: "заголовок домашки (обязательно)" },
   { key: "description", desc: "необязательно: что нужно сделать" },
   { key: "due", desc: "необязательно: срок, ГГГГ-ММ-ДД или ГГГГ-ММ-ДД ЧЧ:ММ" },
-  { key: "task_ids", desc: "необязательно: ID заданий через запятую, напр. 12, 15, 18" },
+  { key: "subject", desc: "обязательно: Математика или Русский" },
+  { key: "task_ids", desc: "обязательно: минимум один ID задания через запятую" },
+  { key: "max_attempts", desc: "от 1 до 20, по умолчанию 1" },
 ];
 
 export default function HomeworkAdmin() {
@@ -276,7 +278,7 @@ export default function HomeworkAdmin() {
           <div className="afilters">
             <label className="asearch">
               <Search size={16} />
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Поиск ученика" />
+              <input aria-label="Поиск ученика" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Поиск ученика" />
             </label>
             <select className="aselect afilter" value={subjectFilter} onChange={(e) => setSubjectFilter(e.target.value)} aria-label="Предмет">
               <option value="all">Все предметы</option>

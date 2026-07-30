@@ -2,7 +2,7 @@
 
 Учебная платформа-геймификация для школьников 5–11 классов. По ТЗ реализованы
 все модули, **кроме ИИ-функционала** (модуль 7 «ИИ-помощник» и ИИ-части
-автоподбора исключены по требованию заказчика). Вся логика подбора заданий,
+адаптивного ИИ-подбора исключены по требованию заказчика). Вся логика подбора заданий,
 разбора ошибок и рекомендаций — правило-основанная.
 
 Дизайн построен на глубокой фиолетово-оранжевой гамме. См. [DESIGN.md](DESIGN.md)
@@ -18,13 +18,15 @@ edmebot/
 
 ## Вход в приложение
 
-Стартовый экран (`/`) даёт выбор роли:
+Стартовый экран (`/`) определяет роль по подписанным данным Telegram Mini App:
 
 - **Админ‑панель** (`/admin`) — управление учениками, заданиями, домашкой и статистикой.
-- **Демо‑ученик** (`/app`) — приложение ученика (практика, домашка, питомец, прогресс).
+- **Ученик** (`/app`) — приложение ученика (практика, домашка, питомец, прогресс).
 
-Пока доступ открыт всем. Позже роли будут разграничены по Telegram ID
-(заголовок `x-telegram-id` уже прокидывается фронтом).
+Backend проверяет подпись и срок жизни `Telegram.WebApp.initData`. Роли сотрудников
+хранятся в таблице `users`; открытие чужого реального профиля не поддерживается.
+Для локальной UI-проверки админки в dev-режиме доступен `/admin?preview=admin`,
+но preview не отключает серверную авторизацию API.
 
 ## База данных (Supabase)
 
@@ -45,7 +47,7 @@ Backend (порт 3001):
 
 ```bash
 cd back
-npm install
+npm ci
 npm run dev      # nodemon, или npm start
 ```
 
@@ -53,14 +55,16 @@ Frontend (порт 5173, проксирует /api на backend):
 
 ```bash
 cd front
-npm install
+npm ci
 npm run dev
 ```
 
 ## Деплой
 
 - **Backend → Render:** blueprint `render.yaml` (rootDir `back`). Задай
-  `DATABASE_URL` в дашборде Render.
+  `DATABASE_URL`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `APP_URL`
+  и при необходимости `CORS_ALLOWED_ORIGINS` в дашборде Render. Webhook secret
+  должен быть случайной URL-safe строкой длиной не менее 32 символов.
 - **Frontend → Vercel:** rootDir `front`, `vercel.json` уже настроен (SPA-rewrite).
   Задай env `VITE_API_URL` = URL бэкенда на Render (напр.
   `https://edmebot-api.onrender.com`), иначе фронт будет ходить на относительный
@@ -72,11 +76,11 @@ npm run dev
 | № | Модуль | Экран(ы) |
 | --- | --- | --- |
 | 1 | Входной тест и карта знаний | `/diagnostic`, `/diagnostic/run` |
-| 2 | Практика (режимы, уровни, автоподбор) | `/practice`, `/practice/run` |
+| 2 | Практика (режимы, уровни, смешанная сложность) | `/practice`, `/practice/run` |
 | 3 | Разбор ошибок и обратная связь | в `/practice/run` (feedback + сводка) |
-| 4 | Подсказка «Намекни» (макс 2, снижает XP) | в `/practice/run` |
-| 5 | XP, уровни, стрики | шапка, `/pet`, `/profile`, reward-оверлей |
-| 6 | Питомец и магазин за баллы | `/pet` |
+| 4 | Подсказка «Намекни» (макс 2, снижает опыт) | в `/practice/run` |
+| 5 | Опыт, уровни, стрики | шапка, `/pet`, `/profile` |
+| 6 | Питомец и магазин за монеты | `/pet` |
 | 8 | Домашние задания и дедлайны | `/homework` |
 | 9 | Личный кабинет и аналитика | `/profile` |
 
@@ -87,15 +91,16 @@ npm run dev
 | Метод | Путь | Назначение |
 | --- | --- | --- |
 | GET | `/api/profile` | Профиль ученика |
+| POST | `/api/profile/trial/start` | Одноразовый trial на 30 дней |
 | GET | `/api/profile/analytics` | Статистика, рекомендации, отчёт |
 | GET | `/api/diagnostic` | Вопросы входного теста |
 | POST | `/api/diagnostic/submit` | Ответы → карта знаний |
 | GET | `/api/practice/series` | Серия заданий (rule-based подбор) |
-| POST | `/api/practice/answer` | Проверка ответа + начисление XP |
-| GET | `/api/pet` | Питомец, баллы, магазин |
+| POST | `/api/practice/answer` | Проверка ответа + начисление опыта и монет |
+| GET | `/api/pet` | Питомец, монеты, магазин |
 | POST | `/api/pet/buy` | Покупка предмета |
 | GET | `/api/homework` | Список ДЗ с дедлайн-статусами |
-| POST | `/api/homework/:id/complete` | Отметить ДЗ выполненным |
+| POST | `/api/homework/:id/submit` | Атомарная отправка попытки ДЗ |
 
 ### Админ‑API (`/api/admin`, БД)
 
@@ -112,11 +117,11 @@ npm run dev
 
 Задания практики и домашка ученика читаются из БД, попытки пишутся в `attempts` —
 поэтому задания и ДЗ, созданные в админке, сразу видны демо‑ученику, а статистика
-реальна. XP/уровни/стрики/питомец пока в `back/src/store.js` (in-memory) и `AppStore`.
+реальна. Опыт, монеты, уровни, стрики, питомец, покупки и trial также хранятся в Postgres.
 
 ## Стек
 
-- **Frontend:** React 19, React Router, Vite, framer-motion (celebration-моменты),
-  lucide-react (иконки). Токены дизайна — OKLCH, шрифты Nunito + Baloo 2.
-- **Backend:** Express 5, CORS, dotenv, `pg` (Postgres/Supabase).
+- **Frontend:** React 19, Vite, небольшой встроенный SPA-роутер, framer-motion,
+  lucide-react. Токены дизайна — OKLCH, системные шрифты.
+- **Backend:** Express 5, Helmet, rate limiting, CORS, dotenv, `pg` (Postgres/Supabase).
 - **Инфраструктура:** Render (backend), Vercel (frontend), Supabase (Postgres).

@@ -5,16 +5,38 @@ const seed = require("./data/seed");
 const { SUBJECT_VARIANTS } = require("./subjects");
 
 const connectionString = process.env.DATABASE_URL;
+const SCHEMA_VERSION = 1;
 
-// Supabase requires SSL. On the pooler the cert chain isn't always verifiable
-// from serverless hosts, so we accept it without strict verification.
+function databaseSsl() {
+  if (!connectionString || /^postgres(?:ql)?:\/\/(?:localhost|127\.0\.0\.1)(?::|\/)/i.test(connectionString)) {
+    return false;
+  }
+  const ca = process.env.DATABASE_SSL_CA?.replace(/\\n/g, "\n");
+  return { rejectUnauthorized: true, ...(ca ? { ca } : {}) };
+}
+
 const pool = new Pool({
   connectionString,
-  ssl: connectionString ? { rejectUnauthorized: false } : false,
+  ssl: databaseSsl(),
 });
 
 async function query(text, params) {
   return pool.query(text, params);
+}
+
+async function transaction(work) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await work(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 const SCHEMA = `
@@ -73,8 +95,24 @@ UPDATE students
  WHERE first_name IS NULL AND name IS NOT NULL;
 ALTER TABLE students ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active';
 ALTER TABLE students ADD COLUMN IF NOT EXISTS access_until TIMESTAMPTZ;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS access_kind TEXT;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS trial_started_at TIMESTAMPTZ;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS trial_used BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE students DROP CONSTRAINT IF EXISTS students_status_check;
 ALTER TABLE students ADD CONSTRAINT students_status_check CHECK (status IN ('pending', 'active'));
+ALTER TABLE students DROP CONSTRAINT IF EXISTS students_access_kind_check;
+ALTER TABLE students ADD CONSTRAINT students_access_kind_check
+  CHECK (access_kind IS NULL OR access_kind IN ('trial', 'assigned'));
+UPDATE students
+   SET access_kind = 'trial',
+       trial_used = TRUE,
+       trial_started_at = COALESCE(trial_started_at, access_until - interval '30 days')
+ WHERE access_until IS NOT NULL AND access_kind IS NULL;
+UPDATE students SET access_kind = 'assigned'
+ WHERE status = 'active' AND access_until IS NULL AND access_kind IS NULL;
+ALTER TABLE students DROP CONSTRAINT IF EXISTS students_grade_check;
+ALTER TABLE students ADD CONSTRAINT students_grade_check
+  CHECK (grade IS NULL OR grade BETWEEN 6 AND 11) NOT VALID;
 
 -- Multi-subject enrollment. students.grade/subject stay as the "primary"
 -- (first-chosen) subject for display/back-compat; this table is the source
@@ -86,6 +124,9 @@ CREATE TABLE IF NOT EXISTS student_subjects (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (student_id, subject)
 );
+ALTER TABLE student_subjects DROP CONSTRAINT IF EXISTS student_subjects_grade_check;
+ALTER TABLE student_subjects ADD CONSTRAINT student_subjects_grade_check
+  CHECK (grade BETWEEN 6 AND 11) NOT VALID;
 
 CREATE TABLE IF NOT EXISTS tasks (
   id           BIGSERIAL PRIMARY KEY,
@@ -106,6 +147,14 @@ CREATE TABLE IF NOT EXISTS tasks (
 -- missing columns, so keep these migrations explicit and idempotent.
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS difficulty TEXT NOT NULL DEFAULT 'medium';
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS hints JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE tasks DROP CONSTRAINT IF EXISTS tasks_difficulty_check;
+ALTER TABLE tasks ADD CONSTRAINT tasks_difficulty_check
+  CHECK (difficulty IN ('easy', 'medium', 'hard')) NOT VALID;
+ALTER TABLE tasks DROP CONSTRAINT IF EXISTS tasks_grade_check;
+ALTER TABLE tasks ADD CONSTRAINT tasks_grade_check CHECK (grade BETWEEN 5 AND 11) NOT VALID;
+ALTER TABLE tasks DROP CONSTRAINT IF EXISTS tasks_correct_check;
+ALTER TABLE tasks ADD CONSTRAINT tasks_correct_check
+  CHECK (correct >= 0 AND correct < jsonb_array_length(options)) NOT VALID;
 
 CREATE TABLE IF NOT EXISTS homework (
   id           BIGSERIAL PRIMARY KEY,
@@ -130,6 +179,31 @@ UPDATE homework hw
 -- manual "mark as done" toggle, so it needs its own attempt budget/counter.
 ALTER TABLE homework ADD COLUMN IF NOT EXISTS max_attempts INTEGER NOT NULL DEFAULT 1;
 ALTER TABLE homework ADD COLUMN IF NOT EXISTS attempts_used INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE homework DROP CONSTRAINT IF EXISTS homework_status_check;
+ALTER TABLE homework ADD CONSTRAINT homework_status_check
+  CHECK (status IN ('active', 'done')) NOT VALID;
+ALTER TABLE homework DROP CONSTRAINT IF EXISTS homework_attempts_check;
+ALTER TABLE homework ADD CONSTRAINT homework_attempts_check
+  CHECK (max_attempts BETWEEN 1 AND 20 AND attempts_used BETWEEN 0 AND max_attempts) NOT VALID;
+ALTER TABLE homework DROP CONSTRAINT IF EXISTS homework_subject_required;
+ALTER TABLE homework ADD CONSTRAINT homework_subject_required
+  CHECK (subject IS NOT NULL AND length(trim(subject)) > 0) NOT VALID;
+
+-- Normalized task membership keeps homework valid when the shared task bank
+-- changes. The legacy JSON column remains for backwards-compatible responses.
+CREATE TABLE IF NOT EXISTS homework_tasks (
+  homework_id BIGINT NOT NULL REFERENCES homework(id) ON DELETE CASCADE,
+  task_id     BIGINT NOT NULL REFERENCES tasks(id) ON DELETE RESTRICT,
+  position    INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (homework_id, task_id)
+);
+INSERT INTO homework_tasks (homework_id, task_id, position)
+SELECT hw.id, t.id, item.ordinality - 1
+  FROM homework hw
+ CROSS JOIN LATERAL jsonb_array_elements_text(COALESCE(hw.task_ids, '[]'::jsonb))
+   WITH ORDINALITY AS item(task_id, ordinality)
+  JOIN tasks t ON t.id = CASE WHEN item.task_id ~ '^\\d+$' THEN item.task_id::bigint END
+ON CONFLICT (homework_id, task_id) DO NOTHING;
 
 -- One row per homework submission attempt, storing the per-question outcome
 -- so the results screen can show right/wrong + explanation after the fact.
@@ -142,7 +216,11 @@ CREATE TABLE IF NOT EXISTS homework_attempts (
   total        INTEGER NOT NULL DEFAULT 0,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE homework_attempts ADD COLUMN IF NOT EXISTS idempotency_key UUID;
 CREATE INDEX IF NOT EXISTS idx_homework_attempts_homework ON homework_attempts (homework_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_homework_attempts_idempotency
+  ON homework_attempts (homework_id, student_id, idempotency_key)
+  WHERE idempotency_key IS NOT NULL;
 
 -- Questions written specifically for one homework assignment — separate from
 -- the shared practice task bank (tasks). No topic/subject/grade: they only
@@ -167,6 +245,44 @@ CREATE TABLE IF NOT EXISTS attempts (
   correct      BOOLEAN NOT NULL,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE attempts ADD COLUMN IF NOT EXISTS practice_instance_id UUID UNIQUE;
+
+CREATE TABLE IF NOT EXISTS practice_question_instances (
+  id             UUID PRIMARY KEY,
+  student_id     BIGINT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  task_id        BIGINT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+  hints_revealed INTEGER NOT NULL DEFAULT 0 CHECK (hints_revealed >= 0),
+  answered_at    TIMESTAMPTZ,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at     TIMESTAMPTZ NOT NULL DEFAULT now() + interval '6 hours'
+);
+ALTER TABLE practice_question_instances ADD COLUMN IF NOT EXISTS selected INTEGER;
+ALTER TABLE practice_question_instances ADD COLUMN IF NOT EXISTS correct BOOLEAN;
+ALTER TABLE practice_question_instances ADD COLUMN IF NOT EXISTS award_xp INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE practice_question_instances ADD COLUMN IF NOT EXISTS award_coins INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE practice_question_instances ADD COLUMN IF NOT EXISTS leveled_up BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE INDEX IF NOT EXISTS idx_practice_instances_student
+  ON practice_question_instances (student_id, expires_at);
+
+CREATE TABLE IF NOT EXISTS practice_daily_awards (
+  student_id   BIGINT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  task_id      BIGINT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+  activity_day DATE NOT NULL,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (student_id, task_id, activity_day)
+);
+
+CREATE TABLE IF NOT EXISTS diagnostic_sessions (
+  id            UUID PRIMARY KEY,
+  student_id    BIGINT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  subject       TEXT NOT NULL,
+  question_ids  JSONB NOT NULL,
+  submitted_at  TIMESTAMPTZ,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at    TIMESTAMPTZ NOT NULL DEFAULT now() + interval '6 hours'
+);
+CREATE INDEX IF NOT EXISTS idx_diagnostic_sessions_student
+  ON diagnostic_sessions (student_id, expires_at);
 
 -- Persistent mistake history powers the dedicated "work on mistakes" mode.
 -- Keep one aggregate row per student/task: repetitions are useful signal,
@@ -229,8 +345,19 @@ CREATE TABLE IF NOT EXISTS student_topics (
 -- Topic ids alone are ambiguous once more than one subject exists (a
 -- Russian topic could reuse a math topic's key). Scope mastery by subject.
 ALTER TABLE student_topics ADD COLUMN IF NOT EXISTS subject TEXT NOT NULL DEFAULT 'Математика';
-ALTER TABLE student_topics DROP CONSTRAINT IF EXISTS student_topics_pkey;
-ALTER TABLE student_topics ADD PRIMARY KEY (student_id, subject, topic_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+      FROM pg_constraint
+     WHERE conrelid = 'student_topics'::regclass
+       AND contype = 'p'
+       AND pg_get_constraintdef(oid) = 'PRIMARY KEY (student_id, subject, topic_id)'
+  ) THEN
+    ALTER TABLE student_topics DROP CONSTRAINT IF EXISTS student_topics_pkey;
+    ALTER TABLE student_topics ADD PRIMARY KEY (student_id, subject, topic_id);
+  END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS telegram_contacts (
   tg_id        TEXT PRIMARY KEY,
@@ -265,6 +392,14 @@ CREATE INDEX IF NOT EXISTS idx_bonus_student ON bonus_transactions (student_id);
 CREATE INDEX IF NOT EXISTS idx_student_topics_student ON student_topics (student_id);
 CREATE INDEX IF NOT EXISTS idx_telegram_contacts_seen ON telegram_contacts (last_seen_at DESC);
 CREATE INDEX IF NOT EXISTS idx_student_subjects_student ON student_subjects (student_id);
+CREATE INDEX IF NOT EXISTS idx_homework_tasks_task ON homework_tasks (task_id);
+
+ALTER TABLE student_profiles DROP CONSTRAINT IF EXISTS student_profiles_nonnegative_check;
+ALTER TABLE student_profiles ADD CONSTRAINT student_profiles_nonnegative_check
+  CHECK (xp >= 0 AND coins >= 0 AND level >= 1 AND streak >= 0) NOT VALID;
+ALTER TABLE bonus_transactions DROP CONSTRAINT IF EXISTS bonus_amount_check;
+ALTER TABLE bonus_transactions ADD CONSTRAINT bonus_amount_check
+  CHECK (amount BETWEEN -100000 AND 100000 AND amount <> 0) NOT VALID;
 
 -- Backfill: every pre-existing student's single subject/grade becomes their
 -- first enrollment row, so nothing already active loses access.
@@ -347,10 +482,26 @@ async function init() {
       "DATABASE_URL is not set. Add your Supabase connection string to back/.env"
     );
   }
-  await query(SCHEMA);
+  await transaction(async (client) => {
+    await client.query("SELECT pg_advisory_xact_lock(402021)");
+    await client.query(
+      `CREATE TABLE IF NOT EXISTS schema_migrations (
+         version INTEGER PRIMARY KEY,
+         applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
+       )`
+    );
+    const { rows } = await client.query("SELECT COALESCE(MAX(version), 0)::int AS version FROM schema_migrations");
+    if (rows[0].version < SCHEMA_VERSION) {
+      await client.query(SCHEMA);
+      await client.query(
+        "INSERT INTO schema_migrations (version) VALUES ($1) ON CONFLICT DO NOTHING",
+        [SCHEMA_VERSION]
+      );
+    }
+  });
   await normalizeTaskSubjects();
   await seedIfEmpty();
   console.log("Database ready.");
 }
 
-module.exports = { pool, query, init, getDemoStudent };
+module.exports = { pool, query, transaction, init, getDemoStudent };

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "../router";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Coins, Home, Info, Lightbulb, RefreshCw, X, Zap } from "lucide-react";
 import Button from "../components/ui/Button";
@@ -8,6 +8,8 @@ import OptionList from "../components/shared/OptionList";
 import { useApp } from "../store/AppStore";
 import { studentApi } from "../api/student";
 import { answerHaptic } from "../utils/haptics";
+import { dateKey } from "../utils/date";
+import useModalFocus from "../hooks/useModalFocus";
 import "./RunMode.css";
 import "./PracticeRun.css";
 
@@ -36,6 +38,8 @@ export default function PracticeRun() {
   const [graded, setGraded] = useState(null);
   const [feedback, setFeedback] = useState(null);
   const [hintsUsed, setHintsUsed] = useState(0);
+  const [hintText, setHintText] = useState("");
+  const [hintLoading, setHintLoading] = useState(false);
   const [results, setResults] = useState([]);
   const [responses, setResponses] = useState({});
   const [done, setDone] = useState(false);
@@ -45,6 +49,8 @@ export default function PracticeRun() {
   const [showExplanation, setShowExplanation] = useState(false);
   const [actionError, setActionError] = useState("");
   const [liveAward, setLiveAward] = useState(null);
+  const explanationRef = useRef(null);
+  useModalFocus(explanationRef, { active: showExplanation, onClose: () => setShowExplanation(false) });
 
   useEffect(() => {
     let cancelled = false;
@@ -61,6 +67,9 @@ export default function PracticeRun() {
           setGraded(cached.graded ?? null);
           setFeedback(cached.feedback ?? null);
           setHintsUsed(cached.hintsUsed ?? 0);
+          setHintText(cached.hintText ?? "");
+          setPendingSave(cached.pendingSave ?? null);
+          setActionError(cached.actionError ?? "");
           setResults(cached.results ?? []);
           setResponses(cached.responses ?? {});
           return () => { cancelled = true; };
@@ -80,9 +89,10 @@ export default function PracticeRun() {
   useEffect(() => {
     if (!tasks?.length || done) return;
     localStorage.setItem(sessionKey, JSON.stringify({
-      savedAt: Date.now(), tasks, idx, selected, graded, feedback, hintsUsed, results, responses,
+      savedAt: Date.now(), tasks, idx, selected, graded, feedback, hintsUsed, hintText,
+      results, responses, pendingSave, actionError,
     }));
-  }, [done, feedback, graded, hintsUsed, idx, responses, results, selected, sessionKey, tasks]);
+  }, [actionError, done, feedback, graded, hintText, hintsUsed, idx, pendingSave, responses, results, selected, sessionKey, tasks]);
 
   useEffect(() => {
     if (done) localStorage.removeItem(sessionKey);
@@ -102,9 +112,10 @@ export default function PracticeRun() {
     setGraded(saved?.graded ?? null);
     setFeedback(saved?.feedback ?? null);
     setHintsUsed(saved?.hintsUsed ?? 0);
+    setHintText(saved?.hintText ?? "");
     setShowExplanation(false);
     setActionError("");
-    setPendingSave(null);
+    setPendingSave(saved?.pendingSave ?? null);
   }
 
   if (tasks === null) {
@@ -112,7 +123,7 @@ export default function PracticeRun() {
   }
 
   if (tasks.length === 0) {
-    return <div className="run"><div className="run__body"><Card pad="lg" className="run__state-card"><h1 className="run__prompt">Для этих настроек заданий нет</h1><p>Выбери другой уровень или режим. Если задания не появляются без фильтров, сообщи учителю.</p><Button icon={Home} onClick={() => navigate(practicePath)}>Изменить настройки</Button></Card></div></div>;
+    return <div className="run"><div className="run__body"><Card pad="lg" className="run__state-card"><h1 className="run__prompt">Для этих настроек заданий нет</h1><p>Выбери другой уровень или режим. Если задания не появляются без фильтров, сообщи репетитору.</p><Button icon={Home} onClick={() => navigate(practicePath)}>Изменить настройки</Button></Card></div></div>;
   }
 
   if (done) return <Summary results={results} onExit={() => navigate("/app")} />;
@@ -132,7 +143,7 @@ export default function PracticeRun() {
       correctIndex: task.correctIndex,
       award: null,
     };
-    const response = { selected: answer, graded: nextGraded, feedback: nextFeedback, hintsUsed };
+    const response = { selected: answer, graded: nextGraded, feedback: nextFeedback, hintsUsed, hintText };
     setGraded(nextGraded);
     setFeedback(nextFeedback);
     setResponses((items) => ({ ...items, [idx]: response }));
@@ -142,17 +153,19 @@ export default function PracticeRun() {
 
   async function saveAnswer(payload) {
     if (checking) return;
-    const { answer, nextFeedback, response, correct } = payload;
+    const { answer, nextFeedback, response } = payload;
     setChecking(true);
     setPendingSave(payload);
     setActionError("");
     try {
-      const data = await studentApi.answer({ taskId: task.id, selected: answer, attempts: 0, hintsUsed });
+      const data = await studentApi.answer({ taskId: task.id, instanceId: task.instanceId, selected: answer });
+      const serverGraded = data.correct ? "correct" : "wrong";
       const savedFeedback = { ...nextFeedback, explanation: data.explanation, commonMistake: data.commonMistake, correctIndex: data.correctIndex, award: data.award };
       hydrate({ profile: data.profile, topics: data.topics });
+      setGraded(serverGraded);
       setFeedback(savedFeedback);
-      setResponses((items) => ({ ...items, [idx]: { ...response, feedback: savedFeedback } }));
-      setResults((items) => [...items, { taskId: task.id, correct, topic: task.topic, topicLabel, award: data.award }]);
+      setResponses((items) => ({ ...items, [idx]: { ...response, graded: serverGraded, feedback: savedFeedback } }));
+      setResults((items) => [...items, { taskId: task.id, correct: data.correct, topic: task.topic, topicLabel, award: data.award }]);
       setPendingSave(null);
       if (correct && (data.award?.gained || data.award?.coins)) {
         setLiveAward({ ...data.award, id: Date.now() });
@@ -162,6 +175,21 @@ export default function PracticeRun() {
       setActionError("Ответ показан, но пока не сохранён. Проверь соединение и повтори отправку.");
     } finally {
       setChecking(false);
+    }
+  }
+
+  async function revealHint() {
+    if (hintLoading || graded || hintsUsed >= (task.hintCount ?? 0)) return;
+    setHintLoading(true);
+    setActionError("");
+    try {
+      const data = await studentApi.revealPracticeHint(task.instanceId);
+      setHintsUsed(data.hintsUsed);
+      setHintText(data.hint);
+    } catch {
+      setActionError("Не удалось открыть подсказку. Проверь соединение и попробуй ещё раз.");
+    } finally {
+      setHintLoading(false);
     }
   }
 
@@ -204,13 +232,13 @@ export default function PracticeRun() {
           <h1 className="run__prompt">{task.prompt}</h1>
 
           <div className="run__assist">
-            {!graded && (task.hints ?? []).length > 0 && <Button variant="ghost" size="sm" icon={Lightbulb} disabled={hintsUsed >= task.hints.length} onClick={() => setHintsUsed((value) => value + 1)}>Подсказка{task.hints.length - hintsUsed > 0 ? ` (${task.hints.length - hintsUsed})` : ""}</Button>}
+            {!graded && (task.hintCount ?? 0) > 0 && <Button variant="ghost" size="sm" icon={Lightbulb} loading={hintLoading} disabled={hintsUsed >= task.hintCount} onClick={revealHint}>Подсказка{task.hintCount - hintsUsed > 0 ? ` (${task.hintCount - hintsUsed})` : ""}</Button>}
             {graded && <Button variant="ghost" size="sm" icon={Info} onClick={() => setShowExplanation((value) => !value)}>{showExplanation ? "Скрыть объяснение" : "Показать объяснение"}</Button>}
           </div>
 
           <div className="run__notices" aria-live="polite">
             {actionError && <div className="run__action-error" role="alert"><span>{actionError}</span>{pendingSave && <button type="button" disabled={checking} onClick={() => saveAnswer(pendingSave)}>Повторить</button>}</div>}
-            {hintsUsed > 0 && !graded && <div className="pr__hint"><Lightbulb size={16} /><span>{task.hints[hintsUsed - 1]}</span></div>}
+            {hintText && !graded && <div className="pr__hint"><Lightbulb size={16} /><span>{hintText}</span></div>}
           </div>
 
           <OptionList options={task.options} selected={selected} onSelect={selectAnswer} state={graded} correctIndex={feedback?.correctIndex} disabled={!!graded} />
@@ -221,14 +249,14 @@ export default function PracticeRun() {
         </Card>
       </div>
       <AnimatePresence initial={false}>
-        {showExplanation && feedback?.explanation && <><motion.button type="button" className="run__sheet-backdrop" aria-label="Закрыть объяснение" onClick={() => setShowExplanation(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} /><motion.aside className="run__explanation-sheet" role="dialog" aria-modal="true" aria-label="Объяснение" initial={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(100%)" }} animate={{ opacity: 1, transform: "translateY(0)" }} exit={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(100%)" }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}><div><strong>Объяснение</strong><button type="button" onClick={() => setShowExplanation(false)} aria-label="Закрыть объяснение"><X size={20} /></button></div><p>{feedback.explanation}</p>{graded === "wrong" && feedback.commonMistake && <small>{feedback.commonMistake}</small>}</motion.aside></>}
+        {showExplanation && feedback?.explanation && <><motion.button type="button" className="run__sheet-backdrop" aria-label="Закрыть объяснение" onClick={() => setShowExplanation(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} /><motion.aside ref={explanationRef} tabIndex={-1} className="run__explanation-sheet" role="dialog" aria-modal="true" aria-label="Объяснение" initial={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(100%)" }} animate={{ opacity: 1, transform: "translateY(0)" }} exit={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(100%)" }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}><div><strong>Объяснение</strong><button type="button" onClick={() => setShowExplanation(false)} aria-label="Закрыть объяснение"><X size={20} /></button></div><p>{feedback.explanation}</p>{graded === "wrong" && feedback.commonMistake && <small>{feedback.commonMistake}</small>}</motion.aside></>}
       </AnimatePresence>
     </div>
   );
 }
 
 function LivePracticeStats({ profile, award }) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = dateKey();
   const lit = profile.streakLastDoneOn === today;
   const xpInLevel = Math.max(0, profile.xp - profile.xpFromLevel);
   const xpNeeded = Math.max(1, profile.xpForNext - profile.xpFromLevel);
@@ -236,7 +264,7 @@ function LivePracticeStats({ profile, award }) {
   return <div className="run__live-stats" aria-label="Прогресс ученика">
     <span className={`run__live-stat run__live-stat--streak ${lit ? "is-lit" : ""} ${award ? "is-celebrating" : ""}`}><span className="run__live-flame" aria-hidden="true">🔥</span><b>{profile.streak}</b></span>
     <span className="run__live-stat run__live-stat--coins"><Coins size={16} /><b>{profile.coins}</b>{award?.coins > 0 && <i key={`c-${award.id}`} className="run__live-gain">+{award.coins}</i>}</span>
-    <span className="run__live-stat run__live-level"><span className="run__live-level-copy"><small>ур. {profile.level}</small><b>{profile.xp} XP</b></span><span className="run__live-level-track"><i style={{ transform: `scaleX(${progress})` }} /></span>{award?.gained > 0 && <i key={`x-${award.id}`} className="run__live-gain">+{award.gained} XP</i>}</span>
+    <span className="run__live-stat run__live-level"><span className="run__live-level-copy"><small>ур. {profile.level}</small><b>{profile.xp} опыта</b></span><span className="run__live-level-track"><i style={{ transform: `scaleX(${progress})` }} /></span>{award?.gained > 0 && <i key={`x-${award.id}`} className="run__live-gain">+{award.gained} опыта</i>}</span>
   </div>;
 }
 
@@ -260,7 +288,7 @@ function Summary({ results, onExit }) {
       <div className={`pr__score-ring pr__score-ring--${pct >= 80 ? "good" : pct >= 50 ? "mid" : "low"}`}><span className="font-display">{pct}%</span></div>
       <h1>Серия завершена</h1><p className="run__result-lead">{summary}</p>
       <div className="pr__stats" aria-label="Результаты серии"><div className="pr__stat"><span className="pr__stat-num font-display">{correct}</span><span className="pr__stat-label">верно</span></div><div className="pr__stat"><span className="pr__stat-num font-display pr__stat-num--err">{errors}</span><span className="pr__stat-label">ошибок</span></div><div className="pr__stat"><span className="pr__stat-num font-display">{total}</span><span className="pr__stat-label">всего</span></div></div>
-      {(gainedXp > 0 || gainedCoins > 0) && <div className="pr__reward" role="status"><span><Zap size={18} /> +{gainedXp} XP</span><span><Coins size={18} /> +{gainedCoins} монет</span></div>}
+      {(gainedXp > 0 || gainedCoins > 0) && <div className="pr__reward" role="status"><span><Zap size={18} /> +{gainedXp} опыта</span><span><Coins size={18} /> +{gainedCoins} монет</span></div>}
       {errorTopics.length > 0 && <div className="pr__recap"><div className="pr__recap-title">Следующий учебный шаг</div><div className="pr__recap-topics">{errorTopics.map((topic) => <span key={topic} className="pr__recap-chip">{topic}</span>)}</div><p className="pr__recap-hint">Эти темы сохранены в режиме «Работа над ошибками».</p></div>}
       <div className="run__result-actions"><Button variant="soft" icon={Home} onClick={onExit}>На главную</Button><Button icon={RefreshCw} onClick={() => navigate(0)}>Ещё серия</Button></div>
     </Card></div>

@@ -130,7 +130,7 @@
   font-size: var(--text-sm);
   font-weight: 700;
 }
-.run__action-error button { min-height: 36px; padding-inline: 10px; border-radius: var(--r-sm); background: var(--surface); color: var(--danger); font-weight: 850; }
+.run__action-error button { min-height: 44px; padding-inline: 10px; border-radius: var(--r-sm); background: var(--surface); color: var(--danger); font-weight: 850; }
 .run__prompt {
   flex: 0 1 auto;
   font-size: clamp(1.12rem, 2.8vh, var(--text-xl));
@@ -293,10 +293,10 @@
 @media (max-height: 690px) {
   .run { padding-block: 7px; }
   .run__top { min-height: 42px; padding-bottom: 6px; }
-  .run__close { width: 40px; height: 40px; }
+  .run__close { width: 44px; height: 44px; }
   .run__prompt { font-size: 1.05rem; margin-block: 4px 8px; }
   .run__footer { min-height: 50px; padding-top: 6px; }
-  .run__footer .btn { min-height: 42px; }
+  .run__footer .btn { min-height: 44px; }
   .run__question-actions { min-height: 44px; margin-top: 5px; padding-top: 5px; }
 }
 

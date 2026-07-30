@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "../router";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, CircleHelp, Info, Lightbulb, PartyPopper, RefreshCw, X } from "lucide-react";
 import Button from "../components/ui/Button";
@@ -9,6 +9,7 @@ import KnowledgeMap from "../components/shared/KnowledgeMap";
 import { studentApi } from "../api/student";
 import { useApp } from "../store/AppStore";
 import { answerHaptic } from "../utils/haptics";
+import useModalFocus from "../hooks/useModalFocus";
 import "./RunMode.css";
 
 const SESSION_TTL = 6 * 60 * 60 * 1000;
@@ -28,6 +29,7 @@ export default function DiagnosticRun() {
   const [showExplanation, setShowExplanation] = useState(false);
   const [helpUsed, setHelpUsed] = useState(false);
   const [questions, setQuestions] = useState(null);
+  const [diagnosticSessionId, setDiagnosticSessionId] = useState("");
   const [answers, setAnswers] = useState([]);
   const [responses, setResponses] = useState({});
   const [resultTopics, setResultTopics] = useState([]);
@@ -36,6 +38,8 @@ export default function DiagnosticRun() {
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [loadVersion, setLoadVersion] = useState(0);
+  const explanationRef = useRef(null);
+  useModalFocus(explanationRef, { active: showExplanation, onClose: () => setShowExplanation(false) });
 
   useEffect(() => {
     let cancelled = false;
@@ -44,8 +48,9 @@ export default function DiagnosticRun() {
     if (loadVersion === 0) {
       try {
         const cached = JSON.parse(localStorage.getItem(sessionKey) || "null");
-        if (cached && Date.now() - cached.savedAt < SESSION_TTL && cached.questions?.length && cached.questions.every((item) => Number.isInteger(item.correctIndex))) {
+        if (cached && cached.diagnosticSessionId && Date.now() - cached.savedAt < SESSION_TTL && cached.questions?.length && cached.questions.every((item) => Number.isInteger(item.correctIndex))) {
           setQuestions(cached.questions);
+          setDiagnosticSessionId(cached.diagnosticSessionId ?? "");
           setIdx(Math.min(cached.idx ?? 0, cached.questions.length - 1));
           setAnswers(cached.answers ?? []);
           setResponses(cached.responses ?? {});
@@ -60,15 +65,20 @@ export default function DiagnosticRun() {
       }
     }
     studentApi.diagnostic({ fresh: loadVersion > 0 })
-      .then((data) => { if (!cancelled) setQuestions(data.questions ?? []); })
+      .then((data) => {
+        if (!cancelled) {
+          setQuestions(data.questions ?? []);
+          setDiagnosticSessionId(data.sessionId ?? "");
+        }
+      })
       .catch(() => { if (!cancelled) setLoadError("Не удалось загрузить диагностику. Проверь соединение и повтори попытку."); });
     return () => { cancelled = true; };
   }, [loadVersion, sessionKey]);
 
   useEffect(() => {
     if (!questions?.length || done) return;
-    localStorage.setItem(sessionKey, JSON.stringify({ savedAt: Date.now(), questions, idx, answers, responses, selected, graded, feedback, helpUsed }));
-  }, [answers, done, feedback, graded, helpUsed, idx, questions, responses, selected, sessionKey]);
+    localStorage.setItem(sessionKey, JSON.stringify({ savedAt: Date.now(), diagnosticSessionId, questions, idx, answers, responses, selected, graded, feedback, helpUsed }));
+  }, [answers, diagnosticSessionId, done, feedback, graded, helpUsed, idx, questions, responses, selected, sessionKey]);
 
   useEffect(() => { if (done) localStorage.removeItem(sessionKey); }, [done, sessionKey]);
 
@@ -112,7 +122,7 @@ export default function DiagnosticRun() {
     setSubmitting(true);
     setSubmitError("");
     try {
-      const result = await studentApi.submitDiagnostic(answers);
+      const result = await studentApi.submitDiagnostic(diagnosticSessionId, answers);
       setResultTopics(result.knowledgeMap ?? []);
       hydrate({ profile: result.profile, topics: result.knowledgeMap });
       setDone(true);
@@ -128,7 +138,7 @@ export default function DiagnosticRun() {
   }
 
   if (!questions.length) {
-    return <div className="run"><div className="run__body"><Card pad="lg" className="run__state-card"><h1>Вопросы ещё не готовы</h1><p>Для выбранного класса и предмета пока нет заданий. Сообщи учителю.</p><Button variant="soft" onClick={() => navigate("/app")}>На главную</Button></Card></div></div>;
+    return <div className="run"><div className="run__body"><Card pad="lg" className="run__state-card"><h1>Вопросы ещё не готовы</h1><p>Для выбранного класса и предмета пока нет заданий. Сообщи репетитору.</p><Button variant="soft" onClick={() => navigate("/app")}>На главную</Button></Card></div></div>;
   }
 
   if (done) {
@@ -167,7 +177,7 @@ export default function DiagnosticRun() {
         </Card>
       </div>
       <AnimatePresence initial={false}>
-        {showExplanation && sheetText && <><motion.button type="button" className="run__sheet-backdrop" aria-label="Закрыть подсказку" onClick={() => setShowExplanation(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} /><motion.aside className="run__explanation-sheet" role="dialog" aria-modal="true" aria-label={graded ? "Объяснение" : "Напоминание правила"} initial={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(100%)" }} animate={{ opacity: 1, transform: "translateY(0)" }} exit={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(100%)" }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}><div><strong>{graded ? "Объяснение" : `Тема: ${formatTopicLabel(question.topic)}`}</strong><button type="button" onClick={() => setShowExplanation(false)} aria-label="Закрыть"><X size={20} /></button></div><p>{sheetText}</p></motion.aside></>}
+        {showExplanation && sheetText && <><motion.button type="button" className="run__sheet-backdrop" aria-label="Закрыть подсказку" onClick={() => setShowExplanation(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} /><motion.aside ref={explanationRef} tabIndex={-1} className="run__explanation-sheet" role="dialog" aria-modal="true" aria-label={graded ? "Объяснение" : "Напоминание правила"} initial={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(100%)" }} animate={{ opacity: 1, transform: "translateY(0)" }} exit={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(100%)" }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}><div><strong>{graded ? "Объяснение" : `Тема: ${formatTopicLabel(question.topic)}`}</strong><button type="button" onClick={() => setShowExplanation(false)} aria-label="Закрыть"><X size={20} /></button></div><p>{sheetText}</p></motion.aside></>}
       </AnimatePresence>
     </div>
   );

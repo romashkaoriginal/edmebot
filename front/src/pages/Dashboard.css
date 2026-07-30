@@ -3,6 +3,18 @@
   flex-direction: column;
   gap: var(--sp-5);
 }
+.dash__trial {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  color: var(--primary-strong);
+  background: var(--primary-soft);
+  border-radius: var(--r-md);
+  font-size: var(--text-sm);
+}
+.dash__trial svg { flex: 0 0 auto; }
+.dash__trial span { display: flex; flex-wrap: wrap; gap: 4px 8px; }
 
 .dash__heading {
   display: flex;

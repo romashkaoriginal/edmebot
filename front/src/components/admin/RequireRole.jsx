@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Navigate } from "../../router";
 import { useAdminAuth } from "../../context/AdminAuth";
 
 // Guards a single admin route by role. AdminLayout already blocks unauthenticated

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "../router";
 import { ArrowLeft, ArrowRight, Calculator, PenLine } from "lucide-react";
 import Button from "../components/ui/Button";
 import Logo from "../components/brand/Logo";

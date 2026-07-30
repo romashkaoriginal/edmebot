@@ -6,7 +6,8 @@ import SectionTitle from "../components/ui/SectionTitle";
 import PetAvatar, { AccessoryPreview } from "../components/pet/PetAvatar";
 import { useApp } from "../store/AppStore";
 import { studentApi } from "../api/student";
-import { shopItems, petSpecies } from "../data/mock";
+import { dateKey } from "../utils/date";
+import { petSpecies } from "../data/mock";
 import "./Pet.css";
 
 const CATEGORIES = [
@@ -18,8 +19,8 @@ const PET_NAMES = ["Искра", "Плюша", "Финик", "Луна", "Тош
 
 export default function Pet() {
   const { profile, ownedItems, hydrate, setPetSpecies, setPetName } = useApp();
+  const [shopItems, setShopItems] = useState([]);
   const [cat, setCat] = useState("look");
-  const [view, setView] = useState("room");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [pendingSpecies, setPendingSpecies] = useState(null);
   const [previewItem, setPreviewItem] = useState(null);
@@ -33,6 +34,20 @@ export default function Pet() {
   const [savingName, setSavingName] = useState(false);
   const [coinsInfoOpen, setCoinsInfoOpen] = useState(false);
   const timers = useRef([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    studentApi.pet()
+      .then(({ shop = [], ...petProfile }) => {
+        if (cancelled) return;
+        setShopItems(shop);
+        hydrate({ profile: petProfile });
+      })
+      .catch(() => {
+        if (!cancelled) setFeedback({ type: "poor", text: "Магазин временно не загрузился. Попробуй открыть раздел позже." });
+      });
+    return () => { cancelled = true; };
+  }, [hydrate]);
 
   function startEditName() {
     setNameDraft(profile.pet.name);
@@ -74,7 +89,7 @@ export default function Pet() {
   const bond = profile.petBond ?? 0;
   const bondLevel = Math.floor(bond / 100) + 1;
   const bondProgress = bond % 100;
-  const studiedToday = profile.streakLastDoneOn === new Date().toISOString().slice(0, 10);
+  const studiedToday = profile.streakLastDoneOn === dateKey();
 
   const clearLater = useCallback((fn, ms) => {
     const timer = setTimeout(fn, ms);
@@ -123,7 +138,6 @@ export default function Pet() {
 
   async function feed(item) {
     if (!item) {
-      setView("room");
       requestAnimationFrame(() => document.getElementById("pet-food")?.scrollIntoView({ behavior: "smooth", block: "center" }));
       showFeedback({ type: "poor", text: "Выбери корм в комнате — цена видна до покупки." });
       return;
@@ -194,6 +208,25 @@ export default function Pet() {
     requestAnimationFrame(() => document.getElementById(`pet-tab-${index}`)?.focus());
   }
 
+  function previewInRoom(item) {
+    setPreviewItem(item);
+    requestAnimationFrame(() => {
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      document.getElementById("pet-room")?.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "start",
+      });
+    });
+  }
+
+  function openCatalog() {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.getElementById("pet-shop")?.scrollIntoView({
+      behavior: reduceMotion ? "auto" : "smooth",
+      block: "start",
+    });
+  }
+
   if (!profile.petSelected && profile.onboardingStep === "pet") {
     return <PetFirstChoice hydrate={hydrate} />;
   }
@@ -205,14 +238,8 @@ export default function Pet() {
         <p>{profile.pet.name} растёт вместе с твоим учебным прогрессом.</p>
       </header>
 
-      <div className="pet-page__views" role="tablist" aria-label="Разделы питомца">
-        <button type="button" role="tab" aria-selected={view === "room"} className={view === "room" ? "is-active" : ""} onClick={() => setView("room")}><Heart size={17} /> Комната</button>
-        <button type="button" role="tab" aria-selected={view === "shop"} className={view === "shop" ? "is-active" : ""} onClick={() => setView("shop")}><Store size={17} /> Каталог</button>
-      </div>
-
-      {view === "room" && <>
-      <Card className="pet-page__hero" pad="none">
-        <div className="pet-page__room" aria-label={`Комната питомца ${profile.pet.name}`}>
+      <Card className="pet-page__hero" pad="none" id="pet-room">
+        <div className={`pet-page__room ${previewItem ? "pet-page__room--previewing" : ""}`} aria-label={`Комната питомца ${profile.pet.name}`}>
           {editingName ? (
             <div className="pet-page__room-chip pet-page__room-chip--name pet-page__name-edit">
               <input
@@ -258,7 +285,7 @@ export default function Pet() {
           </button>
           {coinsInfoOpen && (
             <div className="pet-page__coins-popover" role="status">
-              Начисляются автоматически: половина от XP за каждое верно решённое задание.
+              Монеты — единая валюта для корма, одежды, комнаты и смены питомца.
             </div>
           )}
 
@@ -266,18 +293,63 @@ export default function Pet() {
           <span className="pet-page__cloud pet-page__cloud--one" aria-hidden="true" />
           <span className="pet-page__cloud pet-page__cloud--two" aria-hidden="true" />
           <div className="pet-page__plant" aria-hidden="true"><i /><i /><i /></div>
-          {ownedItems.includes("s6") && <div className="pet-page__rug" aria-hidden="true" />}
-          {ownedItems.includes("s7") && <div className="pet-page__lamp" aria-hidden="true"><i /></div>}
-          {ownedItems.includes("s12") && <div className="pet-page__house" aria-hidden="true"><i /></div>}
-          {ownedItems.includes("s8") && <div className="pet-page__star" aria-hidden="true">★</div>}
+          {ownedItems.includes("s6") && <RoomItem item={{ id: "s6", name: "Коврик" }} />}
+          {ownedItems.includes("s7") && <RoomItem item={{ id: "s7", name: "Лампа" }} />}
+          {ownedItems.includes("s12") && <RoomItem item={{ id: "s12", name: "Домик" }} />}
+          {ownedItems.includes("s8") && <RoomItem item={{ id: "s8", name: "Звезда" }} />}
+          {previewItem?.category === "home" && !ownedItems.includes(previewItem.id) && <RoomItem item={previewItem} preview />}
           <div className="pet-page__mood" role="status">{petMoodLabel(petStats)}</div>
-          <PetAvatar className="pet-page__avatar" species={profile.pet.species} mood={petStats.mood >= 70 || studiedToday ? "happy" : "idle"} accessories={wornAccessories} reaction={reaction} eating={eating} size={220} />
+          <PetAvatar className="pet-page__avatar" species={profile.pet.species} mood={petStats.mood >= 70 || studiedToday ? "happy" : "idle"} accessories={previewAccessories} reaction={reaction} eating={eating} size={220} />
         </div>
+
+        {previewItem && (
+          <div className="pet-page__preview-bar" aria-live="polite">
+            <span className="pet-page__preview-icon" aria-hidden="true">
+              {previewItem.accessory ? <AccessoryPreview accessory={previewItem.accessory} size={42} /> : previewItem.icon}
+            </span>
+            <span className="pet-page__preview-copy">
+              <strong>Примерка: {previewItem.name}</strong>
+              <small>{previewItem.category === "look" ? "Так предмет выглядит на питомце" : "Так предмет выглядит в комнате"}</small>
+            </span>
+            <span className="pet-page__preview-actions">
+              <Button size="sm" variant="ghost" onClick={() => setPreviewItem(null)}>Сбросить</Button>
+              {previewItem.category === "look" ? (
+                <Button
+                  size="sm"
+                  variant={worn[previewItem.slot] === previewItem.accessory ? "soft" : "accent"}
+                  icon={worn[previewItem.slot] === previewItem.accessory ? Check : Shirt}
+                  loading={busyId === previewItem.id}
+                  disabled={!ownedItems.includes(previewItem.id) && profile.coins < previewItem.price}
+                  onClick={() => wear(previewItem)}
+                >
+                  {worn[previewItem.slot] === previewItem.accessory
+                    ? "Снять"
+                    : ownedItems.includes(previewItem.id)
+                      ? "Надеть"
+                      : `Купить за ${previewItem.price}`}
+                </Button>
+              ) : ownedItems.includes(previewItem.id) ? (
+                <span className="pet-page__preview-owned"><Check size={15} /> Уже в комнате</span>
+              ) : (
+                <Button
+                  size="sm"
+                  variant={profile.coins >= previewItem.price ? "accent" : "soft"}
+                  icon={Coins}
+                  disabled={profile.coins < previewItem.price}
+                  loading={busyId === previewItem.id}
+                  onClick={async () => (await purchase(previewItem)) && showFeedback({ type: "ok", name: previewItem.name })}
+                >
+                  Купить за {previewItem.price}
+                </Button>
+              )}
+            </span>
+          </div>
+        )}
 
         <div className="pet-page__actions" aria-label="Забота о питомце">
           <button className="pet-action pet-action--primary" onClick={() => feed(ownedFood)} disabled={busyId?.startsWith("feed:")}><Cookie size={19} strokeWidth={2.5} /><span>{ownedFood ? "Покормить" : "Выбрать корм"}</span></button>
           <button className="pet-action" onClick={cheer}><Heart size={19} strokeWidth={2.5} /><span>Погладить</span></button>
-          <button className="pet-action" onClick={() => setView("shop")}><Store size={19} strokeWidth={2.5} /><span>Каталог</span></button>
+          <button className="pet-action" onClick={openCatalog}><Store size={19} strokeWidth={2.5} /><span>Магазин</span></button>
         </div>
       </Card>
 
@@ -338,12 +410,9 @@ export default function Pet() {
         </div>}
         </div>}
       </section>
-      </>}
 
-      {view === "shop" && <section className="pet-page__shop-section">
-        <div className="pet-page__section-head"><SectionTitle>Каталог питомца</SectionTitle><p>Примеряй одежду или добавляй предметы прямо в комнату.</p></div>
-        {cat === "look" && <Card className="pet-page__shop-preview" pad="sm"><PetAvatar species={profile.pet.species} mood="idle" accessories={previewAccessories} size={112} animated={false} /><div><strong>{previewItem ? `Примерка: ${previewItem.name}` : "Текущий образ"}</strong><p>Примерка бесплатна и не меняет сохранённый образ.</p>{previewItem && <button type="button" onClick={() => setPreviewItem(null)}>Сбросить примерку</button>}</div></Card>}
-        {cat === "home" && <Card className="pet-page__room-preview" pad="none"><div className="pet-page__room-preview-scene"><span className="pet-page__room-preview-floor" /><RoomItemPreview item={previewItem} /><PetAvatar species={profile.pet.species} mood="idle" accessories={wornAccessories} size={106} animated={false} /></div><div className="pet-page__room-preview-copy"><strong>{previewItem ? `В комнате: ${previewItem.name}` : "Примерка комнаты"}</strong><p>{previewItem ? "Так предмет будет выглядеть рядом с питомцем." : "Нажми «Примерить» у предмета — покупать сразу не нужно."}</p>{previewItem && <button type="button" onClick={() => setPreviewItem(null)}>Убрать из примерки</button>}</div></Card>}
+      <section className="pet-page__shop-section" id="pet-shop">
+        <div className="pet-page__section-head"><SectionTitle>Магазин питомца</SectionTitle><p>Нажми «Примерить» — предмет сразу появится в комнате наверху.</p></div>
         <div className="pet-page__cats" role="tablist" aria-label="Категории предметов">
           {CATEGORIES.map((category, index) => (
             <button
@@ -368,22 +437,21 @@ export default function Pet() {
         <div className="pet-page__shop" id="pet-shop-panel" role="tabpanel" aria-live="polite">
           {items.map((item) => {
             const owned = ownedItems.includes(item.id);
-            const afford = profile.coins >= item.price;
             const isWorn = item.slot && worn[item.slot] === item.accessory;
             return (
-              <Card key={item.id} className="shopitem" pad="sm">
+                <Card key={item.id} className={`shopitem ${previewItem?.id === item.id ? "shopitem--previewing" : ""}`} pad="sm">
                 <span className={`shopitem__icon shopitem__icon--${item.category}`} aria-hidden="true">{item.accessory ? <AccessoryPreview accessory={item.accessory} size={52} /> : item.icon}</span>
                 <div className="shopitem__meta"><span className="shopitem__name">{item.name}</span>{!owned && <span className="shopitem__price"><Coins size={13} /> {item.price}</span>}</div>
                 {cat === "look" ? (
-                  <div className="shopitem__actions"><Button size="sm" variant="soft" onClick={() => setPreviewItem(item)}>Примерить</Button><Button size="sm" variant={isWorn ? "soft" : owned || afford ? "accent" : "soft"} icon={isWorn ? Check : Shirt} disabled={!owned && !afford} loading={busyId === item.id} onClick={() => wear(item)}>{isWorn ? "Снять" : owned ? "Надеть" : `Купить за ${item.price}`}</Button></div>
+                  <div className="shopitem__actions"><Button size="sm" variant={previewItem?.id === item.id ? "accent" : "soft"} aria-pressed={previewItem?.id === item.id} onClick={() => previewInRoom(item)}>{previewItem?.id === item.id ? "Примеряется" : owned ? "Посмотреть" : "Примерить"}</Button>{owned && <Button size="sm" variant={isWorn ? "soft" : "accent"} icon={isWorn ? Check : Shirt} loading={busyId === item.id} onClick={() => wear(item)}>{isWorn ? "Снять" : "Надеть"}</Button>}</div>
                 ) : (
-                  <div className="shopitem__actions"><Button size="sm" variant="soft" onClick={() => setPreviewItem(item)}>Примерить</Button>{owned ? <span className="shopitem__owned"><Check size={14} /> В комнате</span> : <Button size="sm" variant={afford ? "accent" : "soft"} icon={Store} disabled={!afford} loading={busyId === item.id} onClick={async () => (await purchase(item)) && showFeedback({ type: "ok", name: item.name })}>Купить за {item.price}</Button>}</div>
+                  <div className="shopitem__actions"><Button size="sm" variant={previewItem?.id === item.id ? "accent" : "soft"} aria-pressed={previewItem?.id === item.id} onClick={() => previewInRoom(item)}>{previewItem?.id === item.id ? "Показан наверху" : owned ? "Посмотреть" : "Примерить"}</Button>{owned && <span className="shopitem__owned"><Check size={14} /> В комнате</span>}</div>
                 )}
               </Card>
             );
           })}
         </div>
-      </section>}
+      </section>
 
       {feedback && (
         <div className={`pet-page__toast pet-page__toast--${feedback.type === "poor" ? "poor" : "ok"}`} role="status" aria-live="polite">
@@ -431,11 +499,20 @@ function petMoodLabel(stats) {
   return "Спокоен и готов заниматься";
 }
 
-function RoomItemPreview({ item }) {
+function RoomItem({ item, preview = false }) {
   if (!item) return null;
   const kind = { s6: "rug", s7: "lamp", s12: "house", s8: "star" }[item.id];
-  if (!kind) return <span className="pet-page__room-preview-generic" aria-label={item.name}>{item.icon}</span>;
-  return <span className={`pet-page__room-preview-item pet-page__room-preview-item--${kind}`} aria-label={item.name}>{kind === "star" ? "★" : null}<i /></span>;
+  if (!kind) return null;
+  return (
+    <span
+      className={`pet-page__${kind} ${preview ? "pet-page__room-item--preview" : ""}`}
+      role="img"
+      aria-label={`${item.name}${preview ? " — примерка" : ""}`}
+    >
+      {kind === "star" ? "★" : null}
+      {(kind === "lamp" || kind === "house") && <i />}
+    </span>
+  );
 }
 
 function PetFirstChoice({ hydrate }) {

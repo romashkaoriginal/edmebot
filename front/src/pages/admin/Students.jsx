@@ -137,10 +137,14 @@ export default function Students() {
   }
 
   const visibleStudents = students.filter((student) => {
+    const subjects = student.subjects?.length
+      ? student.subjects
+      : [{ subject: student.subject, grade: student.grade }];
     if (statusFilter !== "all" && student.status !== statusFilter) return false;
-    if (gradeFilter !== "all" && String(student.grade) !== gradeFilter) return false;
-    if (subjectFilter !== "all" && student.subject !== subjectFilter) return false;
-    const value = `${student.name} ${student.subject} ${student.tg_id ?? ""}`.toLowerCase();
+    if (gradeFilter !== "all" && !subjects.some((item) => String(item.grade) === gradeFilter)) return false;
+    if (subjectFilter !== "all" && !subjects.some((item) => item.subject === subjectFilter)) return false;
+    const subjectText = subjects.map((item) => `${item.subject} ${item.grade}`).join(" ");
+    const value = `${student.name} ${subjectText} ${student.tg_id ?? ""}`.toLowerCase();
     return value.includes(search.trim().toLowerCase());
   });
 
@@ -343,7 +347,7 @@ export default function Students() {
         <div className="afilters">
           <label className="asearch">
             <Search size={16} />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Поиск по имени или Telegram ID" />
+            <input aria-label="Поиск учеников" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Поиск по имени или Telegram ID" />
           </label>
           <select className="aselect afilter" value={subjectFilter} onChange={(e) => setSubjectFilter(e.target.value)} aria-label="Предмет">
             <option value="all">Все предметы</option>
@@ -356,7 +360,7 @@ export default function Students() {
           <select className="aselect afilter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Статус">
             <option value="all">Любой статус</option>
             <option value="active">Активные</option>
-            <option value="pending">Без предмета</option>
+            <option value="pending">Без доступа</option>
           </select>
         </div>
 
@@ -389,8 +393,8 @@ export default function Students() {
                       <div className="arow__title">
                         {s.name}
                         {s.status === "pending" && (
-                          <span className="atag atag--pending" title="Ученик написал боту, но ему ещё не назначен предмет — назначьте его кнопкой «Предметы»">
-                            без предмета
+                          <span className="atag atag--pending" title="У ученика сейчас нет доступа к практике и домашним заданиям">
+                            {s.trial_used ? "trial завершён" : "доступ закрыт"}
                           </span>
                         )}
                         {isDemo && <span className="atag atag--demo">демо</span>}
@@ -493,12 +497,12 @@ function SubjectsPanel({ studentId, onAssigned }) {
         )) : <span className="arow__meta">Пока ни одного предмета. Назначьте первый ниже.</span>}
       </div>
       <form className="aform aform--inline" onSubmit={submit}>
-        <select className="aselect" value={subject} onChange={(event) => setSubject(event.target.value)}>
+        <select className="aselect" aria-label="Предмет для добавления" value={subject} onChange={(event) => setSubject(event.target.value)}>
           {SUBJECTS.map((s) => (
             <option key={s} value={s}>{s}{has(s) ? " (уже есть)" : ""}</option>
           ))}
         </select>
-        <select className="aselect" value={grade} onChange={(event) => setGrade(Number(event.target.value))}>
+        <select className="aselect" aria-label="Класс для добавления" value={grade} onChange={(event) => setGrade(Number(event.target.value))}>
           {GRADES.map((value) => <option key={value} value={value}>{value} класс</option>)}
         </select>
         <Button type="submit" icon={Plus} disabled={busy}>
@@ -554,11 +558,12 @@ function BonusPanel({ studentId }) {
   return (
     <div className="arow__panel">
       <div className="arow__panel-title">
-        Баллы · баланс <strong className="abalance">{data ? data.balance : "…"}</strong>
+        Монеты · баланс <strong className="abalance">{data ? data.balance : "…"}</strong>
       </div>
 
       <form className="aform aform--inline" onSubmit={award}>
         <input
+          aria-label="Количество монет"
           className="ainput"
           type="number"
           value={amount}
@@ -566,6 +571,7 @@ function BonusPanel({ studentId }) {
           placeholder="Сумма (можно −)"
         />
         <input
+          aria-label="Причина начисления"
           className="ainput"
           value={reason}
           onChange={(e) => setReason(e.target.value)}

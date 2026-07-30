@@ -7,8 +7,15 @@ import "./OptionList.css";
  * selected: index | null ; correctIndex used only when graded.
  */
 export default function OptionList({ options, selected, onSelect, state, correctIndex, disabled }) {
+  const announcement = state === "correct"
+    ? "Верно."
+    : state === "wrong"
+      ? `Неверно. Правильный ответ: ${options[correctIndex] ?? ""}.`
+      : "";
   return (
-    <ul className="optlist">
+    <>
+      <p className="sr-only" role="status" aria-live="polite">{announcement}</p>
+      <ul className="optlist">
       {options.map((opt, i) => {
         const isSelected = selected === i;
         let mod = "";
@@ -30,12 +37,13 @@ export default function OptionList({ options, selected, onSelect, state, correct
             >
               <span className="opt__marker">{String.fromCharCode(1040 + i)}</span>
               <span className="opt__text">{opt}</span>
-              {mod === "correct" && <Check className="opt__icon" size={20} strokeWidth={3} />}
-              {mod === "wrong" && <X className="opt__icon" size={20} strokeWidth={3} />}
+              {mod === "correct" && <Check aria-hidden="true" className="opt__icon" size={20} strokeWidth={3} />}
+              {mod === "wrong" && <X aria-hidden="true" className="opt__icon" size={20} strokeWidth={3} />}
             </button>
           </li>
         );
       })}
-    </ul>
+      </ul>
+    </>
   );
 }

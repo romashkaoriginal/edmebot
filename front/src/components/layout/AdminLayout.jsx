@@ -1,4 +1,4 @@
-import { NavLink, Outlet, Link } from "react-router-dom";
+import { NavLink, Link } from "../../router";
 import { Users, UserCog, ListChecks, BookOpen, BarChart3, LogOut, ShieldAlert } from "lucide-react";
 import Logo from "../brand/Logo";
 import { useAdminAuth } from "../../context/AdminAuth";
@@ -12,7 +12,7 @@ const NAV = [
   { to: "/admin/stats", label: "Статистика", icon: BarChart3, roles: ["admin", "tutor"] },
 ];
 
-export default function AdminLayout() {
+export default function AdminLayout({ children }) {
   const { loading, user, error } = useAdminAuth();
 
   if (loading) {
@@ -80,7 +80,7 @@ export default function AdminLayout() {
           ))}
         </nav>
         <main className="admin__content">
-          <Outlet />
+          {children}
         </main>
       </div>
     </div>

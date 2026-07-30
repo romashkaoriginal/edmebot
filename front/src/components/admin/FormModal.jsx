@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { useRef } from "react";
 import { X } from "lucide-react";
 import useBodyScrollLock from "../../hooks/useBodyScrollLock";
+import useModalFocus from "../../hooks/useModalFocus";
 import "./FormModal.css";
 
 /**
@@ -21,16 +22,8 @@ import "./FormModal.css";
  */
 export default function FormModal({ title, eyebrow, onClose, size = "md", children }) {
   useBodyScrollLock();
-
-  useEffect(() => {
-    function onKey(e) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [onClose]);
+  const dialogRef = useRef(null);
+  useModalFocus(dialogRef, { onClose });
 
   const EyebrowIcon = eyebrow?.icon;
 
@@ -41,6 +34,8 @@ export default function FormModal({ title, eyebrow, onClose, size = "md", childr
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <section
+        ref={dialogRef}
+        tabIndex={-1}
         className={`fmodal__dialog fmodal__dialog--${size}`}
         role="dialog"
         aria-modal="true"

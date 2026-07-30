@@ -1,7 +1,7 @@
-import { apiUrl } from "./base";
+import { apiUrl, fetchWithTimeout } from "./base";
 
-// Thin wrapper over the admin API. Sends x-telegram-id (from Telegram WebApp or
-// a localStorage fallback) — not enforced server-side yet, but wired for later.
+// Thin wrapper over the admin API. Every request carries the signed Telegram
+// Mini App initData; the backend verifies its signature and freshness.
 export function telegramWebApp() {
   return window.Telegram?.WebApp ?? null;
 }
@@ -25,7 +25,7 @@ export function initTelegramWebApp() {
 }
 
 async function req(path, { method = "GET", body } = {}) {
-  const res = await fetch(apiUrl(`/api/admin${path}`), {
+  const res = await fetchWithTimeout(apiUrl(`/api/admin${path}`), {
     method,
     headers: {
       "Content-Type": "application/json",
@@ -41,7 +41,7 @@ async function req(path, { method = "GET", body } = {}) {
 // Multipart upload — no Content-Type/JSON.stringify, the browser sets the
 // multipart boundary header itself from the FormData body.
 async function reqForm(path, formData) {
-  const res = await fetch(apiUrl(`/api/admin${path}`), {
+  const res = await fetchWithTimeout(apiUrl(`/api/admin${path}`), {
     method: "POST",
     headers: { "x-telegram-init-data": initData() },
     body: formData,
@@ -54,7 +54,7 @@ async function reqForm(path, formData) {
 // Fetch an .xlsx template as a blob and trigger a browser download. Used by
 // every import flow so each one offers a downloadable, self-documenting sample.
 async function downloadTemplate(fullPath, filename) {
-  const response = await fetch(apiUrl(fullPath), {
+  const response = await fetchWithTimeout(apiUrl(fullPath), {
     headers: { "x-telegram-init-data": initData() },
   });
   if (!response.ok) throw new Error("template_download_failed");

@@ -122,7 +122,7 @@
 @media (max-height: 720px) and (max-width: 620px) {
   .fmodal__eyebrow { display: none; }
   .fmodal__title { font-size: var(--text-md); }
-  .fmodal__close { width: 40px; height: 40px; }
+  .fmodal__close { width: 44px; height: 44px; }
   .fmodal__body .afield__hint { font-size: 11px; line-height: 1.25; }
 }
 

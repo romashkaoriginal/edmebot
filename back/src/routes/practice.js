@@ -1,4 +1,5 @@
 const express = require("express");
+const crypto = require("crypto");
 const db = require("../db");
 const state = require("../studentState");
 const { requireStudent, requireActiveStudent } = require("../middleware/auth");
@@ -59,8 +60,32 @@ router.get("/series", async (req, res, next) => {
     const regular = shuffle(filtered.filter((task) => !weakTopics.includes(task.topic)));
     const source = mode === "weak" && priority.length ? [...priority, ...regular] : shuffle(filtered);
     const tasks = source.length
-      ? Array.from({ length }, (_, index) => ({ ...source[index % source.length], id: String(source[index % source.length].id) }))
+      ? Array.from({ length }, (_, index) => {
+        const task = source[index % source.length];
+        return {
+          ...task,
+          id: String(task.id),
+          instanceId: crypto.randomUUID(),
+          hintCount: Array.isArray(task.hints) ? task.hints.length : 0,
+          hints: undefined,
+        };
+      })
       : [];
+    if (tasks.length) {
+      await db.transaction(async (client) => {
+        await client.query(
+          "DELETE FROM practice_question_instances WHERE student_id = $1 AND expires_at <= now()",
+          [req.student.id]
+        );
+        for (const task of tasks) {
+          await client.query(
+            `INSERT INTO practice_question_instances (id, student_id, task_id)
+             VALUES ($1,$2,$3)`,
+            [task.instanceId, req.student.id, task.id]
+          );
+        }
+      });
+    }
     res.json({ tasks });
   } catch (e) { next(e); }
 });
@@ -74,19 +99,59 @@ function shuffle(items) {
   return result;
 }
 
+router.post("/hint", async (req, res, next) => {
+  try {
+    const instanceId = String(req.body?.instanceId || "");
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(instanceId)) {
+      return res.status(400).json({ error: "instance_id_required" });
+    }
+    const result = await db.transaction(async (client) => {
+      const { rows } = await client.query(
+        `SELECT pqi.hints_revealed, t.hints
+           FROM practice_question_instances pqi
+           JOIN tasks t ON t.id = pqi.task_id
+          WHERE pqi.id = $1 AND pqi.student_id = $2
+            AND pqi.answered_at IS NULL AND pqi.expires_at > now()
+          FOR UPDATE OF pqi`,
+        [instanceId, req.student.id]
+      );
+      if (!rows.length) return { error: "practice_instance_invalid" };
+      const hints = Array.isArray(rows[0].hints) ? rows[0].hints : [];
+      const nextIndex = rows[0].hints_revealed;
+      if (nextIndex >= hints.length) return { error: "no_hints_left" };
+      await client.query(
+        "UPDATE practice_question_instances SET hints_revealed = hints_revealed + 1 WHERE id = $1",
+        [instanceId]
+      );
+      return { hint: hints[nextIndex], hintsUsed: nextIndex + 1, hintsLeft: hints.length - nextIndex - 1 };
+    });
+    if (result.error) return res.status(409).json(result);
+    return res.json(result);
+  } catch (e) { return next(e); }
+});
+
 router.post("/answer", async (req, res, next) => {
   try {
-    const { taskId, selected, hintsUsed = 0, attempts = 0 } = req.body ?? {};
-    if (!taskId || typeof selected !== "number") return res.status(400).json({ error: "taskId_and_selected_required" });
+    const { taskId, selected, instanceId } = req.body ?? {};
+    if (!Number.isInteger(Number(taskId)) || !Number.isInteger(selected)) {
+      return res.status(400).json({ error: "taskId_and_selected_required" });
+    }
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(instanceId || ""))) {
+      return res.status(400).json({ error: "instance_id_required" });
+    }
     const { rows } = await db.query("SELECT * FROM tasks WHERE id = $1", [taskId]);
     if (!rows.length) return res.status(404).json({ error: "task_not_found" });
     const task = rows[0];
+    if (selected < 0 || !Array.isArray(task.options) || selected >= task.options.length) {
+      return res.status(400).json({ error: "selected_out_of_range" });
+    }
     const { rows: enrolled } = await db.query(
       "SELECT 1 FROM student_subjects WHERE student_id = $1 AND subject = $2",
       [req.student.id, task.subject]
     );
     if (!enrolled.length) return res.status(403).json({ error: "not_enrolled_in_subject" });
-    const result = await state.gradePractice(req.student, task, selected, Number(hintsUsed) || 0, Number(attempts) || 0);
+    const result = await state.gradePractice(req.student, task, selected, instanceId);
+    if (result.error) return res.status(409).json(result);
     res.json({
       correct: result.correct,
       correctIndex: task.correct,

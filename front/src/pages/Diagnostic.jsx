@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "../router";
 import { Target, Clock, ListChecks, HelpCircle, ArrowRight } from "lucide-react";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";

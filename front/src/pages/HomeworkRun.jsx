@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "../router";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, Home, Info, RefreshCw, X } from "lucide-react";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import OptionList from "../components/shared/OptionList";
 import { studentApi } from "../api/student";
+import useModalFocus from "../hooks/useModalFocus";
 import "./RunMode.css";
 import "./PracticeRun.css";
 import "./HomeworkRun.css";
@@ -26,8 +27,11 @@ export default function HomeworkRun() {
   const [showExplanation, setShowExplanation] = useState(false);
   const [answers, setAnswers] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [attemptId] = useState(() => crypto.randomUUID());
   const [submitError, setSubmitError] = useState("");
   const [result, setResult] = useState(null);
+  const explanationRef = useRef(null);
+  useModalFocus(explanationRef, { active: showExplanation, onClose: () => setShowExplanation(false) });
 
   useEffect(() => {
     if (!homeworkId) return;
@@ -68,7 +72,7 @@ export default function HomeworkRun() {
   }
 
   if (tasks.length === 0) {
-    return <div className="run"><div className="run__body"><Card pad="lg" className="run__state-card"><h1 className="run__prompt">В этой домашке нет заданий</h1><p>Сообщи учителю — задания ещё не добавлены.</p><Button icon={Home} onClick={() => navigate("/app/homework")}>К списку домашки</Button></Card></div></div>;
+    return <div className="run"><div className="run__body"><Card pad="lg" className="run__state-card"><h1 className="run__prompt">В этой домашке нет заданий</h1><p>Сообщи репетитору — задания ещё не добавлены.</p><Button icon={Home} onClick={() => navigate("/app/homework")}>К списку домашки</Button></Card></div></div>;
   }
 
   if (result) {
@@ -95,7 +99,7 @@ export default function HomeworkRun() {
     setSubmitError("");
     try {
       const payload = tasks.map((t, i) => ({ taskId: t.id, selected: answers[i]?.selected ?? null }));
-      const data = await studentApi.submitHomework(homeworkId, payload);
+      const data = await studentApi.submitHomework(homeworkId, attemptId, payload);
       setResult(data);
     } catch (e) {
       setSubmitError(e.message === "no_attempts_left" ? "Попытки на эту домашку закончились." : "Не удалось отправить домашку. Проверь соединение и повтори попытку.");
@@ -134,7 +138,7 @@ export default function HomeworkRun() {
         </Card>
       </div>
       <AnimatePresence initial={false}>
-        {showExplanation && task.explanation && <><motion.button type="button" className="run__sheet-backdrop" aria-label="Закрыть объяснение" onClick={() => setShowExplanation(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} /><motion.aside className="run__explanation-sheet" role="dialog" aria-modal="true" aria-label="Объяснение" initial={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(100%)" }} animate={{ opacity: 1, transform: "translateY(0)" }} exit={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(100%)" }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}><div><strong>Объяснение</strong><button type="button" onClick={() => setShowExplanation(false)} aria-label="Закрыть объяснение"><X size={20} /></button></div><p>{task.explanation}</p></motion.aside></>}
+        {showExplanation && task.explanation && <><motion.button type="button" className="run__sheet-backdrop" aria-label="Закрыть объяснение" onClick={() => setShowExplanation(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} /><motion.aside ref={explanationRef} tabIndex={-1} className="run__explanation-sheet" role="dialog" aria-modal="true" aria-label="Объяснение" initial={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(100%)" }} animate={{ opacity: 1, transform: "translateY(0)" }} exit={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(100%)" }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}><div><strong>Объяснение</strong><button type="button" onClick={() => setShowExplanation(false)} aria-label="Закрыть объяснение"><X size={20} /></button></div><p>{task.explanation}</p></motion.aside></>}
       </AnimatePresence>
     </div>
   );

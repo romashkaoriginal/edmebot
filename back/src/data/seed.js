@@ -103,7 +103,7 @@ const achievements = [
   { id: "a19", name: "Десятый уровень", desc: "Достигнут 10 уровень", icon: "👑", tier: "gold", earned: false, progress: { cur: 8, max: 10 } },
   { id: "a20", name: "Домосед", desc: "10 домашних заданий сдано", icon: "📚", tier: "silver", earned: false, progress: { cur: 6, max: 10 } },
   { id: "a21", name: "Ранняя пташка", desc: "Занятие до 8 утра", icon: "🌅", tier: "bronze", earned: true },
-  { id: "a22", name: "Богач", desc: "Накоплено 1000 баллов", icon: "💰", tier: "gold", earned: false, progress: { cur: 340, max: 1000 } },
+  { id: "a22", name: "Богач", desc: "Накоплено 1000 монет", icon: "💰", tier: "gold", earned: false, progress: { cur: 340, max: 1000 } },
   { id: "a23", name: "Модник", desc: "Куплено 5 предметов питомцу", icon: "🎀", tier: "silver", earned: false, progress: { cur: 1, max: 5 } },
   { id: "a24", name: "Коллекционер", desc: "Собран редкий предмет", icon: "🏆", tier: "diamond", earned: false },
 ];

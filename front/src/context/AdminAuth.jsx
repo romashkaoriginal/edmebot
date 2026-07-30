@@ -28,6 +28,7 @@ export function AdminAuthProvider({ children }) {
   return <Ctx.Provider value={state}>{children}</Ctx.Provider>;
 }
 
+// oxlint-disable-next-line react/only-export-components
 export function useAdminAuth() {
   const ctx = useContext(Ctx);
   if (!ctx) throw new Error("useAdminAuth must be used within AdminAuthProvider");

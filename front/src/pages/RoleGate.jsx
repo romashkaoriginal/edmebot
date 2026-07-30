@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "../router";
 import { ShieldCheck, GraduationCap, ArrowRight, ChevronLeft } from "lucide-react";
 import Logo from "../components/brand/Logo";
 import Card from "../components/ui/Card";

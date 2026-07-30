@@ -7,9 +7,15 @@ services:
     runtime: node
     rootDir: back
     plan: free
-    buildCommand: npm install
+    buildCommand: npm ci
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
       - key: DATABASE_URL
         sync: false # set manually in the Render dashboard (secret)
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_WEBHOOK_SECRET
+        generateValue: true
+      - key: APP_URL
+        sync: false

@@ -13,6 +13,7 @@ export default function Button({
   iconRight: IconRight,
   loading = false,
   disabled = false,
+  onClick,
   className = "",
   children,
   ...props
@@ -23,6 +24,14 @@ export default function Button({
       className={`btn btn--${variant} btn--${size} ${full ? "btn--full" : ""} ${className}`}
       disabled={isNative ? disabled || loading : undefined}
       aria-disabled={!isNative && (disabled || loading) ? true : undefined}
+      aria-busy={loading || undefined}
+      onClick={(event) => {
+        if (disabled || loading) {
+          event.preventDefault();
+          return;
+        }
+        onClick?.(event);
+      }}
       data-loading={loading || undefined}
       {...props}
     >

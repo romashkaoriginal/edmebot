@@ -8,3 +8,18 @@ export const API_BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
 export function apiUrl(path) {
   return `${API_BASE}${path}`;
 }
+
+export async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const parentSignal = options.signal;
+  const abortFromParent = () => controller.abort(parentSignal.reason);
+  if (parentSignal?.aborted) abortFromParent();
+  else parentSignal?.addEventListener("abort", abortFromParent, { once: true });
+  const timeout = window.setTimeout(() => controller.abort(new DOMException("Request timed out", "TimeoutError")), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    window.clearTimeout(timeout);
+    parentSignal?.removeEventListener("abort", abortFromParent);
+  }
+}

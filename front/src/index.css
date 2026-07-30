@@ -1,2 +1,46 @@
 @import "./styles/tokens.css";
 @import "./styles/base.css";
+
+.fatal-error {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--bg);
+}
+
+.fatal-error__card {
+  width: min(100%, 520px);
+  padding: clamp(24px, 5vw, 40px);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+}
+
+.fatal-error__card h1 {
+  margin: 6px 0 12px;
+}
+
+.fatal-error__card p {
+  color: var(--muted);
+}
+
+.fatal-error__eyebrow {
+  margin: 0;
+  font-weight: 800;
+  color: var(--danger);
+}
+
+.fatal-error__card button {
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--primary-strong);
+  color: white;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}

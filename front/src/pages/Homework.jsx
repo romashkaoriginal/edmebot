@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "../router";
 import { BookOpen, Check, CircleAlert, Clock, Pencil, RefreshCw } from "lucide-react";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
@@ -84,7 +84,7 @@ function HomeworkList({ subject }) {
     ? "Выполненных заданий пока нет."
     : filter === "active"
       ? "Активных заданий нет — можно перейти к практике."
-      : "Учитель пока не назначил домашних заданий.";
+      : "Репетитор пока не назначил домашних заданий.";
 
   return (
     <div className="hw">
@@ -191,15 +191,14 @@ function HomeworkCard({ hw, onOpen }) {
 }
 
 function deadlineNotice(hw) {
-  if (hw.status === "done") return { tone: "done", text: "сдано", icon: <Check size={14} strokeWidth={2.6} /> };
-  if (!hw.due) return { tone: "muted", text: "без срока", icon: <Clock size={14} strokeWidth={2.6} /> };
-  const hours = (new Date(hw.due) - new Date()) / 36e5;
-  if (hours < 0) return { tone: "danger", text: "просрочено", icon: <CircleAlert size={14} strokeWidth={2.6} /> };
-  if (hours <= 24) return { tone: "danger", text: "сдать сегодня", icon: <Clock size={14} strokeWidth={2.6} /> };
-  if (hours <= 48) return { tone: "warning", text: "завтра дедлайн", icon: <Clock size={14} strokeWidth={2.6} /> };
-  return {
-    tone: "muted",
-    text: `до ${new Date(hw.due).toLocaleDateString("ru-RU", { day: "numeric", month: "short" })}`,
-    icon: <Clock size={14} strokeWidth={2.6} />,
-  };
+  const notice = hw.notice ?? { tone: "muted", text: "без срока" };
+  const icon = notice.tone === "done"
+    ? <Check size={14} strokeWidth={2.6} />
+    : notice.tone === "danger" && notice.text === "просрочено"
+      ? <CircleAlert size={14} strokeWidth={2.6} />
+      : <Clock size={14} strokeWidth={2.6} />;
+  const text = notice.text === "предстоит" && hw.due
+    ? `до ${new Date(hw.due).toLocaleDateString("ru-RU", { day: "numeric", month: "short" })}`
+    : notice.text;
+  return { ...notice, text, icon };
 }

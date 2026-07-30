@@ -69,7 +69,7 @@ export default function ImportModal({ title, eyebrow, fields, onDownload, onImpo
 
           <label className="afield">
             <span>Файл Excel</span>
-            <input className="ainput" type="file" accept=".xlsx" onChange={(event) => { setFile(event.target.files?.[0] ?? null); setResult(null); }} />
+            <input className="ainput" aria-label="Файл Excel для импорта" type="file" accept=".xlsx" onChange={(event) => { setFile(event.target.files?.[0] ?? null); setResult(null); }} />
           </label>
 
           {error && <p className="aerror">{error}</p>}

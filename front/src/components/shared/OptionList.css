@@ -120,6 +120,6 @@
 }
 
 @media (max-height: 690px) {
-  .opt { min-height: 42px; padding-block: 7px; }
+  .opt { min-height: 44px; padding-block: 7px; }
   .opt__marker { width: 27px; height: 27px; }
 }

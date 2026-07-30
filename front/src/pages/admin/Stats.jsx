@@ -72,7 +72,7 @@ export default function Stats() {
       <div className="afilters">
         <label className="asearch">
           <Search size={16} />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Поиск ученика" />
+          <input aria-label="Поиск ученика" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Поиск ученика" />
         </label>
         <select className="aselect afilter" value={subjectFilter} onChange={(e) => setSubjectFilter(e.target.value)} aria-label="Предмет">
           <option value="all">Все предметы</option>
@@ -155,8 +155,8 @@ export default function Stats() {
                       </div>
                       <div className="agame">
                         <Coins size={16} strokeWidth={2.4} className="agame__ic agame__ic--coins" />
-                        <span className="agame__num">{detail.bonusBalance ?? detail.profile.coins}</span>
-                        <span className="agame__cap">баллы</span>
+                        <span className="agame__num">{detail.profile.coins}</span>
+                        <span className="agame__cap">монеты</span>
                       </div>
                       <div className="agame">
                         <PawPrint size={16} strokeWidth={2.4} className="agame__ic agame__ic--pet" />
@@ -170,7 +170,7 @@ export default function Stats() {
                     <div className="axp">
                       <div className="axp__row">
                         <span>Опыт до след. уровня</span>
-                        <span className="arow__meta">{detail.profile.xp_from_level} / {detail.profile.xp_for_next} XP</span>
+                        <span className="arow__meta">{detail.profile.xp_from_level} / {detail.profile.xp_for_next} опыта</span>
                       </div>
                       <ProgressBar
                         value={detail.profile.xp_from_level}

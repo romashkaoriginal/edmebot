@@ -1,10 +1,7 @@
 .pet-page { display: flex; flex-direction: column; gap: var(--sp-6); padding-bottom: var(--sp-4); }
 .pet-page__heading p { margin-top: 6px; color: var(--muted); font-weight: 600; }
-.pet-page__views { display: inline-flex; align-self: flex-start; gap: 4px; padding: 4px; border-radius: var(--r-md); background: var(--surface-2); }
-.pet-page__views button { display: inline-flex; min-height: 44px; align-items: center; gap: 7px; padding: 0 var(--sp-4); border-radius: var(--r-sm); color: var(--muted); font-weight: 850; }
-.pet-page__views button.is-active { background: var(--surface); color: var(--primary); box-shadow: var(--shadow-sm); }
 
-.pet-page__hero { overflow: hidden; border-color: oklch(0.88 0.04 82); background: oklch(0.98 0.025 88); }
+.pet-page__hero { overflow: hidden; scroll-margin-top: calc(var(--header-h) + var(--sp-3)); border-color: oklch(0.88 0.04 82); background: oklch(0.98 0.025 88); }
 
 /* Name + coins live as glass chips inside the scene itself, instead of a
    separate header row above it — one visual language, clearly grouped. */
@@ -27,6 +24,7 @@
 .pet-page__name-btn:disabled { opacity: 0.5; }
 
 .pet-page__room { position: relative; display: grid; min-height: 312px; place-items: end center; overflow: hidden; isolation: isolate; padding-bottom: 10px; background: linear-gradient(180deg, oklch(0.9 0.085 210) 0 72%, oklch(0.82 0.08 142) 72% 100%); }
+.pet-page__room--previewing { box-shadow: inset 0 0 0 3px color-mix(in oklch, var(--primary) 72%, transparent); }
 .pet-page__room::before { position: absolute; z-index: -1; right: 10%; bottom: 22%; width: 150px; height: 104px; border: 8px solid oklch(0.95 0.08 85 / 0.6); border-bottom: 0; border-radius: 80px 80px 0 0; content: ""; }
 .pet-page__room::after { position: absolute; z-index: -1; bottom: 22%; left: -2%; width: 54%; height: 3px; background: oklch(0.52 0.09 145 / 0.3); content: ""; }
 .pet-page__avatar { z-index: 1; margin-bottom: 14px; }
@@ -51,6 +49,16 @@
 .pet-page__house::before { position: absolute; top: -31px; left: -10px; width: 112px; height: 38px; background: oklch(0.5 0.15 28); clip-path: polygon(50% 0, 100% 100%, 0 100%); content: ""; }
 .pet-page__house i { position: absolute; right: 12px; bottom: 0; width: 24px; height: 38px; border-radius: 12px 12px 0 0; background: oklch(0.32 0.06 48); }
 .pet-page__star { position: absolute; z-index: 0; top: 74px; left: 18%; color: var(--accent); font-size: 2rem; filter: drop-shadow(0 2px 2px oklch(0.5 0.12 75 / 0.25)); }
+.pet-page__room-item--preview { animation: pet-preview-in 200ms var(--ease-out); filter: drop-shadow(0 0 8px color-mix(in oklch, var(--primary) 52%, transparent)); }
+@keyframes pet-preview-in { from { opacity: 0; transform: translateY(8px) scale(0.96); } }
+
+.pet-page__preview-bar { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); background: var(--primary-soft); }
+.pet-page__preview-icon { display: grid; width: 48px; height: 48px; place-items: center; border-radius: var(--r-md); background: var(--surface); font-size: 1.6rem; }
+.pet-page__preview-copy { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+.pet-page__preview-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pet-page__preview-copy small { color: var(--muted); font-size: var(--text-xs); font-weight: 650; }
+.pet-page__preview-actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--sp-2); }
+.pet-page__preview-owned { display: inline-flex; min-height: 44px; align-items: center; gap: 5px; color: var(--success); font-size: var(--text-sm); font-weight: 850; }
 
 .pet-page__actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); padding: var(--sp-3) var(--sp-4) var(--sp-4); background: var(--surface); }
 .pet-action { display: inline-flex; min-height: 48px; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); color: var(--ink); font-weight: 800; transition: transform var(--dur-press) var(--ease-out), background-color var(--dur-pop) var(--ease-out); }
@@ -109,30 +117,14 @@
 .petpick__check { position: absolute; z-index: 2; top: 8px; right: 8px; display: grid; width: 20px; height: 20px; place-items: center; border-radius: 50%; background: var(--accent); color: var(--on-accent); }
 @media (hover: hover) and (pointer: fine) { .petpick:hover { border-color: var(--accent); background: oklch(0.985 0.02 80); } }
 
+.pet-page__shop-section { scroll-margin-top: calc(var(--header-h) + var(--sp-3)); }
 .pet-page__cats { display: flex; gap: var(--sp-2); margin-bottom: var(--sp-4); overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
 .pet-page__cats::-webkit-scrollbar { display: none; }
 .pet-page__cat { min-height: 44px; flex: 0 0 auto; padding: 0 var(--sp-4); border: 1px solid var(--line); border-radius: var(--r-pill); background: var(--surface); color: var(--muted); font-size: var(--text-sm); font-weight: 800; }
 .pet-page__cat--on { border-color: var(--primary); background: var(--primary); color: var(--on-primary); }
 .pet-page__shop { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); }
-.pet-page__shop-preview { display: flex; max-width: 420px; align-items: center; gap: var(--sp-4); margin-bottom: var(--sp-4); }
-.pet-page__shop-preview p { margin-top: 3px; color: var(--muted); font-size: var(--text-sm); }
-.pet-page__shop-preview button { margin-top: 7px; color: var(--primary); font-size: var(--text-sm); font-weight: 800; }
-.pet-page__room-preview { display: grid; grid-template-columns: 190px minmax(0, 1fr); max-width: 520px; min-height: 150px; margin-bottom: var(--sp-4); overflow: hidden; }
-.pet-page__room-preview-scene { position: relative; display: grid; min-height: 150px; place-items: end center; overflow: hidden; background: linear-gradient(180deg, oklch(0.91 0.07 210) 0 72%, oklch(0.84 0.07 142) 72%); }
-.pet-page__room-preview-scene .pet { position: relative; z-index: 2; margin-bottom: 8px; }
-.pet-page__room-preview-copy { align-self: center; padding: var(--sp-4); }
-.pet-page__room-preview-copy p { margin-top: 4px; color: var(--muted); font-size: var(--text-sm); font-weight: 650; }
-.pet-page__room-preview-copy button { margin-top: 8px; color: var(--primary); font-size: var(--text-sm); font-weight: 800; }
-.pet-page__room-preview-floor { position: absolute; right: 0; bottom: 39px; left: 0; height: 2px; background: oklch(0.5 0.08 145 / 0.25); }
-.pet-page__room-preview-item { position: absolute; z-index: 1; }
-.pet-page__room-preview-item--rug { bottom: 5px; width: 130px; height: 30px; border: 5px solid oklch(0.95 0.09 82 / 0.8); border-radius: 50%; background: oklch(0.7 0.11 68 / 0.6); }
-.pet-page__room-preview-item--lamp { right: 22px; bottom: 40px; width: 6px; height: 60px; border-radius: var(--r-pill); background: oklch(0.42 0.06 55); }
-.pet-page__room-preview-item--lamp::before { position: absolute; top: -10px; left: 50%; width: 38px; height: 22px; border-radius: 20px 20px 6px 6px; background: var(--accent); content: ""; transform: translateX(-50%); }
-.pet-page__room-preview-item--house { right: 12px; bottom: 40px; width: 62px; height: 44px; border-radius: 6px 6px 2px 2px; background: oklch(0.74 0.12 48); }
-.pet-page__room-preview-item--house::before { position: absolute; top: -22px; left: -7px; width: 76px; height: 26px; background: oklch(0.5 0.15 28); clip-path: polygon(50% 0, 100% 100%, 0 100%); content: ""; }
-.pet-page__room-preview-item--star { top: 28px; left: 24px; color: var(--accent); font-size: 1.8rem; }
-.pet-page__room-preview-generic { position: absolute; top: 34px; right: 20px; font-size: 2rem; }
 .shopitem { display: grid; grid-template-columns: 62px minmax(0, 1fr); align-items: center; gap: var(--sp-3); min-height: 112px; }
+.shopitem--previewing { background: var(--primary-soft); }
 .shopitem .btn, .shopitem__owned, .shopitem__actions { grid-column: 2; justify-self: start; }
 .shopitem__actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .shopitem__icon { display: grid; width: 62px; height: 62px; place-items: center; border-radius: var(--r-md); background: var(--accent-soft); font-size: 2.1rem; line-height: 1; }
@@ -146,8 +138,11 @@
 @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 8px); } }
 @media (min-width: 861px) { .pet-page__toast { bottom: var(--sp-6); } }
 @media (max-width: 760px) { .pet-page__shop { grid-template-columns: repeat(2, minmax(0, 1fr)); }.shopitem { grid-template-columns: 54px minmax(0, 1fr); gap: var(--sp-2); }.shopitem__icon { width: 54px; height: 54px; }.pet-page__change-confirm { grid-template-columns: 1fr; }.pet-page__change-pets { justify-content: center; }.pet-page__change-actions { justify-content: flex-start; } }
-@media (max-width: 560px) { .pet-page__room-preview { grid-template-columns: 142px minmax(0, 1fr); }.pet-page__room-preview-copy { padding: var(--sp-3); }.pet-page__room-preview-scene { min-height: 142px; } }
-@media (max-width: 560px) { .pet-page { gap: var(--sp-5); }.pet-page__views { align-self: stretch; }.pet-page__views button { flex: 1; justify-content: center; }.pet-page__room { min-height: 300px; }.pet-page__avatar { margin-bottom: 20px; }.pet-page__sun { top: 38px; right: 9%; width: 48px; height: 48px; }.pet-page__plant { left: 5%; scale: 0.8; transform-origin: bottom left; }.pet-page__cloud--one { left: 2%; }.pet-page__actions { padding: var(--sp-2); }.pet-action { min-height: 50px; flex-direction: column; gap: 1px; padding: 5px; font-size: var(--text-xs); }.pet-page__species { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-2); }.petpick { min-height: 134px; }.pet-page__food-list { gap: 5px; }.pet-food.card--pad-sm { padding: 8px; }.pet-food { grid-template-columns: 1fr; justify-items: center; text-align: center; }.pet-food__icon { grid-row: auto; }.pet-food__buttons { grid-template-columns: 1fr; }.pet-food__buttons .btn { padding-inline: 6px; font-size: 12px; }.pet-page__shop { gap: var(--sp-2); }.shopitem { grid-template-columns: 1fr; justify-items: center; gap: 5px; min-height: 166px; text-align: center; }.shopitem .btn, .shopitem__owned, .shopitem__actions { grid-column: 1; justify-self: center; }.shopitem__actions { justify-content: center; }.shopitem__name { max-width: 100%; }.pet-page__mood { bottom: 8px; }.pet-page__room-chip--name { max-width: calc(100% - 112px); }.pet-page__shop-preview { max-width: none; }.pet-page__lamp { right: 5%; scale: 0.82; transform-origin: bottom; }.pet-page__house { right: 7%; scale: 0.82; transform-origin: bottom right; } }
+@media (max-width: 560px) { .pet-page { gap: var(--sp-5); }.pet-page__room { min-height: 300px; }.pet-page__avatar { margin-bottom: 20px; }.pet-page__sun { top: 38px; right: 9%; width: 48px; height: 48px; }.pet-page__plant { left: 5%; scale: 0.8; transform-origin: bottom left; }.pet-page__cloud--one { left: 2%; }.pet-page__preview-bar { grid-template-columns: 44px minmax(0, 1fr); padding: 10px; }.pet-page__preview-icon { width: 44px; height: 44px; }.pet-page__preview-actions { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }.pet-page__preview-actions .btn { width: 100%; }.pet-page__preview-owned { justify-content: center; }.pet-page__actions { padding: var(--sp-2); }.pet-action { min-height: 50px; flex-direction: column; gap: 1px; padding: 5px; font-size: var(--text-xs); }.pet-page__species { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-2); }.petpick { min-height: 134px; }.pet-page__food-list { gap: 5px; }.pet-food.card--pad-sm { padding: 8px; }.pet-food { grid-template-columns: 1fr; justify-items: center; text-align: center; }.pet-food__icon { grid-row: auto; }.pet-food__buttons { grid-template-columns: 1fr; }.pet-food__buttons .btn { padding-inline: 6px; font-size: 12px; }.pet-page__shop { gap: var(--sp-2); }.shopitem { grid-template-columns: 1fr; justify-items: center; gap: 5px; min-height: 166px; text-align: center; }.shopitem .btn, .shopitem__owned, .shopitem__actions { grid-column: 1; justify-self: center; }.shopitem__actions { justify-content: center; }.shopitem__name { max-width: 100%; }.pet-page__mood { bottom: 8px; }.pet-page__room-chip--name { max-width: calc(100% - 112px); }.pet-page__lamp { right: 5%; scale: 0.82; transform-origin: bottom; }.pet-page__house { right: 7%; scale: 0.82; transform-origin: bottom right; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .pet-page__room-item--preview { animation: none; }
+}
 
 /* First pet choice is a fixed onboarding step: every control stays inside one viewport. */
 .pet-choice { position: relative; display: grid; width: min(680px, 100%); height: 100%; min-height: 540px; grid-template-rows: auto minmax(0, 1fr) auto auto; gap: clamp(8px, 1.5vh, var(--sp-3)); margin: auto; padding: clamp(8px, 1.6vh, var(--sp-4)); box-sizing: border-box; }

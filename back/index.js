@@ -1,14 +1,53 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const crypto = require('crypto');
+const helmet = require('helmet');
+const { rateLimit } = require('express-rate-limit');
 const db = require('./src/db');
 const bot = require('./src/bot');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors());
-app.use(express.json());
+app.set('trust proxy', 1);
+app.disable('x-powered-by');
+
+const allowedOrigins = new Set(
+  [
+    process.env.APP_URL,
+    ...(process.env.CORS_ALLOWED_ORIGINS || '').split(','),
+    ...(process.env.NODE_ENV === 'production'
+      ? []
+      : ['http://localhost:5173', 'http://127.0.0.1:5173']),
+  ].filter(Boolean).map((value) => value.trim().replace(/\/$/, ''))
+);
+
+app.use((req, res, next) => {
+  req.requestId = req.header('x-request-id') || crypto.randomUUID();
+  res.setHeader('x-request-id', req.requestId);
+  next();
+});
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'same-site' },
+}));
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.has(origin.replace(/\/$/, ''))) return callback(null, true);
+    return callback(new Error('cors_origin_denied'));
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'x-telegram-init-data', 'x-demo-student-id', 'x-request-id'],
+  maxAge: 86400,
+}));
+app.use(express.json({ limit: '64kb', strict: true }));
+app.use('/api', rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 300,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  skip: (req) => req.path === '/health' || req.path === '/telegram/webhook',
+}));
 
 // Registers the webhook route (POST /api/telegram/webhook) if configured.
 bot.init(app);
@@ -34,8 +73,29 @@ app.use('/api', (req, res) => {
 
 // Central error handler (async route errors bubble here via next(e)).
 app.use((err, req, res, _next) => {
-  console.error(err);
-  res.status(500).json({ error: 'internal_error' });
+  const isCorsError = err?.message === 'cors_origin_denied';
+  const isUploadError = err?.name === 'MulterError';
+  const isBodyTooLarge = err?.type === 'entity.too.large';
+  const isInvalidDatabaseInput = ['22P02', '22003', '23514'].includes(err?.code);
+  console.error({
+    requestId: req.requestId,
+    error: err?.name || 'Error',
+    message: isCorsError ? 'CORS origin denied' : String(err?.message || 'internal_error').slice(0, 240),
+  });
+  const status = isCorsError ? 403 : isUploadError || isBodyTooLarge ? 413 : isInvalidDatabaseInput ? 400 : 500;
+  const error = isCorsError
+    ? 'origin_not_allowed'
+    : isUploadError
+      ? 'upload_rejected'
+      : isBodyTooLarge
+        ? 'request_too_large'
+        : isInvalidDatabaseInput
+          ? 'invalid_request'
+        : 'internal_error';
+  res.status(status).json({
+    error,
+    requestId: req.requestId,
+  });
 });
 
 // Migrate + seed the database before accepting traffic.

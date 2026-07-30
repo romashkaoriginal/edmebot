@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "../router";
 import { Lightbulb, AlertCircle, Infinity as InfinityIcon, ListTree, Play } from "lucide-react";
 import Button from "../components/ui/Button";
 import SectionTitle from "../components/ui/SectionTitle";
@@ -37,7 +37,7 @@ const LEVELS = [
   { id: "easy", label: "Лёгкий", desc: "Базовые задания" },
   { id: "medium", label: "Средний", desc: "Стандартные" },
   { id: "hard", label: "Сложный", desc: "Повышенная" },
-  { id: "auto", label: "Автоподбор", desc: "Бот подстроит" },
+  { id: "auto", label: "Смешанный", desc: "Сочетает все уровни сложности" },
 ];
 
 export default function Practice() {
@@ -160,7 +160,7 @@ function PracticeSettings({ subject }) {
           {LEVELS.map((l) => (
             <button
               key={l.id}
-              className={`prac__level ${level === l.id ? "prac__level--on" : ""}`}
+              className={`prac__level ${l.id === "auto" ? "prac__level--mixed" : ""} ${level === l.id ? "prac__level--on" : ""}`}
               onClick={() => setLevel(l.id)}
               aria-pressed={level === l.id}
             >

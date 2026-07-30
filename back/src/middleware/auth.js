@@ -4,18 +4,17 @@ const db = require("../db");
 function verifyTelegramInitData(initData) {
   try {
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
-    if (!botToken) return null;
+    if (!botToken || typeof initData !== "string" || initData.length > 8192) return null;
 
     const params = new URLSearchParams(initData);
     const hash = params.get("hash");
-    if (!hash) return null;
+    if (!hash || !/^[a-f0-9]{64}$/i.test(hash)) return null;
 
     const authDate = params.get("auth_date");
-    if (authDate) {
-      const ageSec = Math.floor(Date.now() / 1000) - parseInt(authDate, 10);
-      const maxAge = parseInt(process.env.TELEGRAM_INIT_MAX_AGE_SEC || "86400", 10);
-      if (!Number.isFinite(ageSec) || ageSec < 0 || ageSec > maxAge) return null;
-    }
+    if (!authDate || !/^\d{10}$/.test(authDate)) return null;
+    const ageSec = Math.floor(Date.now() / 1000) - Number(authDate);
+    const maxAge = Number(process.env.TELEGRAM_INIT_MAX_AGE_SEC || "3600");
+    if (!Number.isFinite(ageSec) || !Number.isFinite(maxAge) || ageSec < 0 || ageSec > maxAge) return null;
 
     params.delete("hash");
     const dataCheckString = [...params.entries()]
@@ -29,11 +28,15 @@ function verifyTelegramInitData(initData) {
       .update(dataCheckString)
       .digest("hex");
 
-    if (calculatedHash !== hash) return null;
+    const expected = Buffer.from(calculatedHash, "hex");
+    const received = Buffer.from(hash, "hex");
+    if (expected.length !== received.length || !crypto.timingSafeEqual(expected, received)) return null;
 
     const userStr = params.get("user");
     if (!userStr) return null;
-    return JSON.parse(userStr);
+    const user = JSON.parse(userStr);
+    if (!user || !Number.isSafeInteger(Number(user.id))) return null;
+    return user;
   } catch {
     return null;
   }
@@ -136,4 +139,4 @@ function requireRole(...roles) {
   };
 }
 
-module.exports = { requireAuth, requireRole, requireStudent, requireActiveStudent };
+module.exports = { verifyTelegramInitData, requireAuth, requireRole, requireStudent, requireActiveStudent };

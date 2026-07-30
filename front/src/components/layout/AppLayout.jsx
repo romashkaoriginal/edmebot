@@ -1,15 +1,16 @@
-import { NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Navigate, useLocation } from "../../router";
 import { useCallback, useEffect, useState } from "react";
-import { Target, Lightbulb, PawPrint, BookOpen, User, RefreshCw, Coins } from "lucide-react";
+import { House, Target, Lightbulb, PawPrint, BookOpen, User, RefreshCw, Coins } from "lucide-react";
 import Button from "../ui/Button";
 import Logo from "../brand/Logo";
 import { StreakPill } from "../ui/StatPill";
-import RewardOverlay from "./RewardOverlay";
 import { useApp } from "../../store/AppStore";
 import { studentApi } from "../../api/student";
+import { dateKey } from "../../utils/date";
 import "./AppLayout.css";
 
 const FULL_NAV = [
+  { to: "/app", label: "Главная", icon: House, end: true },
   { to: "/app/practice", label: "Практика", icon: Lightbulb },
   { to: "/app/homework", label: "Домашка", icon: BookOpen },
   { to: "/app/pet", label: "Питомец", icon: PawPrint },
@@ -19,7 +20,7 @@ const FULL_NAV = [
 // only gets the diagnostic — everything else 403s server-side anyway.
 const PENDING_NAV = [{ to: "/app/diagnostic", label: "Диагностика", icon: Target }];
 
-export default function AppLayout() {
+export default function AppLayout({ children }) {
   const { profile, hydrate, hydrated } = useApp();
   const { pathname } = useLocation();
   const [loadError, setLoadError] = useState("");
@@ -27,11 +28,12 @@ export default function AppLayout() {
   const [statInfo, setStatInfo] = useState(null);
   // Practice/diagnostic run in a focused mode — hide chrome distractions there.
   const focus = pathname.startsWith("/app/practice/run") || pathname.startsWith("/app/diagnostic/run") || pathname.startsWith("/app/homework/run");
-  const todayISO = new Date().toISOString().slice(0, 10);
+  const todayISO = dateKey();
   const doneToday = profile.streakLastDoneOn === todayISO;
   const isActive = profile.status === "active";
   const onboardingStep = profile.onboardingStep ?? "complete";
   const onboardingIncomplete = onboardingStep !== "complete";
+  const showChrome = isActive && !onboardingIncomplete;
   const NAV = isActive ? FULL_NAV : PENDING_NAV;
   const xpInLevel = Math.max(0, profile.xp - profile.xpFromLevel);
   const xpNeeded = Math.max(1, profile.xpForNext - profile.xpFromLevel);
@@ -99,13 +101,16 @@ export default function AppLayout() {
   if (onboardingStep === "pet" && !pathname.startsWith("/app/pet")) {
     return <Navigate to="/app/pet" replace />;
   }
-  if (hydrated && !isActive && !onboardingIncomplete && !focus && !pathname.startsWith("/app/diagnostic")) {
-    return <Navigate to="/app/diagnostic" replace />;
+  if (onboardingStep === "trial" && !pathname.startsWith("/app/trial")) {
+    return <Navigate to="/app/trial" replace />;
+  }
+  if (hydrated && !isActive && !focus && !pathname.startsWith("/app/trial")) {
+    return <Navigate to="/app/trial" replace />;
   }
 
   return (
     <div className={`app ${focus ? "app--focus" : ""} ${onboardingIncomplete ? "app--onboarding" : ""} ${onboardingStep === "pet" ? "app--pet-choice" : ""} ${!isActive ? "app--pending" : ""}`}>
-      {!onboardingIncomplete && <aside className="app__sidebar">
+      {showChrome && <aside className="app__sidebar">
         <div className="app__brand">
           <Logo height={34} />
         </div>
@@ -123,11 +128,16 @@ export default function AppLayout() {
       </aside>}
 
       <div className="app__main">
-        {!onboardingIncomplete && <header className="app__header">
+        {showChrome && <header className="app__header">
           <div className="app__header-brand">
             <Logo height={34} />
           </div>
           {isActive && <div className="app__stats">
+            {profile.accessKind === "trial" && profile.accessUntil && (
+              <span className="app__trial" title="Пробный доступ не продлевается автоматически">
+                Пробный · до {new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short" }).format(new Date(profile.accessUntil))}
+              </span>
+            )}
             <StreakPill value={profile.streak} doneToday={doneToday} />
             <div className="app__stat-wrap">
               <button
@@ -151,14 +161,14 @@ export default function AppLayout() {
               className="app__level"
               onClick={() => setStatInfo((value) => value === "level" ? null : "level")}
               aria-expanded={statInfo === "level"}
-              aria-label={`Уровень ${profile.level}, осталось ${Math.max(0, xpNeeded - xpInLevel)} XP`}
+              aria-label={`Уровень ${profile.level}, осталось ${Math.max(0, xpNeeded - xpInLevel)} опыта`}
             >
-              <span className="app__level-copy"><span className="app__level-tag">ур. {profile.level}</span><span className="app__level-sep">·</span><span className="app__level-num font-display">{profile.xp} XP</span></span>
-              <span className="app__level-track" aria-label={`Осталось ${Math.max(0, xpNeeded - xpInLevel)} XP`}><i style={{ width: `${xpProgress}%` }} /></span>
+              <span className="app__level-copy"><span className="app__level-tag">ур. {profile.level}</span><span className="app__level-sep">·</span><span className="app__level-num font-display">{profile.xp} опыта</span></span>
+              <span className="app__level-track" aria-label={`Осталось ${Math.max(0, xpNeeded - xpInLevel)} опыта`}><i style={{ width: `${xpProgress}%` }} /></span>
             </button>
               {statInfo === "level" && (
                 <div className="app__stat-popover app__stat-popover--right" role="status">
-                  Уровень растёт от XP. XP дают за верные задания; подсказки и повторные попытки уменьшают награду.
+                  Опыт повышает уровень и не тратится. Единственная валюта для покупок — монеты.
                 </div>
               )}
             </div>
@@ -166,11 +176,11 @@ export default function AppLayout() {
         </header>}
 
         <main className="app__content">
-          <Outlet />
+          {children}
         </main>
       </div>
 
-      {isActive && !onboardingIncomplete && <nav className="app__tabbar" aria-label="Мобильная навигация">
+      {showChrome && <nav className="app__tabbar" aria-label="Мобильная навигация">
         {NAV.map(({ to, label, icon: Icon, end }) => (
           <NavLink key={to} to={to} end={end} className="tabitem" aria-label={label}>
             <Icon size={22} strokeWidth={2.2} aria-hidden="true" />
@@ -179,7 +189,6 @@ export default function AppLayout() {
         ))}
       </nav>}
 
-      <RewardOverlay />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "./router";
 import { lazy, Suspense } from "react";
 import AppLayout from "./components/layout/AppLayout";
 import AdminLayout from "./components/layout/AdminLayout";
@@ -8,6 +8,8 @@ import { AdminAuthProvider } from "./context/AdminAuth";
 
 const RoleGate = lazy(() => import("./pages/RoleGate"));
 const StudentOnboarding = lazy(() => import("./pages/StudentOnboarding"));
+const TrialStart = lazy(() => import("./pages/TrialStart"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Practice = lazy(() => import("./pages/Practice"));
 const PracticeRun = lazy(() => import("./pages/PracticeRun"));
 const Diagnostic = lazy(() => import("./pages/Diagnostic"));
@@ -23,59 +25,55 @@ const HomeworkAdmin = lazy(() => import("./pages/admin/HomeworkAdmin"));
 const Stats = lazy(() => import("./pages/admin/Stats"));
 
 export default function App() {
+  const { pathname } = useLocation();
+  let content;
+
+  if (pathname === "/") {
+    content = <RoleGate />;
+  } else if (pathname === "/app" || pathname.startsWith("/app/")) {
+    content = <AppLayout>{studentPage(pathname)}</AppLayout>;
+  } else if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    content = (
+      <AdminAuthProvider>
+        <AdminLayout>{adminPage(pathname)}</AdminLayout>
+      </AdminAuthProvider>
+    );
+  } else {
+    content = <Navigate to="/" replace />;
+  }
+
   return (
     <Suspense fallback={<div className="app__loading" role="status">Загружаем раздел…</div>}>
-      <Routes>
-      {/* Entry: choose admin or demo student */}
-      <Route index element={<RoleGate />} />
-
-      {/* Student app */}
-      <Route path="app" element={<AppLayout />}>
-        <Route path="onboarding" element={<StudentOnboarding />} />
-        <Route index element={<Navigate to="profile" replace />} />
-        <Route path="practice" element={<Practice />} />
-        <Route path="practice/run" element={<PracticeRun />} />
-        <Route path="diagnostic" element={<Diagnostic />} />
-        <Route path="diagnostic/run" element={<DiagnosticRun />} />
-        <Route path="homework" element={<Homework />} />
-        <Route path="homework/run" element={<HomeworkRun />} />
-        <Route path="pet" element={<Pet />} />
-        <Route path="profile" element={<Profile />} />
-      </Route>
-
-      {/* Admin panel */}
-      <Route
-        path="admin"
-        element={
-          <AdminAuthProvider>
-            <AdminLayout />
-          </AdminAuthProvider>
-        }
-      >
-        <Route index element={<AdminIndex />} />
-        <Route
-          path="students"
-          element={
-            <RequireRole roles={["admin"]}>
-              <Students />
-            </RequireRole>
-          }
-        />
-        <Route
-          path="users"
-          element={
-            <RequireRole roles={["admin"]}>
-              <Users />
-            </RequireRole>
-          }
-        />
-        <Route path="tasks" element={<Tasks />} />
-        <Route path="homework" element={<HomeworkAdmin />} />
-        <Route path="stats" element={<Stats />} />
-      </Route>
-
-      <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      {content}
     </Suspense>
   );
+}
+
+function studentPage(pathname) {
+  const routes = {
+    "/app": <Dashboard />,
+    "/app/onboarding": <StudentOnboarding />,
+    "/app/trial": <TrialStart />,
+    "/app/practice": <Practice />,
+    "/app/practice/run": <PracticeRun />,
+    "/app/diagnostic": <Diagnostic />,
+    "/app/diagnostic/run": <DiagnosticRun />,
+    "/app/homework": <Homework />,
+    "/app/homework/run": <HomeworkRun />,
+    "/app/pet": <Pet />,
+    "/app/profile": <Profile />,
+  };
+  return routes[pathname] ?? <Navigate to="/app" replace />;
+}
+
+function adminPage(pathname) {
+  const routes = {
+    "/admin": <AdminIndex />,
+    "/admin/students": <RequireRole roles={["admin"]}><Students /></RequireRole>,
+    "/admin/users": <RequireRole roles={["admin"]}><Users /></RequireRole>,
+    "/admin/tasks": <Tasks />,
+    "/admin/homework": <HomeworkAdmin />,
+    "/admin/stats": <Stats />,
+  };
+  return routes[pathname] ?? <Navigate to="/admin" replace />;
 }
