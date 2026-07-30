@@ -3,22 +3,12 @@
 const { Pool } = require("pg");
 const seed = require("./data/seed");
 const { SUBJECT_VARIANTS } = require("./subjects");
+const { buildDatabaseConfig } = require("./utils/databaseConfig");
 
 const connectionString = process.env.DATABASE_URL;
 const SCHEMA_VERSION = 1;
-
-function databaseSsl() {
-  if (!connectionString || /^postgres(?:ql)?:\/\/(?:localhost|127\.0\.0\.1)(?::|\/)/i.test(connectionString)) {
-    return false;
-  }
-  const ca = process.env.DATABASE_SSL_CA?.replace(/\\n/g, "\n");
-  return { rejectUnauthorized: true, ...(ca ? { ca } : {}) };
-}
-
-const pool = new Pool({
-  connectionString,
-  ssl: databaseSsl(),
-});
+const databaseConfig = buildDatabaseConfig(connectionString);
+const pool = new Pool(databaseConfig);
 
 async function query(text, params) {
   return pool.query(text, params);
@@ -480,6 +470,12 @@ async function init() {
   if (!connectionString) {
     throw new Error(
       "DATABASE_URL is not set. Add your Supabase connection string to back/.env"
+    );
+  }
+  if (databaseConfig.ssl && !databaseConfig.sslVerified) {
+    console.warn(
+      "Database TLS is encrypted but the server certificate is not verified. " +
+      "Set DATABASE_SSL_CA and DATABASE_SSL_MODE=verify-full for strict verification."
     );
   }
   await transaction(async (client) => {
