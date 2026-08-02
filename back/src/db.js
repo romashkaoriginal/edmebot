@@ -6,7 +6,10 @@ const { SUBJECT_VARIANTS } = require("./subjects");
 const { buildDatabaseConfig } = require("./utils/databaseConfig");
 
 const connectionString = process.env.DATABASE_URL;
-const SCHEMA_VERSION = 1;
+// Bump whenever SCHEMA changes. init() skips the whole schema block when the
+// recorded version is already current, so a new CREATE/ALTER never reaches an
+// existing database unless this number moves.
+const SCHEMA_VERSION = 2;
 const databaseConfig = buildDatabaseConfig(connectionString);
 const pool = new Pool(databaseConfig);
 
