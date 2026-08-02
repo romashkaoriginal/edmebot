@@ -15,6 +15,15 @@ function clampStat(value) {
   return Math.max(0, Math.min(100, Number(value) || 0));
 }
 
+// node-postgres hands back DATE columns as JS Date objects, whose String() form
+// is "Sun Aug 02 2026 ...". Slicing that yields "Sun Aug 02", which Postgres
+// rejects on the way back in, so always normalise through toISOString().
+function isoDay(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return String(value).slice(0, 10);
+}
+
 function foodEffect(item) {
   return item?.effect ?? { satiety: 24, mood: 6 };
 }
@@ -66,7 +75,7 @@ function toProfile(row, student) {
     xpFromLevel: row.xp_from_level,
     xpForNext: row.xp_for_next,
     streak: row.streak,
-    streakLastDoneOn: row.streak_last_done_on ? row.streak_last_done_on.toISOString?.().slice(0, 10) ?? String(row.streak_last_done_on) : null,
+    streakLastDoneOn: isoDay(row.streak_last_done_on),
     streakFreezeUsed: row.streak_freeze_used,
     pet: { species: row.pet_species, name: row.pet_name },
     petBond: row.pet_bond ?? 0,
@@ -238,8 +247,10 @@ async function gradePractice(student, task, selected, instanceId) {
     const instance = instances[0];
     if (instance.answered_at) {
       if (instance.selected !== selected) return { error: "practice_instance_already_answered" };
+      const replayOrder = Array.isArray(instance.option_order) ? instance.option_order : null;
       return {
         correct: instance.correct,
+        correctIndex: replayOrder ? replayOrder.indexOf(task.correct) : task.correct,
         award: {
           gained: instance.award_xp,
           coins: instance.award_coins,
@@ -256,14 +267,22 @@ async function gradePractice(student, task, selected, instanceId) {
       return { error: "practice_instance_expired" };
     }
     const hintsUsed = instance.hints_revealed;
-    const correct = selected === task.correct;
+    // `selected` is a position in the shuffled list the student was shown, so
+    // map it back to the stored option before comparing. Instances created
+    // before option shuffling have no order and are already in storage order.
+    const optionOrder = Array.isArray(instance.option_order) ? instance.option_order : null;
+    const storedSelected = optionOrder ? optionOrder[selected] : selected;
+    if (optionOrder && !Number.isInteger(storedSelected)) {
+      return { error: "practice_instance_invalid" };
+    }
+    const correct = storedSelected === task.correct;
 
     await client.query(
       `INSERT INTO attempts (student_id, task_id, selected, correct, practice_instance_id)
        VALUES ($1,$2,$3,$4,$5)`,
       [student.id, task.id, selected, correct, instanceId]
     );
-    await recordMistake(student.id, task, selected, correct, client);
+    await recordMistake(student.id, task, storedSelected, correct, client);
 
     const { rows: topicRows } = await client.query(
       `SELECT mastery FROM student_topics
@@ -313,9 +332,7 @@ async function gradePractice(student, task, selected, instanceId) {
         xpFromLevel = xpForNext;
         xpForNext += 400 + level * 40;
       }
-      const previousDay = profile.streak_last_done_on
-        ? String(profile.streak_last_done_on).slice(0, 10)
-        : null;
+      const previousDay = isoDay(profile.streak_last_done_on);
       const { rows: consecutiveRows } = previousDay
         ? await client.query("SELECT ($1::date - $2::date) = 1 AS consecutive", [today, previousDay])
         : { rows: [{ consecutive: false }] };
@@ -357,7 +374,9 @@ async function gradePractice(student, task, selected, instanceId) {
         WHERE id = $1`,
       [instanceId, selected, correct, award.gained, award.coins, award.leveledUp]
     );
-    return { correct, award };
+    // Report the correct answer as a position in the list the student saw.
+    const shownCorrectIndex = optionOrder ? optionOrder.indexOf(task.correct) : task.correct;
+    return { correct, award, correctIndex: shownCorrectIndex };
   });
   if (outcome.error) return outcome;
   return { ...outcome, state: await getState(student, task.subject) };

@@ -251,6 +251,10 @@ ALTER TABLE practice_question_instances ADD COLUMN IF NOT EXISTS correct BOOLEAN
 ALTER TABLE practice_question_instances ADD COLUMN IF NOT EXISTS award_xp INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE practice_question_instances ADD COLUMN IF NOT EXISTS award_coins INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE practice_question_instances ADD COLUMN IF NOT EXISTS leveled_up BOOLEAN NOT NULL DEFAULT FALSE;
+-- Per-instance answer order: option_order[i] is the index in tasks.options that
+-- was shown to the student in position i. Lets grading map the position the
+-- student picked back to the stored option.
+ALTER TABLE practice_question_instances ADD COLUMN IF NOT EXISTS option_order JSONB;
 CREATE INDEX IF NOT EXISTS idx_practice_instances_student
   ON practice_question_instances (student_id, expires_at);
 

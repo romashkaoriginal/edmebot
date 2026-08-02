@@ -62,10 +62,18 @@ router.get("/series", async (req, res, next) => {
     const tasks = source.length
       ? Array.from({ length }, (_, index) => {
         const task = source[index % source.length];
+        // Answers are stored with the correct option first, so serving them in
+        // storage order makes "А" always right. Shuffle per instance and keep
+        // the permutation so the answer route can map the pick back.
+        const optionCount = Array.isArray(task.options) ? task.options.length : 0;
+        const optionOrder = shuffle(Array.from({ length: optionCount }, (_, i) => i));
         return {
           ...task,
           id: String(task.id),
           instanceId: crypto.randomUUID(),
+          options: optionOrder.map((source) => task.options[source]),
+          correctIndex: optionOrder.indexOf(task.correctIndex),
+          optionOrder,
           hintCount: Array.isArray(task.hints) ? task.hints.length : 0,
           hints: undefined,
         };
@@ -85,14 +93,14 @@ router.get("/series", async (req, res, next) => {
         );
         for (const task of tasks) {
           await client.query(
-            `INSERT INTO practice_question_instances (id, student_id, task_id)
-             VALUES ($1,$2,$3)`,
-            [task.instanceId, req.student.id, task.id]
+            `INSERT INTO practice_question_instances (id, student_id, task_id, option_order)
+             VALUES ($1,$2,$3,$4)`,
+            [task.instanceId, req.student.id, task.id, JSON.stringify(task.optionOrder)]
           );
         }
       });
     }
-    res.json({ tasks });
+    res.json({ tasks: tasks.map(({ optionOrder, ...task }) => task) });
   } catch (e) { next(e); }
 });
 
@@ -160,7 +168,8 @@ router.post("/answer", async (req, res, next) => {
     if (result.error) return res.status(409).json(result);
     res.json({
       correct: result.correct,
-      correctIndex: task.correct,
+      // Position in the shuffled list the student was shown, not storage order.
+      correctIndex: result.correctIndex ?? task.correct,
       explanation: task.explanation,
       commonMistake: result.correct ? null : "Проверь решение ещё раз и сравни с правилом в объяснении.",
       award: result.award,
