@@ -9,6 +9,24 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 const MIN_DIAGNOSTIC_QUESTIONS = 5;
 router.use(requireStudent);
 
+function shuffle(items) {
+  const result = [...items];
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    const other = Math.floor(Math.random() * (index + 1));
+    [result[index], result[other]] = [result[other], result[index]];
+  }
+  return result;
+}
+
+// Maps a position in the shuffled list back to the stored option index.
+// Sessions created before shuffling have no stored order and are already
+// in storage order.
+function toStoredIndex(optionOrders, taskId, selected) {
+  const order = optionOrders?.[String(taskId)];
+  if (!Array.isArray(order) || selected === null) return selected;
+  return Number.isInteger(order[selected]) ? order[selected] : null;
+}
+
 // Diagnostic-only students haven't picked a subject via onboarding yet if
 // they land here directly; ?subject= lets the frontend request whichever
 // subject the onboarding form or subject picker chose, without requiring
@@ -36,13 +54,28 @@ router.get("/", async (req, res, next) => {
     if (rows.length < MIN_DIAGNOSTIC_QUESTIONS) {
       return res.json({ subject, sessionId: null, questions: [], minimumQuestions: MIN_DIAGNOSTIC_QUESTIONS });
     }
+    // Answers are stored with the correct option first, so serving them in
+    // storage order would make the first choice always right. Shuffle per
+    // question and keep the permutation to grade the positions shown.
+    const optionOrders = {};
+    const questions = rows.map((question) => {
+      const optionCount = Array.isArray(question.options) ? question.options.length : 0;
+      const order = shuffle(Array.from({ length: optionCount }, (_, index) => index));
+      optionOrders[question.id] = order;
+      return {
+        ...question,
+        options: order.map((storedIndex) => question.options[storedIndex]),
+        correctIndex: order.indexOf(question.correctIndex),
+      };
+    });
     const sessionId = crypto.randomUUID();
     await db.query(
-      `INSERT INTO diagnostic_sessions (id, student_id, subject, question_ids)
-       VALUES ($1,$2,$3,$4)`,
-      [sessionId, req.student.id, subject, JSON.stringify(rows.map((question) => question.id))]
+      `INSERT INTO diagnostic_sessions (id, student_id, subject, question_ids, option_orders)
+       VALUES ($1,$2,$3,$4,$5)`,
+      [sessionId, req.student.id, subject, JSON.stringify(rows.map((question) => question.id)),
+        JSON.stringify(optionOrders)]
     );
-    res.json({ subject, sessionId, questions: rows });
+    res.json({ subject, sessionId, questions });
   } catch (e) { next(e); }
 });
 
@@ -56,7 +89,7 @@ router.post("/check", async (req, res, next) => {
     }
     if (!UUID_RE.test(sessionId)) return res.status(400).json({ error: "diagnostic_session_required" });
     const { rows: sessions } = await db.query(
-      `SELECT 1 FROM diagnostic_sessions
+      `SELECT option_orders FROM diagnostic_sessions
         WHERE id = $1 AND student_id = $2 AND submitted_at IS NULL
           AND expires_at > now() AND question_ids @> $3::jsonb`,
       [sessionId, req.student.id, JSON.stringify([taskId])]
@@ -73,9 +106,12 @@ router.post("/check", async (req, res, next) => {
       [req.student.id, task.subject]
     );
     if (!enrolled.length) return res.status(403).json({ error: "not_enrolled_in_subject" });
+    const optionOrders = sessions[0].option_orders;
+    const order = optionOrders?.[String(taskId)];
     res.json({
-      correct: selected === task.correct,
-      correctIndex: task.correct,
+      correct: toStoredIndex(optionOrders, taskId, selected) === task.correct,
+      // Report the answer as a position in the list the student was shown.
+      correctIndex: Array.isArray(order) ? order.indexOf(task.correct) : task.correct,
       explanation: task.explanation,
     });
   } catch (e) { next(e); }
@@ -122,7 +158,13 @@ router.post("/submit", async (req, res, next) => {
           return { error: "diagnostic_answer_invalid" };
         }
       }
-      await state.submitDiagnostic(req.student, answers, session.subject, questions, client);
+      // Answers arrive as positions in the shuffled list the student saw;
+      // grading compares against tasks.correct, so map them back first.
+      const storedAnswers = answers.map((answer) => ({
+        ...answer,
+        selected: toStoredIndex(session.option_orders, answer.id, answer.selected),
+      }));
+      await state.submitDiagnostic(req.student, storedAnswers, session.subject, questions, client);
       await client.query("UPDATE diagnostic_sessions SET submitted_at = now() WHERE id = $1", [sessionId]);
       return { subject: session.subject };
     });

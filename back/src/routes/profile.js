@@ -48,17 +48,26 @@ router.post("/onboard", async (req, res, next) => {
     if (!["subject", "diagnostic"].includes(current.profile.onboardingStep)) {
       return res.status(409).json({ error: "onboarding_step_invalid" });
     }
-    const { subject, grade } = req.body ?? {};
-    if (!ONBOARD_SUBJECTS.includes(subject)) return res.status(400).json({ error: "invalid_subject" });
+    // A student may enrol in several subjects at once. `subject` (singular) is
+    // still accepted so an older client keeps working.
+    const { subject, subjects, grade } = req.body ?? {};
+    const requested = Array.isArray(subjects) ? subjects : [subject];
+    const chosen = [...new Set(requested.filter((item) => ONBOARD_SUBJECTS.includes(item)))];
+    if (!chosen.length || chosen.length !== new Set(requested).size) {
+      return res.status(400).json({ error: "invalid_subject" });
+    }
     const g = Number(grade);
     if (!Number.isInteger(g) || g < 6 || g > 11) return res.status(400).json({ error: "invalid_grade" });
+    const primary = chosen[0];
 
     await db.transaction(async (client) => {
-      await client.query(
-        `INSERT INTO student_subjects (student_id, subject, grade) VALUES ($1,$2,$3)
-         ON CONFLICT (student_id, subject) DO UPDATE SET grade = EXCLUDED.grade`,
-        [req.student.id, subject, g]
-      );
+      for (const item of chosen) {
+        await client.query(
+          `INSERT INTO student_subjects (student_id, subject, grade) VALUES ($1,$2,$3)
+           ON CONFLICT (student_id, subject) DO UPDATE SET grade = EXCLUDED.grade`,
+          [req.student.id, item, g]
+        );
+      }
       await state.ensure(req.student, client);
       await client.query(
         "UPDATE student_profiles SET onboarding_step = 'diagnostic', updated_at = now() WHERE student_id = $1",
@@ -67,11 +76,11 @@ router.post("/onboard", async (req, res, next) => {
       // Keep the legacy single subject/grade columns as "primary" = first chosen.
       await client.query(
         `UPDATE students SET subject = $2, grade = $3 WHERE id = $1`,
-        [req.student.id, subject, g]
+        [req.student.id, primary, g]
       );
     });
     const refreshed = await db.query("SELECT * FROM students WHERE id = $1", [req.student.id]);
-    const { profile } = await state.getState(refreshed.rows[0], subject);
+    const { profile } = await state.getState(refreshed.rows[0], primary);
     res.json({ ok: true, profile });
   } catch (e) { next(e); }
 });

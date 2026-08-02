@@ -12,6 +12,38 @@
 .sonboard__subject:not(:disabled):active { transform: scale(.98); }
 .sonboard__subject:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .sonboard__subject:disabled { cursor: not-allowed; opacity: .56; }
+
+/* Multi-select: each subject is a checkbox, so the card carries a visible tick
+   rather than looking like a radio that picks exactly one. */
+.sonboard__subject { position: relative; cursor: pointer; border: 2px solid transparent; }
+.sonboard__subject.is-selected { border-color: var(--primary); }
+.sonboard__subject-input { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+.sonboard__subject-input:focus-visible ~ .sonboard__subject-check { outline: 3px solid var(--accent); outline-offset: 2px; }
+/* Outranks the generic `.sonboard__subject span` colour so an unchecked box
+   reads as empty rather than as a greyed-out tick. */
+.sonboard__subject span.sonboard__subject-check {
+  position: absolute;
+  top: var(--sp-3);
+  right: var(--sp-3);
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: transparent;
+  transition: background-color var(--dur-pop) var(--ease-out), border-color var(--dur-pop) var(--ease-out), color var(--dur-pop) var(--ease-out);
+}
+.sonboard__subject.is-selected span.sonboard__subject-check {
+  border-color: var(--on-primary);
+  background: var(--on-primary);
+  color: var(--primary);
+}
+.sonboard__subject-icon { margin-top: var(--sp-2); }
+@media (prefers-reduced-motion: reduce) {
+  .sonboard__subject, .sonboard__subject-check { transition: none; }
+}
 .sonboard__grades { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3); }
 .sonboard__grades button { aspect-ratio: 1; display: grid; place-content: center; border-radius: var(--r-md); background: var(--surface-2); color: var(--ink); }
 .sonboard__grades strong { font-size: var(--text-2xl); line-height: 1; }

@@ -9,7 +9,7 @@ const connectionString = process.env.DATABASE_URL;
 // Bump whenever SCHEMA changes. init() skips the whole schema block when the
 // recorded version is already current, so a new CREATE/ALTER never reaches an
 // existing database unless this number moves.
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 const databaseConfig = buildDatabaseConfig(connectionString);
 const pool = new Pool(databaseConfig);
 
@@ -278,6 +278,10 @@ CREATE TABLE IF NOT EXISTS diagnostic_sessions (
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   expires_at    TIMESTAMPTZ NOT NULL DEFAULT now() + interval '6 hours'
 );
+-- Per-question answer order, keyed by task id: option_orders[taskId][i] is the
+-- index in tasks.options shown in position i. Mirrors option_order on practice
+-- instances so the diagnostic can shuffle answers too.
+ALTER TABLE diagnostic_sessions ADD COLUMN IF NOT EXISTS option_orders JSONB;
 CREATE INDEX IF NOT EXISTS idx_diagnostic_sessions_student
   ON diagnostic_sessions (student_id, expires_at);
 
