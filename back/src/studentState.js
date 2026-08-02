@@ -188,27 +188,34 @@ async function updateTopics(studentId, subject, updates, executor = db) {
 
 async function submitDiagnostic(student, answers, subject, questions = null, executor = db) {
   const activeSubject = subject || student.subject || "Математика";
-  const byTopic = new Map();
+  // One diagnostic can span several subjects, so tally each question under its
+  // own subject rather than assuming they all belong to the active one.
+  const bySubject = new Map();
   const source = questions ?? seed.diagnostic;
   for (const answer of answers) {
     const question = source.find((item) => String(item.id) === String(answer.id));
-    if (!question || question.subject !== activeSubject) continue;
+    if (!question) continue;
     // A remembered rule is useful learning support, but it also signals that
     // this topic should stay in the student's practice route.
     const correct = answer.selected === question.correct && !answer.usedHelp;
+    const questionSubject = question.subject || activeSubject;
+    const byTopic = bySubject.get(questionSubject) ?? new Map();
     const stat = byTopic.get(question.topic) ?? { correct: 0, total: 0 };
     stat.total += 1;
     if (correct) stat.correct += 1;
     byTopic.set(question.topic, stat);
+    bySubject.set(questionSubject, byTopic);
     await recordMistake(student.id, question, answer.selected, correct, executor);
   }
   await ensure(student, executor);
-  await updateTopics(student.id, activeSubject, [...byTopic].map(([topicId, stat]) => ({
-    topicId,
-    // A single lucky answer must not mark a whole topic as mastered. The
-    // neutral prior keeps 1/1 at 67%, while repeated evidence can reach green.
-    mastery: Math.round(((stat.correct + 1) / (stat.total + 2)) * 100),
-  })), executor);
+  for (const [questionSubject, byTopic] of bySubject) {
+    await updateTopics(student.id, questionSubject, [...byTopic].map(([topicId, stat]) => ({
+      topicId,
+      // A single lucky answer must not mark a whole topic as mastered. The
+      // neutral prior keeps 1/1 at 67%, while repeated evidence can reach green.
+      mastery: Math.round(((stat.correct + 1) / (stat.total + 2)) * 100),
+    })), executor);
+  }
   await executor.query("UPDATE student_profiles SET diagnostic_done = TRUE, onboarding_step = 'pet', updated_at = now() WHERE student_id = $1", [student.id]);
 }
 

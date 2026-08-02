@@ -37,23 +37,39 @@ router.get("/", async (req, res, next) => {
     if (current.profile.onboardingStep !== "diagnostic" && current.profile.onboardingStep !== "complete") {
       return res.status(409).json({ error: "onboarding_step_invalid" });
     }
-    const subject = req.query.subject || req.student.subject || "Математика";
+    // A student enrolled in several subjects takes one diagnostic covering all
+    // of them (10 questions each), so they are not sent back to a subject
+    // picker between tests. ?subject= still narrows it to a single subject for
+    // a deliberate retake.
     const { rows: enrollments } = await db.query(
-      "SELECT grade FROM student_subjects WHERE student_id = $1 AND subject = $2",
-      [req.student.id, subject]
+      `SELECT subject, grade FROM student_subjects
+        WHERE student_id = $1 ${req.query.subject ? "AND subject = $2" : ""}
+        ORDER BY created_at ASC`,
+      req.query.subject ? [req.student.id, req.query.subject] : [req.student.id]
     );
-    const grade = enrollments[0]?.grade ?? req.student.grade;
-    if (!grade) return res.json({ subject, questions: [] });
-    const { rows } = await db.query(
-      `SELECT id, topic, subject, prompt, options, hints,
-              correct AS "correctIndex", explanation
-       FROM tasks WHERE grade = $1 AND subject = $2
-       ORDER BY random() LIMIT 10`,
-      [grade, subject]
-    );
-    if (rows.length < MIN_DIAGNOSTIC_QUESTIONS) {
+    const enrolled = enrollments.length
+      ? enrollments
+      : [{ subject: req.query.subject || req.student.subject || "Математика", grade: req.student.grade }];
+    const subject = enrolled[0].subject;
+    if (enrolled.every((item) => !item.grade)) return res.json({ subject, questions: [] });
+
+    const perSubject = await Promise.all(enrolled.map(async (item) => {
+      const grade = item.grade ?? req.student.grade;
+      if (!grade) return [];
+      const { rows } = await db.query(
+        `SELECT id, topic, subject, prompt, options, hints,
+                correct AS "correctIndex", explanation
+         FROM tasks WHERE grade = $1 AND subject = $2
+         ORDER BY random() LIMIT 10`,
+        [grade, item.subject]
+      );
+      return rows.length >= MIN_DIAGNOSTIC_QUESTIONS ? rows : [];
+    }));
+    const rows = perSubject.flat();
+    if (!rows.length) {
       return res.json({ subject, sessionId: null, questions: [], minimumQuestions: MIN_DIAGNOSTIC_QUESTIONS });
     }
+    const subjects = [...new Set(rows.map((question) => question.subject))];
     // Answers are stored with the correct option first, so serving them in
     // storage order would make the first choice always right. Shuffle per
     // question and keep the permutation to grade the positions shown.
@@ -75,7 +91,7 @@ router.get("/", async (req, res, next) => {
       [sessionId, req.student.id, subject, JSON.stringify(rows.map((question) => question.id)),
         JSON.stringify(optionOrders)]
     );
-    res.json({ subject, sessionId, questions });
+    res.json({ subject, subjects, sessionId, questions });
   } catch (e) { next(e); }
 });
 
@@ -144,10 +160,12 @@ router.post("/submit", async (req, res, next) => {
         answerIds.length !== expectedIds.length ||
         expectedIds.some((id) => !answerIds.includes(id))
       ) return { error: "diagnostic_answers_incomplete" };
+      // A session may span several subjects, so the questions are looked up by
+      // id alone; session.question_ids is what scopes them to this student.
       const { rows: questions } = await client.query(
         `SELECT id, topic, subject, correct, options
-           FROM tasks WHERE id = ANY($1::bigint[]) AND subject = $2`,
-        [expectedIds, session.subject]
+           FROM tasks WHERE id = ANY($1::bigint[])`,
+        [expectedIds]
       );
       if (questions.length !== expectedIds.length) return { error: "diagnostic_questions_not_found" };
       for (const answer of answers) {

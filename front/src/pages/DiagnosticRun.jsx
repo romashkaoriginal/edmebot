@@ -7,6 +7,7 @@ import Card from "../components/ui/Card";
 import OptionList from "../components/shared/OptionList";
 import KnowledgeMap from "../components/shared/KnowledgeMap";
 import { studentApi } from "../api/student";
+import { subjectLabel } from "../utils/subjects";
 import { useApp } from "../store/AppStore";
 import { answerHaptic } from "../utils/haptics";
 import useModalFocus from "../hooks/useModalFocus";
@@ -17,11 +18,13 @@ const SESSION_TTL = 6 * 60 * 60 * 1000;
 export default function DiagnosticRun() {
   const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
-  const { hydrate, profile } = useApp();
+  const { hydrate } = useApp();
+  // One diagnostic now covers every enrolled subject, so the cached session is
+  // keyed per student rather than per subject.
   const sessionKey = useMemo(() => {
     const student = localStorage.getItem("edme_student_id") || "telegram";
-    return `edme:diagnostic:${student}:${profile.subject || "default"}`;
-  }, [profile.subject]);
+    return `edme:diagnostic:${student}`;
+  }, []);
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState(null);
   const [graded, setGraded] = useState(null);
@@ -83,6 +86,9 @@ export default function DiagnosticRun() {
   useEffect(() => { if (done) localStorage.removeItem(sessionKey); }, [done, sessionKey]);
 
   const question = questions?.[idx];
+  // With several subjects in one run, label each question so the switch from
+  // one subject to the next is not disorienting.
+  const multiSubject = new Set((questions ?? []).map((item) => item.subject)).size > 1;
   const progress = questions?.length ? ((idx + (graded ? 1 : 0)) / questions.length) * 100 : 0;
   const hasProgress = idx > 0 || graded || answers.length > 0;
 
@@ -158,7 +164,7 @@ export default function DiagnosticRun() {
       <div className="run__body">
         <Card className={`run__question ${graded ? `run__question--${graded}` : ""}`} pad="lg">
           <div className="run__question-head">
-            <span className="run__qlabel">Тема: {formatTopicLabel(question.topic)}</span>
+            <span className="run__qlabel">{multiSubject ? `${subjectLabel(question.subject)} · ` : ""}{formatTopicLabel(question.topic)}</span>
             <span className="run__qnumber">Вопрос {idx + 1}</span>
           </div>
           <h1 className="run__prompt">{question.prompt}</h1>

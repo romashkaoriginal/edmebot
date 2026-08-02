@@ -7,10 +7,13 @@ import KnowledgeMap from "../components/shared/KnowledgeMap";
 import SectionTitle from "../components/ui/SectionTitle";
 import { useApp } from "../store/AppStore";
 import { studentApi } from "../api/student";
+import { enrolledSubjects } from "../utils/subjects";
 import "./Diagnostic.css";
 
 export default function Diagnostic() {
   const { topics, profile } = useApp();
+  // One diagnostic covers every enrolled subject, 10 questions each.
+  const subjectCount = Math.max(1, enrolledSubjects(profile).length);
 
   useEffect(() => {
     // Warm the whole diagnostic while the student reads the intro. The run
@@ -32,11 +35,11 @@ export default function Diagnostic() {
         <ul className="diag__facts">
           <li>
             <ListChecks size={18} strokeWidth={2.4} />
-            <span>До 10 вопросов</span>
+            <span>До {subjectCount * 10} вопросов{subjectCount > 1 ? " — по 10 на предмет" : ""}</span>
           </li>
           <li>
             <Clock size={18} strokeWidth={2.4} />
-            <span>5–7 минут</span>
+            <span>{subjectCount > 1 ? "10–15 минут" : "5–7 минут"}</span>
           </li>
           <li>
             <HelpCircle size={18} strokeWidth={2.4} />
