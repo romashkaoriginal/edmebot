@@ -48,6 +48,7 @@ export default function PracticeRun() {
   const [extending, setExtending] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
   const [actionError, setActionError] = useState("");
+  const [seriesStale, setSeriesStale] = useState(false);
   const [liveAward, setLiveAward] = useState(null);
   const explanationRef = useRef(null);
   useModalFocus(explanationRef, { active: showExplanation, onClose: () => setShowExplanation(false) });
@@ -70,6 +71,7 @@ export default function PracticeRun() {
           setHintText(cached.hintText ?? "");
           setPendingSave(cached.pendingSave ?? null);
           setActionError(cached.actionError ?? "");
+          setSeriesStale(cached.seriesStale ?? false);
           setResults(cached.results ?? []);
           setResponses(cached.responses ?? {});
           return () => { cancelled = true; };
@@ -90,9 +92,9 @@ export default function PracticeRun() {
     if (!tasks?.length || done) return;
     localStorage.setItem(sessionKey, JSON.stringify({
       savedAt: Date.now(), tasks, idx, selected, graded, feedback, hintsUsed, hintText,
-      results, responses, pendingSave, actionError,
+      results, responses, pendingSave, actionError, seriesStale,
     }));
-  }, [actionError, done, feedback, graded, hintText, hintsUsed, idx, pendingSave, responses, results, selected, sessionKey, tasks]);
+  }, [actionError, done, feedback, graded, hintText, hintsUsed, idx, pendingSave, responses, results, selected, seriesStale, sessionKey, tasks]);
 
   useEffect(() => {
     if (done) localStorage.removeItem(sessionKey);
@@ -115,7 +117,25 @@ export default function PracticeRun() {
     setHintText(saved?.hintText ?? "");
     setShowExplanation(false);
     setActionError("");
+    setSeriesStale(false);
     setPendingSave(saved?.pendingSave ?? null);
+  }
+
+  function startNewSeries() {
+    localStorage.removeItem(sessionKey);
+    setTasks(null);
+    setIdx(0);
+    setSelected(null);
+    setGraded(null);
+    setFeedback(null);
+    setHintsUsed(0);
+    setHintText("");
+    setResults([]);
+    setResponses({});
+    setPendingSave(null);
+    setActionError("");
+    setSeriesStale(false);
+    setLoadVersion((value) => value + 1);
   }
 
   if (tasks === null) {
@@ -153,7 +173,7 @@ export default function PracticeRun() {
 
   async function saveAnswer(payload) {
     if (checking) return;
-    const { answer, nextFeedback, response } = payload;
+    const { answer, nextFeedback, response, correct } = payload;
     setChecking(true);
     setPendingSave(payload);
     setActionError("");
@@ -171,8 +191,13 @@ export default function PracticeRun() {
         setLiveAward({ ...data.award, id: Date.now() });
         window.setTimeout(() => setLiveAward(null), 950);
       }
-    } catch {
-      setActionError("Ответ показан, но пока не сохранён. Проверь соединение и повтори отправку.");
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "";
+      const stale = reason === "practice_instance_invalid" || reason === "practice_instance_expired";
+      setSeriesStale(stale);
+      setActionError(stale
+        ? "Эта серия заданий устарела, поэтому ответ нельзя сохранить. Начни новую серию."
+        : "Ответ показан, но пока не сохранён. Проверь соединение и повтори отправку.");
     } finally {
       setChecking(false);
     }
@@ -237,7 +262,7 @@ export default function PracticeRun() {
           </div>
 
           <div className="run__notices" aria-live="polite">
-            {actionError && <div className="run__action-error" role="alert"><span>{actionError}</span>{pendingSave && <button type="button" disabled={checking} onClick={() => saveAnswer(pendingSave)}>Повторить</button>}</div>}
+            {actionError && <div className="run__action-error" role="alert"><span>{actionError}</span>{seriesStale ? <button type="button" onClick={startNewSeries}>Новая серия</button> : pendingSave && <button type="button" disabled={checking} onClick={() => saveAnswer(pendingSave)}>Повторить</button>}</div>}
             {hintText && !graded && <div className="pr__hint"><Lightbulb size={16} /><span>{hintText}</span></div>}
           </div>
 
