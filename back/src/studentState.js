@@ -20,6 +20,7 @@ function foodEffect(item) {
 }
 
 function petDecay(row) {
+  if (!row) return null;
   const lastChecked = row.pet_decay_checked_at ? new Date(row.pet_decay_checked_at).getTime() : Date.now();
   const steps = Math.min(PET_DECAY_MAX_STEPS, Math.floor((Date.now() - lastChecked) / PET_DECAY_INTERVAL_MS));
   if (steps <= 0) return null;
@@ -106,6 +107,19 @@ async function getState(student, subject = null) {
   await ensure(student);
   const { rows: profiles } = await db.query("SELECT * FROM student_profiles WHERE student_id = $1", [student.id]);
   let profileRow = profiles[0];
+  if (!profileRow) {
+    // ensure() upserts with ON CONFLICT DO NOTHING and this SELECT may land on a
+    // different pooled connection, so a freshly created row can still be missing
+    // here. Insert-returning rather than reading a half-built profile.
+    const { rows: created } = await db.query(
+      `INSERT INTO student_profiles (student_id, onboarding_step)
+       VALUES ($1, $2)
+       ON CONFLICT (student_id) DO UPDATE SET updated_at = now()
+       RETURNING *`,
+      [student.id, student.status === "active" && student.subject && student.grade ? "complete" : "subject"]
+    );
+    profileRow = created[0];
+  }
   const decay = petDecay(profileRow);
   if (decay) {
     const { rows: decayed } = await db.query(
