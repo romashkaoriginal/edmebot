@@ -9,7 +9,6 @@ import { AdminAuthProvider } from "./context/AdminAuth";
 const RoleGate = lazy(() => import("./pages/RoleGate"));
 const StudentOnboarding = lazy(() => import("./pages/StudentOnboarding"));
 const TrialStart = lazy(() => import("./pages/TrialStart"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Practice = lazy(() => import("./pages/Practice"));
 const PracticeRun = lazy(() => import("./pages/PracticeRun"));
 const Diagnostic = lazy(() => import("./pages/Diagnostic"));
@@ -51,7 +50,7 @@ export default function App() {
 
 function studentPage(pathname) {
   const routes = {
-    "/app": <Dashboard />,
+    "/app": <Navigate to="/app/profile" replace />,
     "/app/onboarding": <StudentOnboarding />,
     "/app/trial": <TrialStart />,
     "/app/practice": <Practice />,
@@ -63,7 +62,7 @@ function studentPage(pathname) {
     "/app/pet": <Pet />,
     "/app/profile": <Profile />,
   };
-  return routes[pathname] ?? <Navigate to="/app" replace />;
+  return routes[pathname] ?? <Navigate to="/app/profile" replace />;
 }
 
 function adminPage(pathname) {

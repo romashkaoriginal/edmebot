@@ -11,6 +11,7 @@ import Button from "../components/ui/Button";
 import { useApp } from "../store/AppStore";
 import { studentApi } from "../api/student";
 import { plural } from "../utils/format";
+import { ProfileHomeOverview } from "./Dashboard";
 import "./Profile.css";
 
 const WEEKDAY_LABELS = {
@@ -97,6 +98,8 @@ export default function Profile() {
           </span>
         </Link>
       </Card>
+
+      <ProfileHomeOverview />
 
       {/* Level progress */}
       <Card pad="md">

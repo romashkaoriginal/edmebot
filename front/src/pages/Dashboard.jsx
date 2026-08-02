@@ -3,7 +3,6 @@ import { Link } from "../router";
 import {
   ArrowRight,
   BookOpen,
-  CalendarDays,
   ChevronRight,
   Flame,
   Coins,
@@ -19,7 +18,7 @@ import { studentApi } from "../api/student";
 import { formatDue, plural } from "../utils/format";
 import "./Dashboard.css";
 
-export default function Dashboard() {
+export function ProfileHomeOverview() {
   const { profile, topics } = useApp();
   const [homeworkState, setHomeworkState] = useState({ status: "loading", items: [], counts: { active: 0, overdue: 0 } });
 
@@ -54,31 +53,9 @@ export default function Dashboard() {
 
   return (
     <div className="dash">
-      {profile.accessKind === "trial" && profile.accessUntil && (
-        <div className="dash__trial" role="status">
-          <CalendarDays size={19} aria-hidden="true" />
-          <span>
-            <b>Пробный доступ активен</b>
-            До {new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" }).format(new Date(profile.accessUntil))}. Автопродления нет.
-          </span>
-        </div>
-      )}
-      <header className="dash__heading">
-        <div>
-          <p className="dash__welcome">{firstName ? `Привет, ${firstName}` : "Привет"}</p>
-          <h1>Что сделаем сегодня?</h1>
-          <p className="dash__context">
-            {[profile.subject, profile.grade ? `${profile.grade} класс` : null].filter(Boolean).join(" · ")}
-          </p>
-        </div>
-        <Link className="dash__profile-link" to="/app/profile">
-          Открыть прогресс <ChevronRight size={18} aria-hidden="true" />
-        </Link>
-      </header>
-
       <section className="dash__today" aria-labelledby="today-title">
         <div className="dash__today-copy">
-          <p className="dash__today-label">План на сегодня</p>
+          <p className="dash__today-label">{firstName ? `${firstName}, план на сегодня` : "План на сегодня"}</p>
           <h2 id="today-title">
             {needsDiagnostic ? "Собери персональную карту знаний" : "Продолжи с тем, что требует внимания"}
           </h2>
@@ -127,7 +104,6 @@ export default function Dashboard() {
               <p className="dash__panel-kicker">Учебный фокус</p>
               <h2>Темы для повторения</h2>
             </div>
-            <Link to="/app/profile" aria-label="Открыть всю карту знаний"><ChevronRight size={20} /></Link>
           </div>
           {topics.length === 0 ? (
             <div className="dash__empty-block">

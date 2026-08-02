@@ -1,6 +1,6 @@
 import { NavLink, Navigate, useLocation } from "../../router";
 import { useCallback, useEffect, useState } from "react";
-import { House, Target, Lightbulb, PawPrint, BookOpen, User, RefreshCw, Coins } from "lucide-react";
+import { Target, Lightbulb, PawPrint, BookOpen, User, RefreshCw, Coins } from "lucide-react";
 import Button from "../ui/Button";
 import Logo from "../brand/Logo";
 import { StreakPill } from "../ui/StatPill";
@@ -10,11 +10,10 @@ import { dateKey } from "../../utils/date";
 import "./AppLayout.css";
 
 const FULL_NAV = [
-  { to: "/app", label: "Главная", icon: House, end: true },
+  { to: "/app/profile", label: "Профиль", icon: User },
   { to: "/app/practice", label: "Практика", icon: Lightbulb },
   { to: "/app/homework", label: "Домашка", icon: BookOpen },
   { to: "/app/pet", label: "Питомец", icon: PawPrint },
-  { to: "/app/profile", label: "Профиль", icon: User },
 ];
 // A self-serve student who hasn't been assigned a subject by staff yet
 // only gets the diagnostic — everything else 403s server-side anyway.
