@@ -13,7 +13,10 @@ import useModalFocus from "../hooks/useModalFocus";
 import "./RunMode.css";
 import "./PracticeRun.css";
 
-const SESSION_TTL = 6 * 60 * 60 * 1000;
+// Server-side question instances live 6 hours. Expire the cached session well
+// before that, so a resumed run never sends an instance id the server has
+// already swept and rejects with practice_instance_invalid.
+const SESSION_TTL = 5 * 60 * 60 * 1000;
 
 export default function PracticeRun() {
   const navigate = useNavigate();

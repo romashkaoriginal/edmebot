@@ -73,8 +73,14 @@ router.get("/series", async (req, res, next) => {
       : [];
     if (tasks.length) {
       await db.transaction(async (client) => {
+        // Only sweep instances that are already answered or long past expiry.
+        // An endless run keeps answering questions from earlier batches, so
+        // deleting every expired row here would reject answers the student is
+        // still legitimately working through.
         await client.query(
-          "DELETE FROM practice_question_instances WHERE student_id = $1 AND expires_at <= now()",
+          `DELETE FROM practice_question_instances
+            WHERE student_id = $1
+              AND expires_at <= now() - interval '24 hours'`,
           [req.student.id]
         );
         for (const task of tasks) {

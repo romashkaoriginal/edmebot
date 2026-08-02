@@ -1,5 +1,5 @@
 import { NavLink, Navigate, useLocation } from "../../router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Target, Lightbulb, PawPrint, BookOpen, User, RefreshCw, Coins } from "lucide-react";
 import Button from "../ui/Button";
 import Logo from "../brand/Logo";
@@ -25,6 +25,7 @@ export default function AppLayout({ children }) {
   const [loadError, setLoadError] = useState("");
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [statInfo, setStatInfo] = useState(null);
+  const prefetchedRef = useRef(false);
   // Practice/diagnostic run in a focused mode — hide chrome distractions there.
   const focus = pathname.startsWith("/app/practice/run") || pathname.startsWith("/app/diagnostic/run") || pathname.startsWith("/app/homework/run");
   const todayISO = dateKey();
@@ -50,9 +51,15 @@ export default function AppLayout({ children }) {
   }, [loadProfile, loadAttempt]);
 
   useEffect(() => {
-    if (!hydrated || !isActive || pathname !== "/app/profile") return undefined;
+    // Warm every section once the profile is in, whichever page the student
+    // landed on. Gating this on /app/profile meant a direct link to any other
+    // page prefetched nothing, so each tab still loaded from scratch on its
+    // first visit.
+    if (!hydrated || !isActive || prefetchedRef.current) return undefined;
+    prefetchedRef.current = true;
     const preload = () => {
       void Promise.allSettled([
+        import("../../pages/Profile"),
         import("../../pages/Practice"),
         import("../../pages/PracticeRun"),
         import("../../pages/Homework"),
@@ -69,7 +76,7 @@ export default function AppLayout({ children }) {
     }
     const id = window.setTimeout(preload, 120);
     return () => window.clearTimeout(id);
-  }, [hydrated, isActive, pathname, profile]);
+  }, [hydrated, isActive, profile]);
 
   if (loadError && !hydrated) {
     return (

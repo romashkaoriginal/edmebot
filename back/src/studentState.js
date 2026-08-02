@@ -3,6 +3,7 @@ const seed = require("./data/seed");
 
 const XP_BY_DIFFICULTY = { easy: 10, medium: 15, hard: 25 };
 const PET_DECAY_INTERVAL_MS = 6 * 60 * 60 * 1000;
+const PRACTICE_ANSWER_GRACE_MS = 12 * 60 * 60 * 1000;
 const PET_DECAY_MAX_STEPS = 16;
 const APP_TIME_ZONE = process.env.APP_TIME_ZONE || "Europe/Moscow";
 
@@ -233,7 +234,13 @@ async function gradePractice(student, task, selected, instanceId) {
         },
       };
     }
-    if (new Date(instance.expires_at) <= new Date()) return { error: "practice_instance_expired" };
+    // An instance is single-use and grading is idempotent, so a late answer is
+    // harmless. Allow a grace period past expiry: a student who leaves a long
+    // endless run open should not lose a correct answer to a clock boundary.
+    const expiredAt = new Date(instance.expires_at).getTime();
+    if (Date.now() > expiredAt + PRACTICE_ANSWER_GRACE_MS) {
+      return { error: "practice_instance_expired" };
+    }
     const hintsUsed = instance.hints_revealed;
     const correct = selected === task.correct;
 

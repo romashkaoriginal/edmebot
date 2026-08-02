@@ -89,16 +89,34 @@ export const studentApi = {
     diagnosticRequest = null;
     return result;
   },
-  pet: () => studentFetch("/api/pet"),
-  buyPetItem: (itemId) => studentFetch("/api/pet/buy", { method: "POST", body: JSON.stringify({ itemId }) }),
-  feedPet: (itemId) => studentFetch("/api/pet/feed", { method: "POST", body: JSON.stringify({ itemId }) }),
-  renamePet: (name) => studentFetch("/api/pet/rename", { method: "POST", body: JSON.stringify({ name }) }),
-  updatePet: (payload) => studentFetch("/api/pet", { method: "PATCH", body: JSON.stringify(payload) }),
+  pet: ({ fresh = false } = {}) => cachedStudentFetch("pet", "/api/pet", { fresh }),
+  peekPet: () => resourceCache.get("pet")?.data ?? null,
+  buyPetItem: async (itemId) => {
+    const result = await studentFetch("/api/pet/buy", { method: "POST", body: JSON.stringify({ itemId }) });
+    invalidateResource("pet");
+    return result;
+  },
+  feedPet: async (itemId) => {
+    const result = await studentFetch("/api/pet/feed", { method: "POST", body: JSON.stringify({ itemId }) });
+    invalidateResource("pet");
+    return result;
+  },
+  renamePet: async (name) => {
+    const result = await studentFetch("/api/pet/rename", { method: "POST", body: JSON.stringify({ name }) });
+    invalidateResource("pet");
+    return result;
+  },
+  updatePet: async (payload) => {
+    const result = await studentFetch("/api/pet", { method: "PATCH", body: JSON.stringify(payload) });
+    invalidateResource("pet");
+    return result;
+  },
   onboard: (body) => studentFetch("/api/profile/onboard", { method: "POST", body: JSON.stringify(body) }),
   startTrial: () => studentFetch("/api/profile/trial/start", { method: "POST" }),
   prefetchStudentSections: (subjects = []) => Promise.allSettled([
     cachedStudentFetch("analytics", "/api/profile/analytics"),
     cachedStudentFetch("homework:all", "/api/homework"),
+    cachedStudentFetch("pet", "/api/pet"),
     ...subjects.map((subject) =>
       cachedStudentFetch(`homework:${subject}`, `/api/homework?${new URLSearchParams({ subject })}`)
     ),

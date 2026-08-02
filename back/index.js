@@ -29,7 +29,10 @@ app.use((req, res, next) => {
   next();
 });
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'same-site' },
+  // The Mini App is framed by web.telegram.org, so browser requests to this
+  // API are cross-site. 'same-site' would block them; the CORS allowlist below
+  // is what actually restricts who may call us.
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 app.use(cors({
   origin(origin, callback) {

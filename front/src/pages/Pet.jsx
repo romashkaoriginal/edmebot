@@ -19,7 +19,9 @@ const PET_NAMES = ["Искра", "Плюша", "Финик", "Луна", "Тош
 
 export default function Pet() {
   const { profile, ownedItems, hydrate, setPetSpecies, setPetName } = useApp();
-  const [shopItems, setShopItems] = useState([]);
+  // Render straight from the prefetched payload when it is already warm, so
+  // opening the tab does not flash an empty shop while the request repeats.
+  const [shopItems, setShopItems] = useState(() => studentApi.peekPet()?.shop ?? []);
   const [cat, setCat] = useState("look");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [pendingSpecies, setPendingSpecies] = useState(null);
