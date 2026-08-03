@@ -36,10 +36,16 @@ export default function Pet() {
   const [savingName, setSavingName] = useState(false);
   const [coinsInfoOpen, setCoinsInfoOpen] = useState(false);
   const timers = useRef([]);
+  // Read once on mount: adopting the pet completes onboarding, and this must
+  // not change under the loader effect and make it refetch.
+  const onboardingIncompleteRef = useRef((profile.onboardingStep ?? "complete") !== "complete");
 
   useEffect(() => {
     let cancelled = false;
-    studentApi.pet()
+    // The prefetched payload is a snapshot of the profile from whenever the
+    // student last warmed this section, so re-request it during onboarding
+    // rather than hydrating stale coins, pet and step data over the live ones.
+    studentApi.pet({ fresh: onboardingIncompleteRef.current })
       .then(({ shop = [], ...petProfile }) => {
         if (cancelled) return;
         setShopItems(shop);

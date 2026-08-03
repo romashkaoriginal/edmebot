@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useMemo } from "react";
+import { laterOnboardingStep } from "../utils/onboarding";
 
 const AppContext = createContext(null);
 
@@ -49,7 +50,18 @@ export function AppProvider({ children }) {
 
   const hydrate = useCallback((data) => {
     if (data.profile) {
-      setProfile((current) => ({ ...current, ...data.profile, pet: { ...current.pet, ...data.profile.pet } }));
+      setProfile((current) => ({
+        ...current,
+        ...data.profile,
+        // Several sections return the whole profile, and some of those
+        // responses are cached (GET /api/pet is prefetched before the
+        // diagnostic finishes). Replaying one of them must not walk the
+        // student back to a step they already completed: that bounced them
+        // from the pet choice to the subject picker, where /profile/onboard
+        // then 409'd because the server knew they were past it.
+        onboardingStep: laterOnboardingStep(current.onboardingStep, data.profile.onboardingStep),
+        pet: { ...current.pet, ...data.profile.pet },
+      }));
     }
     if (data.topics) setTopics(data.topics);
     setHydrated(true);

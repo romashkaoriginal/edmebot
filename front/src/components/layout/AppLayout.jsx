@@ -55,7 +55,10 @@ export default function AppLayout({ children }) {
     // landed on. Gating this on /app/profile meant a direct link to any other
     // page prefetched nothing, so each tab still loaded from scratch on its
     // first visit.
-    if (!hydrated || !isActive || prefetchedRef.current) return undefined;
+    // Not while onboarding: those sections are unreachable until it finishes,
+    // and caching a mid-onboarding profile only gives the app a stale snapshot
+    // to replay afterwards.
+    if (!hydrated || !isActive || onboardingIncomplete || prefetchedRef.current) return undefined;
     prefetchedRef.current = true;
     const preload = () => {
       void Promise.allSettled([
@@ -76,7 +79,7 @@ export default function AppLayout({ children }) {
     }
     const id = window.setTimeout(preload, 120);
     return () => window.clearTimeout(id);
-  }, [hydrated, isActive, profile]);
+  }, [hydrated, isActive, onboardingIncomplete, profile]);
 
   if (loadError && !hydrated) {
     return (

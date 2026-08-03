@@ -491,17 +491,41 @@ async function init() {
   }
   await transaction(async (client) => {
     await client.query("SELECT pg_advisory_xact_lock(402021)");
+    // The version table is named for this app rather than the generic
+    // "schema_migrations": databases are routinely shared with other tools that
+    // already own that name with a different shape (filename/checksum columns).
+    // CREATE TABLE IF NOT EXISTS silently accepts the foreign table, and the
+    // version SELECT then fails on the missing column, so every migration is
+    // skipped and startup dies with "column version does not exist".
     await client.query(
-      `CREATE TABLE IF NOT EXISTS schema_migrations (
+      `CREATE TABLE IF NOT EXISTS edme_schema_migrations (
          version INTEGER PRIMARY KEY,
          applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
        )`
     );
-    const { rows } = await client.query("SELECT COALESCE(MAX(version), 0)::int AS version FROM schema_migrations");
+    // Carry over the version recorded under the old name, but only when that
+    // table is really ours. The column check runs first: naming it in a query
+    // against a foreign table fails at plan time, which would abort this
+    // transaction even if the statement were guarded by a WHERE clause.
+    const { rows: legacy } = await client.query(
+      `SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'schema_migrations'
+          AND column_name = 'version'`
+    );
+    if (legacy.length) {
+      await client.query(
+        `INSERT INTO edme_schema_migrations (version)
+         SELECT version FROM schema_migrations ON CONFLICT DO NOTHING`
+      );
+    }
+    const { rows } = await client.query(
+      "SELECT COALESCE(MAX(version), 0)::int AS version FROM edme_schema_migrations"
+    );
     if (rows[0].version < SCHEMA_VERSION) {
       await client.query(SCHEMA);
       await client.query(
-        "INSERT INTO schema_migrations (version) VALUES ($1) ON CONFLICT DO NOTHING",
+        "INSERT INTO edme_schema_migrations (version) VALUES ($1) ON CONFLICT DO NOTHING",
         [SCHEMA_VERSION]
       );
     }
