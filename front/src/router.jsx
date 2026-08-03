@@ -10,11 +10,26 @@ function currentLocation() {
   };
 }
 
+// Reuse the previous object when the URL has not actually changed. setLocation
+// otherwise stores a fresh object on every call, which is a new context value,
+// which re-renders every consumer. A component that renders <Navigate> from its
+// body then remounts it, the remount re-runs its effect, and that navigate()
+// starts the cycle again — an endless render/replaceState loop that hangs the
+// tab ("Throttling navigation to prevent the browser from hanging").
+function nextLocation(previous) {
+  const next = currentLocation();
+  return previous.pathname === next.pathname
+    && previous.search === next.search
+    && previous.hash === next.hash
+    ? previous
+    : next;
+}
+
 export function BrowserRouter({ children }) {
   const [location, setLocation] = useState(currentLocation);
 
   useEffect(() => {
-    const onPopState = () => setLocation(currentLocation());
+    const onPopState = () => setLocation(nextLocation);
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
@@ -28,7 +43,7 @@ export function BrowserRouter({ children }) {
     const target = new URL(String(to), window.location.href);
     const next = `${target.pathname}${target.search}${target.hash}`;
     window.history[replace ? "replaceState" : "pushState"]({}, "", next);
-    setLocation(currentLocation());
+    setLocation(nextLocation);
     window.scrollTo({ top: 0, behavior: "auto" });
   }, []);
 
