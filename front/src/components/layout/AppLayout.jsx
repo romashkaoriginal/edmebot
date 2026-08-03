@@ -113,7 +113,11 @@ export default function AppLayout({ children }) {
   if (onboardingStep === "trial" && !pathname.startsWith("/app/trial")) {
     return <Navigate to="/app/trial" replace />;
   }
-  if (hydrated && !isActive && !focus && !pathname.startsWith("/app/trial")) {
+  // Only once onboarding is done. A self-serve student is "pending" for the
+  // whole of it, so running this while a step is still outstanding bounced
+  // them to /app/trial, where the step check above sent them straight back —
+  // an endless /app/onboarding ⇄ /app/trial redirect that never painted.
+  if (!onboardingIncomplete && !isActive && !focus && !pathname.startsWith("/app/trial")) {
     return <Navigate to="/app/trial" replace />;
   }
 
