@@ -393,8 +393,15 @@ export default function Students() {
                       <div className="arow__title">
                         {s.name}
                         {s.status === "pending" && (
-                          <span className="atag atag--pending" title="У ученика сейчас нет доступа к практике и домашним заданиям">
-                            {s.trial_used ? "trial завершён" : "доступ закрыт"}
+                          <span
+                            className="atag atag--pending"
+                            title={s.trial_used
+                              ? "Пробный период закончился — ученику нужен постоянный доступ"
+                              : !s.subject
+                                ? "Ученик проходит первый вход: выбор предмета, диагностика и запуск trial. Это не блокировка."
+                                : "У ученика сейчас нет доступа к практике и домашним заданиям"}
+                          >
+                            {s.trial_used ? "trial завершён" : !s.subject ? "регистрируется" : "доступ закрыт"}
                           </span>
                         )}
                         {isDemo && <span className="atag atag--demo">демо</span>}

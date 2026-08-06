@@ -3,7 +3,7 @@ import { useNavigate } from "../router";
 import { ArrowLeft, ArrowRight, Calculator, Check, PenLine } from "lucide-react";
 import Button from "../components/ui/Button";
 import Logo from "../components/brand/Logo";
-import { studentApi } from "../api/student";
+import { isAuthError, studentApi } from "../api/student";
 import { useApp } from "../store/AppStore";
 import "./StudentOnboarding.css";
 
@@ -47,7 +47,9 @@ export default function StudentOnboarding() {
           return;
         } catch { /* fall through to the generic message */ }
       }
-      setError("Не удалось сохранить выбор. Проверь соединение и попробуй ещё раз.");
+      setError(isAuthError(err)
+        ? "Сессия устарела. Закрой приложение и открой его снова через кнопку в боте — выбор нужно будет повторить."
+        : "Не удалось сохранить выбор. Проверь соединение и попробуй ещё раз.");
     } finally {
       setSaving(false);
     }

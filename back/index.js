@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const { rateLimit } = require('express-rate-limit');
 const db = require('./src/db');
 const bot = require('./src/bot');
+const keepAlive = require('./src/keepAlive');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -110,6 +111,7 @@ db.init()
       // BACKEND_URL for other hosts.
       const backendUrl = process.env.RENDER_EXTERNAL_URL || process.env.BACKEND_URL;
       if (backendUrl) bot.setWebhook(backendUrl).catch((e) => console.error('setWebhook failed:', e.message));
+      keepAlive.start();
     });
   })
   .catch((err) => {

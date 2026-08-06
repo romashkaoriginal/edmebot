@@ -1,6 +1,15 @@
 import { initData } from "./admin";
 import { apiUrl, fetchWithTimeout } from "./base";
 
+// Telegram mints initData once when the Mini App opens; when the backend
+// rejects it (expired or missing), no amount of retrying the same request
+// can succeed — only fully reopening the app issues fresh credentials.
+const AUTH_ERRORS = new Set(["telegram_auth_required", "telegram_auth_invalid", "unauthorized"]);
+
+export function isAuthError(error) {
+  return AUTH_ERRORS.has(error?.message);
+}
+
 export async function studentFetch(path, options = {}) {
   const headers = new Headers(options.headers);
   headers.set("x-telegram-init-data", initData());

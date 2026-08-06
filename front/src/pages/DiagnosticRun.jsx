@@ -6,7 +6,7 @@ import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import OptionList from "../components/shared/OptionList";
 import KnowledgeMap from "../components/shared/KnowledgeMap";
-import { studentApi } from "../api/student";
+import { isAuthError, studentApi } from "../api/student";
 import { subjectLabel } from "../utils/subjects";
 import { useApp } from "../store/AppStore";
 import { answerHaptic } from "../utils/haptics";
@@ -132,8 +132,13 @@ export default function DiagnosticRun() {
       setResultTopics(result.knowledgeMap ?? []);
       hydrate({ profile: result.profile, topics: result.knowledgeMap });
       setDone(true);
-    } catch {
-      setSubmitError("Результат не сохранился. Ответы не потеряны — попробуй ещё раз.");
+    } catch (error) {
+      // A stale Telegram session cannot be fixed by retrying — only reopening
+      // the Mini App issues fresh initData. The answers survive in
+      // localStorage, so nothing is lost by closing.
+      setSubmitError(isAuthError(error)
+        ? "Сессия устарела. Закрой приложение и открой его снова через кнопку в боте — ответы сохранены и не пропадут."
+        : "Результат не сохранился. Ответы не потеряны — попробуй ещё раз.");
     } finally {
       setSubmitting(false);
     }

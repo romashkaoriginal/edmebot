@@ -5,7 +5,7 @@ import Button from "../ui/Button";
 import Logo from "../brand/Logo";
 import { StreakPill } from "../ui/StatPill";
 import { useApp } from "../../store/AppStore";
-import { studentApi } from "../../api/student";
+import { isAuthError, studentApi } from "../../api/student";
 import { dateKey } from "../../utils/date";
 import "./AppLayout.css";
 
@@ -39,16 +39,31 @@ export default function AppLayout({ children }) {
   const xpNeeded = Math.max(1, profile.xpForNext - profile.xpFromLevel);
   const xpProgress = Math.min(100, Math.round((xpInLevel / xpNeeded) * 100));
 
-  const loadProfile = useCallback(() => {
-    setLoadError("");
-    studentApi.profile()
-      .then(hydrate)
-      .catch(() => setLoadError("Не удалось загрузить профиль. Проверь соединение и попробуй ещё раз."));
-  }, [hydrate]);
-
+  // The backend sleeps on the free tier and takes ~50s to cold-start, so the
+  // first request of the day often fails or hangs. Retry quietly with backoff
+  // instead of dropping a brand-new student onto an error screen: this exact
+  // moment is when their account has just been provisioned, and giving up
+  // here is how "доступ закрыт" students with no subject appear in the admin.
   useEffect(() => {
-    loadProfile();
-  }, [loadProfile, loadAttempt]);
+    let cancelled = false;
+    let timer = null;
+    let attempt = 0;
+    setLoadError("");
+    const load = () => {
+      studentApi.profile()
+        .then((data) => { if (!cancelled) hydrate(data); })
+        .catch((error) => {
+          if (cancelled) return;
+          // Retrying with the same stale initData can never succeed.
+          if (isAuthError(error)) return setLoadError("auth");
+          attempt += 1;
+          if (attempt >= 5) return setLoadError("network");
+          timer = window.setTimeout(load, Math.min(8000, 1000 * 2 ** attempt));
+        });
+    };
+    load();
+    return () => { cancelled = true; window.clearTimeout(timer); };
+  }, [hydrate, loadAttempt]);
 
   useEffect(() => {
     // Warm every section once the profile is in, whichever page the student
@@ -85,18 +100,29 @@ export default function AppLayout({ children }) {
     return (
       <main className="app__load-state" role="alert">
         <div className="app__load-state-card">
-          <h1>Профиль не загрузился</h1>
-          <p>{loadError}</p>
-          <Button icon={RefreshCw} onClick={() => setLoadAttempt((value) => value + 1)}>
-            Повторить
-          </Button>
+          {loadError === "auth" ? (
+            <>
+              <h1>Сессия устарела</h1>
+              <p>Закрой мини-приложение и открой его заново через кнопку в боте — всё продолжится с того же места.</p>
+            </>
+          ) : (
+            <>
+              <h1>Профиль не загрузился</h1>
+              <p>Не удалось загрузить профиль. Проверь соединение и попробуй ещё раз.</p>
+              <Button icon={RefreshCw} onClick={() => setLoadAttempt((value) => value + 1)}>
+                Повторить
+              </Button>
+            </>
+          )}
         </div>
       </main>
     );
   }
 
   if (!hydrated) {
-    return <div className="app__loading">Загрузка приложения…</div>;
+    // Mention the possible wait: on a cold backend the spinner can sit for up
+    // to a minute, and a silent one reads as "broken" — students close the app.
+    return <div className="app__loading">Загрузка приложения… Первый запуск может занять до минуты.</div>;
   }
 
   // A pending student who lands anywhere but the diagnostic (typed URL,

@@ -3,7 +3,7 @@ import { ArrowRight, CalendarDays, CheckCircle2, ShieldCheck } from "lucide-reac
 import { useNavigate } from "../router";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
-import { studentApi } from "../api/student";
+import { isAuthError, studentApi } from "../api/student";
 import { useApp } from "../store/AppStore";
 import "./TrialStart.css";
 
@@ -24,7 +24,9 @@ export default function TrialStart() {
     } catch (requestError) {
       setError(requestError?.message === "trial_already_used"
         ? "Пробный период уже использован. Попроси репетитора открыть постоянный доступ."
-        : "Не удалось запустить пробный период. Проверь соединение и попробуй ещё раз.");
+        : isAuthError(requestError)
+          ? "Сессия устарела. Закрой приложение и открой его снова через кнопку в боте."
+          : "Не удалось запустить пробный период. Проверь соединение и попробуй ещё раз.");
     } finally {
       setLoading(false);
     }

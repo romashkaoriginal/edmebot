@@ -13,7 +13,11 @@ function verifyTelegramInitData(initData) {
     const authDate = params.get("auth_date");
     if (!authDate || !/^\d{10}$/.test(authDate)) return null;
     const ageSec = Math.floor(Date.now() / 1000) - Number(authDate);
-    const maxAge = Number(process.env.TELEGRAM_INIT_MAX_AGE_SEC || "3600");
+    // 24h, not 1h: initData is minted once when the Mini App opens and never
+    // refreshes while it stays open. A student who spends over an hour on the
+    // diagnostic would otherwise get 401 on submit with no way to recover
+    // except fully reopening the app — and most just give up instead.
+    const maxAge = Number(process.env.TELEGRAM_INIT_MAX_AGE_SEC || "86400");
     if (!Number.isFinite(ageSec) || !Number.isFinite(maxAge) || ageSec < 0 || ageSec > maxAge) return null;
 
     params.delete("hash");
