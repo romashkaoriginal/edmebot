@@ -60,7 +60,7 @@
 .pet-page__preview-actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--sp-2); }
 .pet-page__preview-owned { display: inline-flex; min-height: 44px; align-items: center; gap: 5px; color: var(--success); font-size: var(--text-sm); font-weight: 850; }
 
-.pet-page__actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); padding: var(--sp-3) var(--sp-4) var(--sp-4); background: var(--surface); }
+.pet-page__actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sp-2); padding: var(--sp-3) var(--sp-4) var(--sp-4); background: var(--surface); }
 .pet-action { display: inline-flex; min-height: 48px; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); color: var(--ink); font-weight: 800; transition: transform var(--dur-press) var(--ease-out), background-color var(--dur-pop) var(--ease-out); }
 .pet-action:active { transform: scale(0.97); }
 .pet-action:disabled { opacity: 0.62; cursor: progress; transform: none; }

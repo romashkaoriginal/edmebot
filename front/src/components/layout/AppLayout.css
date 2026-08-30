@@ -81,6 +81,10 @@
   gap: var(--sp-2);
   padding: var(--sp-2);
 }
+.app__subjects {
+  display: grid;
+  gap: var(--sp-2);
+}
 .app__subject {
   font-size: var(--text-sm);
   font-weight: 700;

@@ -84,6 +84,10 @@ export const studentApi = {
   answer: async (payload) => {
     const result = await studentFetch("/api/practice/answer", { method: "POST", body: JSON.stringify(payload) });
     invalidateResource("analytics");
+    // The prefetched pet payload includes an entire profile snapshot. Once
+    // practice changes XP, coins or the streak, that snapshot is stale and
+    // must never be allowed to overwrite the live global state.
+    invalidateResource("pet");
     return result;
   },
   revealPracticeHint: (instanceId) => studentFetch("/api/practice/hint", {

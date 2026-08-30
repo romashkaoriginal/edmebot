@@ -1,5 +1,5 @@
 import { NavLink, Navigate, useLocation } from "../../router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Target, Lightbulb, PawPrint, BookOpen, User, RefreshCw, Coins } from "lucide-react";
 import Button from "../ui/Button";
 import Logo from "../brand/Logo";
@@ -7,6 +7,7 @@ import { StreakPill } from "../ui/StatPill";
 import { useApp } from "../../store/AppStore";
 import { isAuthError, studentApi } from "../../api/student";
 import { dateKey } from "../../utils/date";
+import { enrolledSubjects, subjectLabel } from "../../utils/subjects";
 import "./AppLayout.css";
 
 const FULL_NAV = [
@@ -38,6 +39,7 @@ export default function AppLayout({ children }) {
   const xpInLevel = Math.max(0, profile.xp - profile.xpFromLevel);
   const xpNeeded = Math.max(1, profile.xpForNext - profile.xpFromLevel);
   const xpProgress = Math.min(100, Math.round((xpInLevel / xpNeeded) * 100));
+  const subjectNames = enrolledSubjects(profile).map(({ subject }) => subjectLabel(subject));
 
   // The backend sleeps on the free tier and takes ~50s to cold-start, so the
   // first request of the day often fails or hangs. Retry quietly with backoff
@@ -162,7 +164,9 @@ export default function AppLayout({ children }) {
           ))}
         </nav>
         <div className="app__sidebar-foot">
-          <div className="app__subject">{profile.subject}</div>
+          <div className="app__subjects" aria-label={`Предметы: ${subjectNames.join(", ")}`}>
+            {subjectNames.map((subject) => <span className="app__subject" key={subject}>{subject}</span>)}
+          </div>
         </div>
       </aside>}
 

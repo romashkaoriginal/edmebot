@@ -11,6 +11,7 @@ import Button from "../components/ui/Button";
 import { useApp } from "../store/AppStore";
 import { studentApi } from "../api/student";
 import { plural } from "../utils/format";
+import { enrolledSubjects, subjectLabel } from "../utils/subjects";
 import { ProfileHomeOverview } from "./Dashboard";
 import "./Profile.css";
 
@@ -31,6 +32,11 @@ export default function Profile() {
   const [knowledgeOpen, setKnowledgeOpen] = useState(false);
   const [achievementsOpen, setAchievementsOpen] = useState(false);
   const visibleTopics = [...topics].sort((a, b) => a.mastery - b.mastery).slice(0, 10);
+  const subjects = enrolledSubjects(profile);
+  const subjectGrades = [...new Set(subjects.map(({ grade }) => grade).filter(Boolean))];
+  const subjectSummary = subjectGrades.length === 1
+    ? `${subjectGrades[0]} класс · ${subjects.map(({ subject }) => subjectLabel(subject)).join(" / ")}`
+    : subjects.map(({ subject, grade }) => `${subjectLabel(subject)}${grade ? ` · ${grade} класс` : ""}`).join(" / ");
 
   // All analytics (solved, accuracy, weekly activity, achievements) come from
   // the backend and reflect real activity — nothing is fabricated.
@@ -66,13 +72,7 @@ export default function Profile() {
         <div className="prof__hero-top">
           <div className="prof__hero-info">
             <h1>{profile.name || "Ученик"}</h1>
-            {(profile.grade || profile.subject) && (
-              <p className="prof__hero-sub">
-                {[profile.grade ? `${profile.grade} класс` : null, profile.subject]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </p>
-            )}
+            {subjectSummary && <p className="prof__hero-sub">{subjectSummary}</p>}
           </div>
           <div className="prof__level">
             <div className="prof__level-badge font-display">{profile.level}</div>

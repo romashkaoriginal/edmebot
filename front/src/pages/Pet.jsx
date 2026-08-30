@@ -36,16 +36,11 @@ export default function Pet() {
   const [savingName, setSavingName] = useState(false);
   const [coinsInfoOpen, setCoinsInfoOpen] = useState(false);
   const timers = useRef([]);
-  // Read once on mount: adopting the pet completes onboarding, and this must
-  // not change under the loader effect and make it refetch.
-  const onboardingIncompleteRef = useRef((profile.onboardingStep ?? "complete") !== "complete");
-
   useEffect(() => {
     let cancelled = false;
-    // The prefetched payload is a snapshot of the profile from whenever the
-    // student last warmed this section, so re-request it during onboarding
-    // rather than hydrating stale coins, pet and step data over the live ones.
-    studentApi.pet({ fresh: onboardingIncompleteRef.current })
+    // Keep the prefetched shop for an instant first paint, but always refresh
+    // the profile snapshot before hydrating global XP, coins and streak.
+    studentApi.pet({ fresh: true })
       .then(({ shop = [], ...petProfile }) => {
         if (cancelled) return;
         setShopItems(shop);
@@ -356,7 +351,6 @@ export default function Pet() {
 
         <div className="pet-page__actions" aria-label="Забота о питомце">
           <button className="pet-action pet-action--primary" onClick={() => feed(ownedFood)} disabled={busyId?.startsWith("feed:")}><Cookie size={19} strokeWidth={2.5} /><span>{ownedFood ? "Покормить" : "Выбрать корм"}</span></button>
-          <button className="pet-action" onClick={cheer}><Heart size={19} strokeWidth={2.5} /><span>Погладить</span></button>
           <button className="pet-action" onClick={openCatalog}><Store size={19} strokeWidth={2.5} /><span>Магазин</span></button>
         </div>
       </Card>

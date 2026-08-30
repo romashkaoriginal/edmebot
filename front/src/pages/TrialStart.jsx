@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowRight, CalendarDays, CheckCircle2, ShieldCheck } from "lucide-react";
+import { ArrowRight, CalendarDays, ShieldCheck } from "lucide-react";
 import { useNavigate } from "../router";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
@@ -34,6 +34,14 @@ export default function TrialStart() {
 
   const trialExpired = profile.trialUsed && profile.status !== "active";
   const activeTrial = profile.status === "active" && profile.accessKind === "trial";
+  const plannedAccessUntil = new Date();
+  plannedAccessUntil.setDate(plannedAccessUntil.getDate() + 30);
+  const accessUntil = activeTrial && profile.accessUntil ? new Date(profile.accessUntil) : plannedAccessUntil;
+  const accessUntilLabel = new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(accessUntil);
 
   return (
     <section className="trial" aria-labelledby="trial-title">
@@ -42,22 +50,21 @@ export default function TrialStart() {
           {trialExpired ? <ShieldCheck size={30} /> : <CalendarDays size={30} />}
         </span>
         <h1 id="trial-title">
-          {trialExpired ? "Пробный период завершён" : activeTrial ? "Пробный период активен" : "30 дней пробного доступа"}
+          {trialExpired ? "Пробный период завершён" : activeTrial ? "Пробный доступ активен" : "30 дней бесплатно"}
         </h1>
         <p className="trial__lead">
           {trialExpired
-            ? "Повторно запустить trial нельзя. Репетитор может открыть постоянный доступ."
+            ? "Чтобы продолжить занятия, попроси репетитора открыть доступ."
             : activeTrial
-              ? "Можно заниматься до даты, указанной в верхней панели. Автоматического продления нет."
-              : "После запуска откроются практика, домашние задания, питомец и статистика."}
+              ? "Продолжай заниматься: практика, домашние задания, питомец и статистика уже доступны."
+              : "Вам предоставляется бесплатный пробный доступ на 30 дней. Практика, домашние задания, питомец и статистика откроются сразу после запуска."}
         </p>
 
-        {!trialExpired && !activeTrial && (
-          <ul className="trial__facts">
-            <li><CheckCircle2 size={19} aria-hidden="true" /> Запускается один раз</li>
-            <li><CheckCircle2 size={19} aria-hidden="true" /> Действует ровно 30 дней</li>
-            <li><CheckCircle2 size={19} aria-hidden="true" /> Не продлевается и не списывает деньги</li>
-          </ul>
+        {!trialExpired && (
+          <div className="trial__until">
+            <span>{activeTrial ? "Доступ открыт до" : "Если начать сегодня, доступ будет открыт до"}</span>
+            <strong>{accessUntilLabel}</strong>
+          </div>
         )}
 
         {error && <p className="trial__error" role="alert">{error}</p>}

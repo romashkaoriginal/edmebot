@@ -28,25 +28,24 @@
   color: var(--muted);
 }
 
-.trial__facts {
+.trial__until {
   display: grid;
-  gap: var(--sp-3);
+  gap: 2px;
   padding: var(--sp-4);
-  text-align: left;
-  color: var(--ink);
-  background: var(--surface-2);
+  color: var(--primary-strong);
+  background: var(--primary-soft);
   border-radius: var(--r-md);
 }
 
-.trial__facts li {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
+.trial__until span {
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: 650;
 }
 
-.trial__facts svg {
-  flex: 0 0 auto;
-  color: var(--success);
+.trial__until strong {
+  font-size: var(--text-lg);
+  font-weight: 900;
 }
 
 .trial__error {
