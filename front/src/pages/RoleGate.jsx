@@ -7,6 +7,7 @@ import Button from "../components/ui/Button";
 import { adminApi, initData, initTelegramWebApp } from "../api/admin";
 import { studentApi } from "../api/student";
 import { useApp } from "../store/AppStore";
+import { preloadAdminRoutes, preloadStudentRoutes } from "../routeModules";
 import "./RoleGate.css";
 
 const ONBOARD_GRADES = [6, 7, 8, 9, 10, 11];
@@ -48,10 +49,13 @@ export default function RoleGate() {
       // Staff wins when both calls resolve (possible with a remembered demo
       // student id), so reopening the Mini App never traps an admin in demo.
       if (staffResult.status === "fulfilled") {
-        setRole(staffResult.value.user.role);
+        const staffRole = staffResult.value.user.role;
+        void preloadAdminRoutes(staffRole);
+        setRole(staffRole);
       } else if (studentResult.status === "fulfilled") {
         setRole(false);
         hydrate(studentResult.value);
+        void preloadStudentRoutes();
         navigate("/app", { replace: true });
       } else {
         // Keep the Telegram-only entry card when both auth checks fail.

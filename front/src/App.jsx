@@ -5,23 +5,41 @@ import AdminLayout from "./components/layout/AdminLayout";
 import RequireRole from "./components/admin/RequireRole";
 import AdminIndex from "./components/admin/AdminIndex";
 import { AdminAuthProvider } from "./context/AdminAuth";
+import {
+  loadDiagnostic,
+  loadDiagnosticRun,
+  loadHomework,
+  loadHomeworkAdmin,
+  loadHomeworkRun,
+  loadPet,
+  loadPractice,
+  loadPracticeRun,
+  loadProfile,
+  loadRoleGate,
+  loadStats,
+  loadStudentOnboarding,
+  loadStudents,
+  loadTasks,
+  loadTrialStart,
+  loadUsers,
+} from "./routeModules";
 
-const RoleGate = lazy(() => import("./pages/RoleGate"));
-const StudentOnboarding = lazy(() => import("./pages/StudentOnboarding"));
-const TrialStart = lazy(() => import("./pages/TrialStart"));
-const Practice = lazy(() => import("./pages/Practice"));
-const PracticeRun = lazy(() => import("./pages/PracticeRun"));
-const Diagnostic = lazy(() => import("./pages/Diagnostic"));
-const DiagnosticRun = lazy(() => import("./pages/DiagnosticRun"));
-const Homework = lazy(() => import("./pages/Homework"));
-const HomeworkRun = lazy(() => import("./pages/HomeworkRun"));
-const Pet = lazy(() => import("./pages/Pet"));
-const Profile = lazy(() => import("./pages/Profile"));
-const Students = lazy(() => import("./pages/admin/Students"));
-const Users = lazy(() => import("./pages/admin/Users"));
-const Tasks = lazy(() => import("./pages/admin/Tasks"));
-const HomeworkAdmin = lazy(() => import("./pages/admin/HomeworkAdmin"));
-const Stats = lazy(() => import("./pages/admin/Stats"));
+const RoleGate = lazy(loadRoleGate);
+const StudentOnboarding = lazy(loadStudentOnboarding);
+const TrialStart = lazy(loadTrialStart);
+const Practice = lazy(loadPractice);
+const PracticeRun = lazy(loadPracticeRun);
+const Diagnostic = lazy(loadDiagnostic);
+const DiagnosticRun = lazy(loadDiagnosticRun);
+const Homework = lazy(loadHomework);
+const HomeworkRun = lazy(loadHomeworkRun);
+const Pet = lazy(loadPet);
+const Profile = lazy(loadProfile);
+const Students = lazy(loadStudents);
+const Users = lazy(loadUsers);
+const Tasks = lazy(loadTasks);
+const HomeworkAdmin = lazy(loadHomeworkAdmin);
+const Stats = lazy(loadStats);
 
 export default function App() {
   const { pathname } = useLocation();

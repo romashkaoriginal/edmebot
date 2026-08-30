@@ -8,6 +8,7 @@ import { useApp } from "../../store/AppStore";
 import { isAuthError, studentApi } from "../../api/student";
 import { dateKey } from "../../utils/date";
 import { enrolledSubjects, subjectLabel } from "../../utils/subjects";
+import { preloadStudentRoutes } from "../../routeModules";
 import "./AppLayout.css";
 
 const FULL_NAV = [
@@ -41,12 +42,20 @@ export default function AppLayout({ children }) {
   const xpProgress = Math.min(100, Math.round((xpInLevel / xpNeeded) * 100));
   const subjectNames = enrolledSubjects(profile).map(({ subject }) => subjectLabel(subject));
 
+  useEffect(() => {
+    // Start downloading every student route immediately. This covers direct
+    // /app links as well as entry through RoleGate and removes the global
+    // "Загружаем раздел…" pause on the first tab switch.
+    void preloadStudentRoutes();
+  }, []);
+
   // The backend sleeps on the free tier and takes ~50s to cold-start, so the
   // first request of the day often fails or hangs. Retry quietly with backoff
   // instead of dropping a brand-new student onto an error screen: this exact
   // moment is when their account has just been provisioned, and giving up
   // here is how "доступ закрыт" students with no subject appear in the admin.
   useEffect(() => {
+    if (hydrated && loadAttempt === 0) return undefined;
     let cancelled = false;
     let timer = null;
     let attempt = 0;
@@ -65,7 +74,7 @@ export default function AppLayout({ children }) {
     };
     load();
     return () => { cancelled = true; window.clearTimeout(timer); };
-  }, [hydrate, loadAttempt]);
+  }, [hydrate, hydrated, loadAttempt]);
 
   useEffect(() => {
     // Warm every section once the profile is in, whichever page the student
@@ -78,13 +87,6 @@ export default function AppLayout({ children }) {
     if (!hydrated || !isActive || onboardingIncomplete || prefetchedRef.current) return undefined;
     prefetchedRef.current = true;
     const preload = () => {
-      void Promise.allSettled([
-        import("../../pages/Profile"),
-        import("../../pages/Practice"),
-        import("../../pages/PracticeRun"),
-        import("../../pages/Homework"),
-        import("../../pages/Pet"),
-      ]);
       const enrolledSubjectNames = (profile.subjects?.length ? profile.subjects : [{ subject: profile.subject }])
         .map((item) => item?.subject)
         .filter(Boolean);

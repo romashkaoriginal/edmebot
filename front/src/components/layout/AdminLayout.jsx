@@ -1,7 +1,9 @@
 import { NavLink, Link } from "../../router";
+import { useEffect } from "react";
 import { Users, UserCog, ListChecks, BookOpen, BarChart3, LogOut, ShieldAlert } from "lucide-react";
 import Logo from "../brand/Logo";
 import { useAdminAuth } from "../../context/AdminAuth";
+import { preloadAdminRoutes } from "../../routeModules";
 import "./AdminLayout.css";
 
 const NAV = [
@@ -14,6 +16,10 @@ const NAV = [
 
 export default function AdminLayout({ children }) {
   const { loading, user, error } = useAdminAuth();
+
+  useEffect(() => {
+    if (user?.role) void preloadAdminRoutes(user.role);
+  }, [user?.role]);
 
   if (loading) {
     return <div className="admin admin--center">Загрузка…</div>;

@@ -38,6 +38,16 @@ async function req(path, { method = "GET", body } = {}) {
   return data;
 }
 
+let meRequest = null;
+
+function currentUser() {
+  meRequest ??= req("/me").catch((error) => {
+    meRequest = null;
+    throw error;
+  });
+  return meRequest;
+}
+
 // Multipart upload — no Content-Type/JSON.stringify, the browser sets the
 // multipart boundary header itself from the FormData body.
 async function reqForm(path, formData) {
@@ -68,7 +78,7 @@ async function downloadTemplate(fullPath, filename) {
 
 export const adminApi = {
   // Current user (role check)
-  me: () => req("/me"),
+  me: currentUser,
   telegramContacts: (kind) => req(`/telegram-contacts?kind=${kind}`),
 
   // Users
