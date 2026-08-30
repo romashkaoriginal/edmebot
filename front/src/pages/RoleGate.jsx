@@ -36,25 +36,28 @@ export default function RoleGate() {
     }
 
     async function resolveRole() {
-      try {
-        const { user } = await adminApi.me();
-        setRole(user.role);
-      } catch {
-        // Normal students are not present in `users`. This call also
-        // auto-provisions a first-time Telegram user server-side. Once the
-        // student profile resolves, AppLayout owns every next step: it opens
-        // the saved profile or routes an unfinished account to onboarding.
+      // Role and student profile used to load one after another. For a normal
+      // student that meant waiting for the expected /admin/me rejection before
+      // the useful profile request even started. Run both checks together so
+      // entry time is the slower request, not the sum of both requests.
+      const [staffResult, studentResult] = await Promise.allSettled([
+        adminApi.me(),
+        studentApi.profile(),
+      ]);
+
+      // Staff wins when both calls resolve (possible with a remembered demo
+      // student id), so reopening the Mini App never traps an admin in demo.
+      if (staffResult.status === "fulfilled") {
+        setRole(staffResult.value.user.role);
+      } else if (studentResult.status === "fulfilled") {
         setRole(false);
-        try {
-          const profileData = await studentApi.profile();
-          hydrate(profileData);
-          navigate("/app", { replace: true });
-        } catch {
-          // Keep the Telegram-only entry card when student auth also fails.
-        }
-      } finally {
-        setLoading(false);
+        hydrate(studentResult.value);
+        navigate("/app", { replace: true });
+      } else {
+        // Keep the Telegram-only entry card when both auth checks fail.
+        setRole(false);
       }
+      setLoading(false);
     }
     resolveRole();
   }, [hydrate, navigate]);
