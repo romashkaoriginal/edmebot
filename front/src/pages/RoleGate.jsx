@@ -6,12 +6,14 @@ import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import { adminApi, initData, initTelegramWebApp } from "../api/admin";
 import { studentApi } from "../api/student";
+import { useApp } from "../store/AppStore";
 import "./RoleGate.css";
 
 const ONBOARD_GRADES = [6, 7, 8, 9, 10, 11];
 
 export default function RoleGate() {
   const navigate = useNavigate();
+  const { hydrate } = useApp();
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("main");
@@ -39,11 +41,14 @@ export default function RoleGate() {
         setRole(user.role);
       } catch {
         // Normal students are not present in `users`. This call also
-        // auto-provisions a first-time Telegram user server-side.
+        // auto-provisions a first-time Telegram user server-side. Once the
+        // student profile resolves, AppLayout owns every next step: it opens
+        // the saved profile or routes an unfinished account to onboarding.
         setRole(false);
         try {
-          const { profile } = await studentApi.profile();
-          if (profile?.onboardingStep !== "complete") navigate("/app", { replace: true });
+          const profileData = await studentApi.profile();
+          hydrate(profileData);
+          navigate("/app", { replace: true });
         } catch {
           // Keep the Telegram-only entry card when student auth also fails.
         }
@@ -52,7 +57,7 @@ export default function RoleGate() {
       }
     }
     resolveRole();
-  }, [navigate]);
+  }, [hydrate, navigate]);
 
   const isStaff = role === "admin" || role === "tutor";
 
