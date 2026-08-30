@@ -2,44 +2,16 @@ import { Navigate, useLocation } from "./router";
 import { lazy, Suspense } from "react";
 import AppLayout from "./components/layout/AppLayout";
 import AdminLayout from "./components/layout/AdminLayout";
-import RequireRole from "./components/admin/RequireRole";
-import AdminIndex from "./components/admin/AdminIndex";
 import { AdminAuthProvider } from "./context/AdminAuth";
 import {
-  loadDiagnostic,
-  loadDiagnosticRun,
-  loadHomework,
-  loadHomeworkAdmin,
-  loadHomeworkRun,
-  loadPet,
-  loadPractice,
-  loadPracticeRun,
-  loadProfile,
+  loadAdminRoutes,
   loadRoleGate,
-  loadStats,
-  loadStudentOnboarding,
-  loadStudents,
-  loadTasks,
-  loadTrialStart,
-  loadUsers,
+  loadStudentRoutes,
 } from "./routeModules";
 
 const RoleGate = lazy(loadRoleGate);
-const StudentOnboarding = lazy(loadStudentOnboarding);
-const TrialStart = lazy(loadTrialStart);
-const Practice = lazy(loadPractice);
-const PracticeRun = lazy(loadPracticeRun);
-const Diagnostic = lazy(loadDiagnostic);
-const DiagnosticRun = lazy(loadDiagnosticRun);
-const Homework = lazy(loadHomework);
-const HomeworkRun = lazy(loadHomeworkRun);
-const Pet = lazy(loadPet);
-const Profile = lazy(loadProfile);
-const Students = lazy(loadStudents);
-const Users = lazy(loadUsers);
-const Tasks = lazy(loadTasks);
-const HomeworkAdmin = lazy(loadHomeworkAdmin);
-const Stats = lazy(loadStats);
+const StudentRoutes = lazy(loadStudentRoutes);
+const AdminRoutes = lazy(loadAdminRoutes);
 
 export default function App() {
   const { pathname } = useLocation();
@@ -48,11 +20,11 @@ export default function App() {
   if (pathname === "/") {
     content = <RoleGate />;
   } else if (pathname === "/app" || pathname.startsWith("/app/")) {
-    content = <AppLayout>{studentPage(pathname)}</AppLayout>;
+    content = <AppLayout><StudentRoutes pathname={pathname} /></AppLayout>;
   } else if (pathname === "/admin" || pathname.startsWith("/admin/")) {
     content = (
       <AdminAuthProvider>
-        <AdminLayout>{adminPage(pathname)}</AdminLayout>
+        <AdminLayout><AdminRoutes pathname={pathname} /></AdminLayout>
       </AdminAuthProvider>
     );
   } else {
@@ -64,33 +36,4 @@ export default function App() {
       {content}
     </Suspense>
   );
-}
-
-function studentPage(pathname) {
-  const routes = {
-    "/app": <Navigate to="/app/profile" replace />,
-    "/app/onboarding": <StudentOnboarding />,
-    "/app/trial": <TrialStart />,
-    "/app/practice": <Practice />,
-    "/app/practice/run": <PracticeRun />,
-    "/app/diagnostic": <Diagnostic />,
-    "/app/diagnostic/run": <DiagnosticRun />,
-    "/app/homework": <Homework />,
-    "/app/homework/run": <HomeworkRun />,
-    "/app/pet": <Pet />,
-    "/app/profile": <Profile />,
-  };
-  return routes[pathname] ?? <Navigate to="/app/profile" replace />;
-}
-
-function adminPage(pathname) {
-  const routes = {
-    "/admin": <AdminIndex />,
-    "/admin/students": <RequireRole roles={["admin"]}><Students /></RequireRole>,
-    "/admin/users": <RequireRole roles={["admin"]}><Users /></RequireRole>,
-    "/admin/tasks": <Tasks />,
-    "/admin/homework": <HomeworkAdmin />,
-    "/admin/stats": <Stats />,
-  };
-  return routes[pathname] ?? <Navigate to="/admin" replace />;
 }

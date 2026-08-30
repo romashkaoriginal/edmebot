@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { Users, UserCog, ListChecks, BookOpen, BarChart3, LogOut, ShieldAlert } from "lucide-react";
 import Logo from "../brand/Logo";
 import { useAdminAuth } from "../../context/AdminAuth";
+import { adminApi } from "../../api/admin";
 import { preloadAdminRoutes } from "../../routeModules";
 import "./AdminLayout.css";
 
@@ -18,7 +19,10 @@ export default function AdminLayout({ children }) {
   const { loading, user, error } = useAdminAuth();
 
   useEffect(() => {
-    if (user?.role) void preloadAdminRoutes(user.role);
+    if (user?.role) {
+      void preloadAdminRoutes(user.role);
+      void adminApi.prefetchAdminSections(user.role);
+    }
   }, [user?.role]);
 
   if (loading) {

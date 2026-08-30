@@ -19,6 +19,21 @@ test("SCHEMA_VERSION is ahead of the first release", () => {
   );
 });
 
+test("multi-subject migration backfills legacy and seeded students", () => {
+  const declared = source.match(/const SCHEMA_VERSION = (\d+)/);
+  assert.ok(Number(declared?.[1]) >= 4, "the enrollment backfill must reach deployed databases");
+  assert.match(
+    source,
+    /INSERT INTO student_subjects \(student_id, subject, grade\)[\s\S]*SELECT id, subject, grade FROM students/,
+    "legacy students need an enrollment row"
+  );
+  assert.match(
+    source,
+    /INSERT INTO student_subjects \(student_id, subject, grade\) VALUES \(\$1,\$2,\$3\)/,
+    "a newly seeded demo student needs an enrollment row"
+  );
+});
+
 test("columns the practice flow writes to are declared in SCHEMA", () => {
   // Written by routes/practice.js when creating question instances.
   for (const column of ["option_order", "selected", "correct", "award_xp", "award_coins", "leveled_up"]) {

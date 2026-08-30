@@ -9,7 +9,7 @@ const connectionString = process.env.DATABASE_URL;
 // Bump whenever SCHEMA changes. init() skips the whole schema block when the
 // recorded version is already current, so a new CREATE/ALTER never reaches an
 // existing database unless this number moves.
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 const databaseConfig = buildDatabaseConfig(connectionString);
 const pool = new Pool(databaseConfig);
 
@@ -439,9 +439,14 @@ async function seedIfEmpty() {
 
   const { rows: studentCount } = await query("SELECT COUNT(*)::int AS n FROM students");
   if (studentCount[0].n === 0) {
-    await query(
-      `INSERT INTO students (tg_id, name, grade, subject) VALUES ($1,$2,$3,$4)`,
+    const { rows } = await query(
+      `INSERT INTO students (tg_id, name, grade, subject) VALUES ($1,$2,$3,$4) RETURNING id`,
       ["demo", seed.profile.name, seed.profile.grade, seed.profile.subject]
+    );
+    await query(
+      `INSERT INTO student_subjects (student_id, subject, grade) VALUES ($1,$2,$3)
+       ON CONFLICT (student_id, subject) DO NOTHING`,
+      [rows[0].id, seed.profile.subject, seed.profile.grade]
     );
     console.log("Seeded demo student.");
   }

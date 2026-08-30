@@ -39,6 +39,7 @@ async function req(path, { method = "GET", body } = {}) {
 }
 
 let meRequest = null;
+const resourceCache = new Map();
 
 function currentUser() {
   meRequest ??= req("/me").catch((error) => {
@@ -46,6 +47,27 @@ function currentUser() {
     throw error;
   });
   return meRequest;
+}
+
+function cachedReq(path) {
+  if (!resourceCache.has(path)) {
+    const request = req(path).catch((error) => {
+      if (resourceCache.get(path) === request) resourceCache.delete(path);
+      throw error;
+    });
+    resourceCache.set(path, request);
+  }
+  return resourceCache.get(path);
+}
+
+function invalidate(...paths) {
+  paths.forEach((path) => resourceCache.delete(path));
+}
+
+async function mutate(path, options, invalidations = []) {
+  const data = await req(path, options);
+  invalidate(...invalidations);
+  return data;
 }
 
 // Multipart upload — no Content-Type/JSON.stringify, the browser sets the
@@ -79,29 +101,29 @@ async function downloadTemplate(fullPath, filename) {
 export const adminApi = {
   // Current user (role check)
   me: currentUser,
-  telegramContacts: (kind) => req(`/telegram-contacts?kind=${kind}`),
+  telegramContacts: (kind) => cachedReq(`/telegram-contacts?kind=${kind}`),
 
   // Users
-  listUsers: () => req("/users"),
-  createUser: (u) => req("/users", { method: "POST", body: u }),
-  updateUser: (id, u) => req(`/users/${id}`, { method: "PUT", body: u }),
-  deleteUser: (id) => req(`/users/${id}`, { method: "DELETE" }),
+  listUsers: () => cachedReq("/users"),
+  createUser: (u) => mutate("/users", { method: "POST", body: u }, ["/users"]),
+  updateUser: (id, u) => mutate(`/users/${id}`, { method: "PUT", body: u }, ["/users"]),
+  deleteUser: (id) => mutate(`/users/${id}`, { method: "DELETE" }, ["/users"]),
 
   // Students
-  listStudents: () => req("/students"),
+  listStudents: () => cachedReq("/students"),
   listDemoStudents: () => req("/demo-students"),
-  createStudent: (s) => req("/students", { method: "POST", body: s }),
-  updateStudent: (id, s) => req(`/students/${id}`, { method: "PUT", body: s }),
-  deleteStudent: (id) => req(`/students/${id}`, { method: "DELETE" }),
+  createStudent: (s) => mutate("/students", { method: "POST", body: s }, ["/students", "/stats"]),
+  updateStudent: (id, s) => mutate(`/students/${id}`, { method: "PUT", body: s }, ["/students", "/stats"]),
+  deleteStudent: (id) => mutate(`/students/${id}`, { method: "DELETE" }, ["/students", "/stats"]),
 
   // Bonuses
   bonusHistory: (studentId) => req(`/students/${studentId}/bonus`),
-  awardBonus: (studentId, b) => req(`/students/${studentId}/bonus`, { method: "POST", body: b }),
+  awardBonus: (studentId, b) => mutate(`/students/${studentId}/bonus`, { method: "POST", body: b }, ["/stats"]),
 
   // Subject enrollments — how a self-serve "pending" student is promoted to
   // active, and how any student gains an additional subject.
   studentSubjects: (id) => req(`/students/${id}/subjects`),
-  assignSubject: (id, body) => req(`/students/${id}/subjects`, { method: "POST", body }),
+  assignSubject: (id, body) => mutate(`/students/${id}/subjects`, { method: "POST", body }, ["/students", "/stats"]),
 
   // Tasks
   listTasks: (params = {}) => {
@@ -138,6 +160,18 @@ export const adminApi = {
   downloadHomeworkTemplate: () => downloadTemplate("/api/admin/homework/import-template", "homework_template.xlsx"),
 
   // Stats
-  stats: () => req("/stats"),
+  stats: () => cachedReq("/stats"),
   studentStats: (id) => req(`/stats/${id}`),
+
+  // Warm the endpoints each role's landing sections need. The pages call the
+  // same cached methods, so background work is reused rather than duplicated.
+  prefetchAdminSections: (role) => Promise.allSettled([
+    cachedReq("/students"),
+    cachedReq("/stats"),
+    ...(role === "admin" ? [
+      cachedReq("/users"),
+      cachedReq("/telegram-contacts?kind=student"),
+      cachedReq("/telegram-contacts?kind=user"),
+    ] : []),
+  ]),
 };

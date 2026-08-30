@@ -51,6 +51,7 @@ export default function RoleGate() {
       if (staffResult.status === "fulfilled") {
         const staffRole = staffResult.value.user.role;
         void preloadAdminRoutes(staffRole);
+        void adminApi.prefetchAdminSections(staffRole);
         setRole(staffRole);
       } else if (studentResult.status === "fulfilled") {
         setRole(false);
@@ -83,6 +84,7 @@ export default function RoleGate() {
   }
 
   async function openStudentPick() {
+    void preloadStudentRoutes();
     setStudentsLoading(true);
     try {
       const { students: list } = await adminApi.listDemoStudents();
