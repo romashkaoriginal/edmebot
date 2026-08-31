@@ -9,6 +9,4 @@ export function apiUrl(path) {
   return `${API_BASE}${path}`;
 }
 
-export async function fetchWithTimeout(url, options = {}) {
-  return fetch(url, options);
-}
+export { fetchWithTimeout } from "./fetchWithTimeout";

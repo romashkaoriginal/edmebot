@@ -9,8 +9,39 @@
   display: grid;
   min-height: 100dvh;
   place-items: center;
+  padding: var(--sp-5);
   color: var(--muted);
+  text-align: center;
+}
+.app__loading-inner {
+  display: flex;
+  max-width: 360px;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.app__loading-inner svg {
+  margin-bottom: var(--sp-1);
+  color: var(--primary);
+  animation: app-loading-spin 900ms linear infinite;
+}
+.app__loading-inner strong {
+  color: var(--ink);
+  font-size: var(--text-lg);
+  line-height: 1.25;
+  text-wrap: balance;
+}
+.app__loading-inner span {
+  font-size: var(--text-sm);
   font-weight: 700;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+@keyframes app-loading-spin {
+  to { transform: rotate(1turn); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app__loading-inner svg { animation: none; }
 }
 .app__load-state {
   display: grid;

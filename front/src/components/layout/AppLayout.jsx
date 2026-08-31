@@ -1,6 +1,6 @@
 import { NavLink, Navigate, useLocation } from "../../router";
 import { useEffect, useRef, useState } from "react";
-import { Target, Lightbulb, PawPrint, BookOpen, User, RefreshCw, Coins } from "lucide-react";
+import { Target, Lightbulb, PawPrint, BookOpen, User, RefreshCw, Coins, LoaderCircle } from "lucide-react";
 import Button from "../ui/Button";
 import Logo from "../brand/Logo";
 import { StreakPill } from "../ui/StatPill";
@@ -20,6 +20,8 @@ const FULL_NAV = [
 // A self-serve student who hasn't been assigned a subject by staff yet
 // only gets the diagnostic — everything else 403s server-side anyway.
 const PENDING_NAV = [{ to: "/app/diagnostic", label: "Диагностика", icon: Target }];
+const PROFILE_REQUEST_TIMEOUT_MS = 15_000;
+const PROFILE_MAX_ATTEMPTS = 3;
 
 export default function AppLayout({ children }) {
   const { profile, hydrate, hydrated } = useApp();
@@ -59,21 +61,30 @@ export default function AppLayout({ children }) {
     let cancelled = false;
     let timer = null;
     let attempt = 0;
+    let requestController = null;
     setLoadError("");
     const load = () => {
-      studentApi.profile()
+      requestController = new AbortController();
+      studentApi.profile({
+        signal: requestController.signal,
+        timeoutMs: PROFILE_REQUEST_TIMEOUT_MS,
+      })
         .then((data) => { if (!cancelled) hydrate(data); })
         .catch((error) => {
           if (cancelled) return;
           // Retrying with the same stale initData can never succeed.
           if (isAuthError(error)) return setLoadError("auth");
           attempt += 1;
-          if (attempt >= 5) return setLoadError("network");
+          if (attempt >= PROFILE_MAX_ATTEMPTS) return setLoadError("network");
           timer = window.setTimeout(load, Math.min(8000, 1000 * 2 ** attempt));
         });
     };
     load();
-    return () => { cancelled = true; window.clearTimeout(timer); };
+    return () => {
+      cancelled = true;
+      requestController?.abort();
+      window.clearTimeout(timer);
+    };
   }, [hydrate, hydrated, loadAttempt]);
 
   useEffect(() => {
@@ -124,9 +135,15 @@ export default function AppLayout({ children }) {
   }
 
   if (!hydrated) {
-    // Mention the possible wait: on a cold backend the spinner can sit for up
-    // to a minute, and a silent one reads as "broken" — students close the app.
-    return <div className="app__loading">Загрузка приложения… Первый запуск может занять до минуты.</div>;
+    return (
+      <main className="app__loading" role="status" aria-live="polite">
+        <div className="app__loading-inner">
+          <LoaderCircle size={28} aria-hidden="true" />
+          <strong>Загружаем приложение</strong>
+          <span>Первый запуск может занять до минуты.</span>
+        </div>
+      </main>
+    );
   }
 
   // A pending student who lands anywhere but the diagnostic (typed URL,

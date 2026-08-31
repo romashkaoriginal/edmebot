@@ -77,7 +77,7 @@ async function reqForm(path, formData) {
     method: "POST",
     headers: { "x-telegram-init-data": initData() },
     body: formData,
-  });
+  }, 120_000);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
   return data;

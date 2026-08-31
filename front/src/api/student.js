@@ -11,12 +11,13 @@ export function isAuthError(error) {
 }
 
 export async function studentFetch(path, options = {}) {
+  const { timeoutMs, ...fetchOptions } = options;
   const headers = new Headers(options.headers);
   headers.set("x-telegram-init-data", initData());
   const demoStudentId = localStorage.getItem("edme_student_id");
   if (demoStudentId) headers.set("x-demo-student-id", demoStudentId);
   if (options.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
-  const response = await fetchWithTimeout(apiUrl(path), { ...options, headers });
+  const response = await fetchWithTimeout(apiUrl(path), { ...fetchOptions, headers }, timeoutMs);
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
   return data;
@@ -58,7 +59,10 @@ function loadDiagnostic(fresh = false) {
 }
 
 export const studentApi = {
-  profile: ({ subject } = {}) => studentFetch(`/api/profile${subject ? `?${new URLSearchParams({ subject })}` : ""}`),
+  profile: ({ subject, signal, timeoutMs } = {}) => studentFetch(
+    `/api/profile${subject ? `?${new URLSearchParams({ subject })}` : ""}`,
+    { signal, timeoutMs }
+  ),
   analytics: ({ fresh = false } = {}) => cachedStudentFetch("analytics", "/api/profile/analytics", { fresh }),
   homework: ({ fresh = false, subject } = {}) => {
     const query = subject ? `?${new URLSearchParams({ subject })}` : "";
