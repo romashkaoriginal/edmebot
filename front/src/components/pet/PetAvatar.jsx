@@ -178,7 +178,7 @@ function Fox({ mood, uid, children }) {
       <Defs uid={uid} from="oklch(0.78 0.16 55)" to="oklch(0.64 0.17 45)" bodyFrom="oklch(0.72 0.16 50)" bodyTo="oklch(0.6 0.17 44)" />
       {/* A broad base hides beneath the torso, so the tail feels attached. */}
       <g className="pet__tail pet__tail--fox">
-        <path d="M76 101 C94 112 114 100 111 81 C109 67 100 63 90 69 C100 75 102 84 97 91 C92 98 83 98 76 93 Z" fill="oklch(0.6 0.17 44)" />
+        <path d="M67 102 C94 112 114 100 111 81 C109 67 100 63 90 69 C100 75 102 84 97 91 C92 98 82 99 67 94 Z" fill="oklch(0.6 0.17 44)" />
         <path d="M104 71 C112 78 112 89 105 96 C101 99 96 100 92 98 C99 94 103 88 102 82 C101 77 98 74 94 72 Z" fill="#fff" opacity="0.94" />
         <path d="M82 96 C88 100 94 99 98 95 M86 91 C92 95 97 93 100 89" stroke="oklch(0.68 0.17 46)" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.8" />
       </g>
@@ -212,11 +212,11 @@ function Raccoon({ mood, uid, children }) {
       <Defs uid={uid} from="oklch(0.72 0.02 265)" to="oklch(0.56 0.02 265)" bodyFrom="oklch(0.66 0.02 265)" bodyTo="oklch(0.5 0.02 265)" blush="oklch(0.72 0.12 20 / 0.5)" />
       {/* A fuller, banded tail starts beneath the hip instead of beside it. */}
       <g className="pet__tail pet__tail--raccoon">
-        <path d="M76 101 C92 109 113 99 111 81 C110 67 99 62 87 69 C97 73 101 80 99 87 C97 97 86 99 77 94 Z" fill="oklch(0.5 0.02 265)" />
+        <path d="M67 102 C92 110 113 99 111 81 C110 67 99 62 87 69 C97 73 101 80 99 87 C97 97 85 100 67 94 Z" fill="oklch(0.5 0.02 265)" />
         <path d="M103 70 C109 74 112 80 111 85 L101 89 C102 82 100 76 96 73 Z" fill="oklch(0.26 0.02 265)" />
         <path d="M101 89 C99 95 94 99 89 100 L85 92 C91 90 96 86 97 81 Z" fill="oklch(0.26 0.02 265)" />
-        <path d="M89 100 C84 101 80 99 77 95 L80 88 C84 92 88 93 92 92 Z" fill="oklch(0.26 0.02 265)" />
-        <path d="M78 95 C82 100 88 102 92 99 C87 99 83 97 80 92 Z" fill="oklch(0.78 0.01 265)" opacity="0.66" />
+        <path d="M89 100 C82 102 73 100 67 94 L75 87 C80 92 87 94 92 92 Z" fill="oklch(0.26 0.02 265)" />
+        <path d="M69 95 C77 101 87 103 92 99 C84 100 77 97 74 91 Z" fill="oklch(0.78 0.01 265)" opacity="0.66" />
       </g>
       {/* torso */}
       <path d="M60 70 C40 70 34 84 36 96 C38 108 82 108 84 96 C86 84 80 70 60 70 Z" fill={`url(#body-${uid})`} />
@@ -246,7 +246,7 @@ function Squirrel({ mood, uid, children }) {
       <Defs uid={uid} from="oklch(0.68 0.13 48)" to="oklch(0.54 0.14 42)" bodyFrom="oklch(0.64 0.13 46)" bodyTo="oklch(0.5 0.14 42)" />
       {/* The tail overlaps the torso at its base, keeping the curl connected. */}
       <g className="pet__tail pet__tail--squirrel">
-        <path d="M74 102 C95 112 118 91 111 63 C107 46 95 35 81 40 C94 48 101 61 97 73 C93 84 82 88 73 84 C80 90 80 98 74 102 Z" fill="oklch(0.6 0.13 45)" />
+        <path d="M64 103 C95 112 118 91 111 63 C107 46 95 35 81 40 C94 48 101 61 97 73 C93 84 81 89 64 84 C73 91 72 99 64 103 Z" fill="oklch(0.6 0.13 45)" />
         <path d="M82 43 C99 52 105 69 96 81 C92 86 85 88 78 85 C90 79 95 70 92 61 C90 53 85 48 79 46 Z" fill="oklch(0.72 0.12 50)" opacity="0.72" />
         <path d="M108 61 C114 75 110 89 100 96 C105 86 105 77 100 69 Z" fill="oklch(0.54 0.14 42)" opacity="0.75" />
       </g>
