@@ -323,13 +323,11 @@ function Cat({ mood, uid, children }) {
   return (
     <g className="pet__body">
       <Defs uid={uid} from="oklch(0.74 0.05 60)" to="oklch(0.6 0.06 55)" bodyFrom="oklch(0.7 0.05 58)" bodyTo="oklch(0.56 0.06 54)" />
-      {/* A broad, striped tail starts under the hip and curls back around it. */}
+      {/* A cat's tail is slim and tapered: it grows under the hip and makes one soft curl. */}
       <g className="pet__tail pet__tail--cat">
-        <path d="M67 102 C91 112 113 102 112 85 C111 70 99 65 87 72 C98 76 103 84 100 91 C97 100 83 100 67 94 Z" fill="oklch(0.58 0.06 54)" />
-        <path d="M103 73 C110 77 113 85 112 90 L102 94 C104 86 101 79 96 75 Z" fill="oklch(0.7 0.06 57)" opacity="0.82" />
-        <path d="M101 94 C98 100 91 102 85 101 L82 93 C89 94 96 90 99 85 Z" fill="oklch(0.49 0.06 52)" opacity="0.78" />
-        <path d="M76 99 C84 103 94 102 99 97" stroke={stripe} strokeWidth="2.6" fill="none" strokeLinecap="round" opacity="0.72" />
-        <path d="M91 75 C96 78 99 82 100 86 M85 78 C91 80 95 84 96 89" stroke={stripe} strokeWidth="2.4" fill="none" strokeLinecap="round" opacity="0.7" />
+        <path d="M69 100 C82 105 99 103 104 92 C109 81 104 72 96 71 C101 78 101 84 97 90 C92 97 80 97 69 92 Z" fill="oklch(0.58 0.06 54)" />
+        <path d="M97 72 C103 76 106 83 103 89 C101 93 98 95 94 95 C99 88 100 81 96 75 Z" fill="oklch(0.7 0.06 57)" opacity="0.72" />
+        <path d="M89 97 C94 96 98 93 100 89 M83 96 C88 95 92 92 94 88" stroke={stripe} strokeWidth="1.8" fill="none" strokeLinecap="round" opacity="0.62" />
       </g>
       {/* torso */}
       <path d="M60 72 C42 72 38 84 40 96 C42 108 78 108 80 96 C82 84 78 72 60 72 Z" fill={`url(#body-${uid})`} />

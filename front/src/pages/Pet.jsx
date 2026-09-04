@@ -558,9 +558,7 @@ function getPetState(stats, name) {
     return {
       key: "hungry-and-sad",
       expression,
-      text: veryHungry || verySad
-        ? `${name}, кажется, совсем загрустил и проголодался. Покормим его, а потом решим пару заданий?`
-        : `${name} хочет перекусить и позаниматься с тобой. Так настроение станет лучше.`,
+      text: veryHungry || verySad ? "Мне нужны корм и пара заданий. Поможешь?" : "Корм и пара заданий поднимут мне настроение.",
       actions: ["food", "practice"],
     };
   }
@@ -568,7 +566,7 @@ function getPetState(stats, name) {
     return {
       key: "hungry",
       expression,
-      text: veryHungry ? `${name} очень проголодался. Выбери ему корм, пожалуйста.` : `${name} не прочь перекусить. Заглянем в питание?`,
+      text: veryHungry ? "Я очень проголодался. Покорми меня, пожалуйста." : "Мне бы перекусить. Заглянем в питание?",
       actions: ["food"],
     };
   }
@@ -576,16 +574,16 @@ function getPetState(stats, name) {
     return {
       key: "sad",
       expression,
-      text: verySad ? `${name} немного грустит. Давай решим несколько заданий вместе?` : `${name} хочет позаниматься с тобой — верные ответы поднимут ему настроение.`,
+      text: verySad ? "Мне немного грустно. Порешаем вместе?" : "Давай решим пару заданий — я повеселею.",
       actions: ["practice"],
     };
   }
 
   const phrases = [
-    `${name} рядом и верит в тебя. Готов к новым заданиям!`,
-    `У ${name} всё хорошо. Учиться вместе — весело!`,
-    `${name} радуется твоим стараниям. Продолжай в своём темпе!`,
-    `Сегодня можно сделать ещё один маленький шаг к цели. ${name} с тобой!`,
+    "Я рядом. У тебя всё получится!",
+    "Учиться вместе — весело!",
+    "Рад твоим стараниям!",
+    "Сделаем ещё один шаг к цели?",
   ];
   const phraseIndex = Array.from(name).reduce((total, symbol) => total + symbol.codePointAt(0), 0) % phrases.length;
   return { key: "content", expression, text: phrases[phraseIndex], actions: [] };
