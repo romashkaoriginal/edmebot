@@ -48,10 +48,10 @@ export function AppProvider({ children }) {
     setProfile((p) => ({ ...p, pet: { ...p.pet, name } }));
   }, []);
 
-  const hydrate = useCallback((data) => {
+  const hydrate = useCallback((data, { replace = false } = {}) => {
     if (data.profile) {
       setProfile((current) => ({
-        ...current,
+        ...(replace ? EMPTY_PROFILE : current),
         ...data.profile,
         // Several sections return the whole profile, and some of those
         // responses are cached (GET /api/pet is prefetched before the
@@ -59,11 +59,14 @@ export function AppProvider({ children }) {
         // student back to a step they already completed: that bounced them
         // from the pet choice to the subject picker, where /profile/onboard
         // then 409'd because the server knew they were past it.
-        onboardingStep: laterOnboardingStep(current.onboardingStep, data.profile.onboardingStep),
-        pet: { ...current.pet, ...data.profile.pet },
+        onboardingStep: replace
+          ? data.profile.onboardingStep
+          : laterOnboardingStep(current.onboardingStep, data.profile.onboardingStep),
+        pet: { ...(replace ? EMPTY_PROFILE.pet : current.pet), ...data.profile.pet },
       }));
     }
     if (data.topics) setTopics(data.topics);
+    else if (replace) setTopics([]);
     setHydrated(true);
   }, []);
 

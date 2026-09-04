@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Coins, Check, Info, Cookie, Shirt, Heart, Store, Pencil, X, Sparkles, ArrowRight } from "lucide-react";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
@@ -37,6 +38,8 @@ export default function Pet() {
   const [savingName, setSavingName] = useState(false);
   const [coinsInfoOpen, setCoinsInfoOpen] = useState(false);
   const timers = useRef([]);
+  const feedbackTimer = useRef(null);
+  const reduceMotion = useReducedMotion();
   useEffect(() => {
     let cancelled = false;
     // Keep the prefetched shop for an instant first paint, but always refresh
@@ -100,7 +103,10 @@ export default function Pet() {
     timers.current.push(timer);
   }, []);
 
-  useEffect(() => () => timers.current.forEach(clearTimeout), []);
+  useEffect(() => () => {
+    timers.current.forEach(clearTimeout);
+    window.clearTimeout(feedbackTimer.current);
+  }, []);
   useEffect(() => {
     if (!coinsInfoOpen) return undefined;
     const closeOnEscape = (event) => { if (event.key === "Escape") setCoinsInfoOpen(false); };
@@ -109,8 +115,9 @@ export default function Pet() {
   }, [coinsInfoOpen]);
 
   function showFeedback(payload) {
-    setFeedback(payload);
-    clearLater(() => setFeedback(null), 3500);
+    window.clearTimeout(feedbackTimer.current);
+    setFeedback({ ...payload, id: Date.now() });
+    feedbackTimer.current = window.setTimeout(() => setFeedback(null), 3500);
   }
 
   function cheer() {
@@ -461,17 +468,27 @@ export default function Pet() {
         </div>
       </section>
 
+      <AnimatePresence>
       {feedback && (
-        <div className={`pet-page__toast pet-page__toast--${feedback.type === "poor" ? "poor" : "ok"}`} aria-live="polite">
+        <motion.div
+          key={feedback.id}
+          className={`pet-page__toast pet-page__toast--${feedback.type === "poor" ? "poor" : "ok"}`}
+          aria-live="polite"
+          initial={reduceMotion ? { opacity: 0, x: "-50%" } : { opacity: 0, x: "-50%", y: 14, scale: 0.98 }}
+          animate={reduceMotion ? { opacity: 1, x: "-50%" } : { opacity: 1, x: "-50%", y: 0, scale: 1 }}
+          exit={reduceMotion ? { opacity: 0, x: "-50%" } : { opacity: 0, x: "-50%", y: 10, scale: 0.98 }}
+          transition={{ duration: reduceMotion ? 0.14 : 0.22, ease: [0.16, 1, 0.3, 1] }}
+        >
           <span className="pet-page__toast-message" role="status">
-          {feedback.text ? <><Info size={16} strokeWidth={2.6} /> {feedback.text}</> :
+          {feedback.text ? <>{feedback.action !== "practice" && <Info size={16} strokeWidth={2.6} />} {feedback.text}</> :
            feedback.type === "poor" ? <><Info size={16} strokeWidth={2.6} /> Не хватает монет, реши ещё пару заданий</> :
            feedback.type === "fed" ? <><Check size={16} strokeWidth={3} /> {profile.pet.name} оценил «{feedback.name}»</> :
            <><Check size={16} strokeWidth={3} /> «{feedback.name}» куплено!</>}
           </span>
           {feedback.action === "practice" && <Button as={Link} to="/app/practice" size="sm" variant="soft">К практике</Button>}
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 }

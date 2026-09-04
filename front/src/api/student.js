@@ -48,6 +48,11 @@ function invalidateResource(key) {
   resourceCache.delete(key);
 }
 
+function clearSessionCache() {
+  diagnosticRequest = null;
+  resourceCache.clear();
+}
+
 function loadDiagnostic(fresh = false) {
   if (fresh || !diagnosticRequest) {
     diagnosticRequest = studentFetch("/api/diagnostic").catch((error) => {
@@ -59,6 +64,9 @@ function loadDiagnostic(fresh = false) {
 }
 
 export const studentApi = {
+  // Switching from one demo student to another must never reuse their cached
+  // homework, analytics or pet snapshot.
+  clearSessionCache,
   profile: ({ subject, signal, timeoutMs } = {}) => studentFetch(
     `/api/profile${subject ? `?${new URLSearchParams({ subject })}` : ""}`,
     { signal, timeoutMs }

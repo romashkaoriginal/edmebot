@@ -1,5 +1,5 @@
 import { Link, NavLink, Navigate, useLocation } from "../../router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Target, Lightbulb, PawPrint, BookOpen, User, RefreshCw, Coins, LoaderCircle } from "lucide-react";
 import Button from "../ui/Button";
 import Logo from "../brand/Logo";
@@ -43,6 +43,7 @@ export default function AppLayout({ children }) {
   const xpNeeded = Math.max(1, profile.xpForNext - profile.xpFromLevel);
   const xpProgress = Math.min(100, Math.round((xpInLevel / xpNeeded) * 100));
   const subjectNames = enrolledSubjects(profile).map(({ subject }) => subjectLabel(subject));
+  const handleStreakPopover = useCallback((open) => setStatInfo(open ? "streak" : null), []);
 
   useEffect(() => {
     // Start downloading every student route immediately. This covers direct
@@ -50,6 +51,12 @@ export default function AppLayout({ children }) {
     // "Загружаем раздел…" pause on the first tab switch.
     void preloadStudentRoutes();
   }, []);
+
+  // A hint belongs to the screen where it was opened. Closing it on route
+  // changes prevents an old popover from covering controls on the next tab.
+  useEffect(() => {
+    setStatInfo(null);
+  }, [pathname]);
 
   // The backend sleeps on the free tier and takes ~50s to cold-start, so the
   // first request of the day often fails or hangs. Retry quietly with backoff
@@ -200,7 +207,12 @@ export default function AppLayout({ children }) {
                 Пробный · до {new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short" }).format(new Date(profile.accessUntil))}
               </span>
             )}
-            <StreakPill value={profile.streak} doneToday={doneToday} />
+            <StreakPill
+              value={profile.streak}
+              doneToday={doneToday}
+              open={statInfo === "streak"}
+              onOpenChange={handleStreakPopover}
+            />
             <div className="app__stat-wrap">
               <button
                 type="button"

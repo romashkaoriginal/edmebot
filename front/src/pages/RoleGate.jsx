@@ -20,6 +20,8 @@ export default function RoleGate() {
   const [view, setView] = useState("main");
   const [students, setStudents] = useState([]);
   const [studentsLoading, setStudentsLoading] = useState(false);
+  const [openingStudentId, setOpeningStudentId] = useState(null);
+  const [studentPickError, setStudentPickError] = useState("");
   const [hasInitData, setHasInitData] = useState(() => Boolean(initData()));
   const [onboardSubject, setOnboardSubject] = useState("Математика");
   const [onboardGrade, setOnboardGrade] = useState(7);
@@ -97,9 +99,23 @@ export default function RoleGate() {
     }
   }
 
-  function pickStudent(s) {
+  async function pickStudent(s) {
+    setStudentPickError("");
+    setOpeningStudentId(s.id);
     localStorage.setItem("edme_student_id", String(s.id));
-    navigate("/app");
+    studentApi.clearSessionCache();
+    try {
+      // Load the selected student before entering the app. Navigating first
+      // rendered the student routes with an empty or previous profile; a page
+      // reload then worked only because the ID had reached localStorage.
+      const data = await studentApi.profile({ timeoutMs: 15_000 });
+      hydrate(data, { replace: true });
+      navigate("/app");
+    } catch {
+      setStudentPickError("Не удалось открыть профиль ученика. Проверь соединение и попробуй ещё раз.");
+    } finally {
+      setOpeningStudentId(null);
+    }
   }
 
   if (view === "onboarding") {
@@ -143,6 +159,7 @@ export default function RoleGate() {
           <div className="gate__brand"><Logo height={40} /></div>
           <h1 className="gate__title font-display">Выберите ученика</h1>
           <p className="gate__sub">Доступны только демо-ученики — реальные аккаунты нельзя открывать от имени сотрудника.</p>
+          {studentPickError && <p className="gate__onboard-error" role="alert">{studentPickError}</p>}
           <div className="gate__student-list">
             {students.length === 0 ? (
               <p className="gate__sub">Демо-учеников нет. Создайте ученика с Telegram ID «демо».</p>
@@ -153,8 +170,8 @@ export default function RoleGate() {
                     <strong>{s.name}</strong>
                     <span>{s.grade && s.subject ? `${s.grade} класс · ${s.subject}` : "Первый вход не завершён"}</span>
                   </div>
-                  <Button size="sm" iconRight={ArrowRight} onClick={() => pickStudent(s)}>
-                    Войти
+                  <Button size="sm" iconRight={ArrowRight} loading={openingStudentId === s.id} disabled={openingStudentId !== null} onClick={() => pickStudent(s)}>
+                    {openingStudentId === s.id ? "Открываем…" : "Войти"}
                   </Button>
                 </Card>
               ))

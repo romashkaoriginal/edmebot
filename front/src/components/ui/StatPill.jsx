@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import "./StatPill.css";
 
@@ -18,9 +18,16 @@ export default function StatPill({ icon: Icon, value, tone = "accent", label }) 
  * color + a brief pulse animation when today's practice is done. Tapping it
  * opens a small popover explaining what "lights the flame".
  */
-export function StreakPill({ value, doneToday }) {
-  const [open, setOpen] = useState(false);
+export function StreakPill({ value, doneToday, open: controlledOpen, onOpenChange }) {
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const ref = useRef(null);
+  const isControlled = typeof controlledOpen === "boolean";
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+  const setOpen = useCallback((next) => {
+    const value = typeof next === "function" ? next(open) : next;
+    if (!isControlled) setUncontrolledOpen(value);
+    onOpenChange?.(value);
+  }, [isControlled, onOpenChange, open]);
 
   useEffect(() => {
     if (!open) return;
@@ -29,7 +36,7 @@ export function StreakPill({ value, doneToday }) {
     }
     document.addEventListener("pointerdown", onOutside);
     return () => document.removeEventListener("pointerdown", onOutside);
-  }, [open]);
+  }, [open, setOpen]);
 
   return (
     <div className="statpill-wrap" ref={ref}>
