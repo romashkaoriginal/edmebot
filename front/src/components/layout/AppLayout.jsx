@@ -1,4 +1,4 @@
-import { NavLink, Navigate, useLocation } from "../../router";
+import { Link, NavLink, Navigate, useLocation } from "../../router";
 import { useEffect, useRef, useState } from "react";
 import { Target, Lightbulb, PawPrint, BookOpen, User, RefreshCw, Coins, LoaderCircle } from "lucide-react";
 import Button from "../ui/Button";
@@ -213,7 +213,8 @@ export default function AppLayout({ children }) {
               </button>
               {statInfo === "coins" && (
                 <div className="app__stat-popover" role="status">
-                  Монеты начисляются за верные ответы в практике, диагностике и домашке. Больше сложность и меньше подсказок — больше награда.
+                  <p>Решай задания в практике — за верные ответы получишь монеты. Сложные задания и ответы без подсказок приносят больше.</p>
+                  <Link to="/app/practice" className="app__stat-popover-action">К практике</Link>
                 </div>
               )}
             </div>

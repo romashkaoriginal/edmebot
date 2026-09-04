@@ -208,6 +208,9 @@
   font-weight: 700;
   line-height: 1.4;
 }
+.app__stat-popover p { margin: 0; }
+.app__stat-popover-action { display: inline-flex; min-height: 36px; align-items: center; margin-top: 6px; color: var(--primary); font-size: var(--text-sm); font-weight: 850; text-decoration: none; }
+.app__stat-popover-action:focus-visible { outline: 3px solid color-mix(in oklch, var(--primary) 32%, transparent); outline-offset: 2px; border-radius: var(--r-sm); }
 .app__stat-popover--right {
   left: auto;
   right: 0;

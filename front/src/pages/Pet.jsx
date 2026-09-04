@@ -8,6 +8,7 @@ import { useApp } from "../store/AppStore";
 import { studentApi } from "../api/student";
 import { dateKey } from "../utils/date";
 import { petSpecies } from "../data/mock";
+import { Link } from "../router";
 import "./Pet.css";
 
 const CATEGORIES = [
@@ -130,8 +131,9 @@ export default function Pet() {
       showFeedback({
         type: "poor",
         text: error.message === "not_enough_coins"
-          ? "Не хватает монет. Реши ещё несколько заданий."
+          ? missingCoinsMessage(item, profile.coins)
           : "Покупка не сохранилась. Проверь соединение и попробуй ещё раз.",
+        action: error.message === "not_enough_coins" ? "practice" : null,
       });
       return false;
     } finally {
@@ -194,7 +196,13 @@ export default function Pet() {
       setSettingsOpen(false);
       cheer();
     } catch (error) {
-      showFeedback({ type: "poor", text: error.message === "not_enough_coins" ? "Для смены питомца нужно 100 монет." : "Не удалось сохранить выбор питомца." });
+      showFeedback({
+        type: "poor",
+        text: error.message === "not_enough_coins"
+          ? `Для смены питомца не хватает ${coinsNeededText(100, profile.coins)}. Заработай их за верные ответы в практике.`
+          : "Не удалось сохранить выбор питомца.",
+        action: error.message === "not_enough_coins" ? "practice" : null,
+      });
     } finally {
       setBusyId(null);
     }
@@ -288,7 +296,8 @@ export default function Pet() {
           </button>
           {coinsInfoOpen && (
             <div className="pet-page__coins-popover" role="status">
-              Монеты — единая валюта для корма, одежды, комнаты и смены питомца.
+              <p>Решай задания в практике — за верные ответы получишь монеты.</p>
+              <Link to="/app/practice" className="pet-page__coins-action">К практике</Link>
             </div>
           )}
 
@@ -322,7 +331,6 @@ export default function Pet() {
                   variant={worn[previewItem.slot] === previewItem.accessory ? "soft" : "accent"}
                   icon={worn[previewItem.slot] === previewItem.accessory ? Check : Shirt}
                   loading={busyId === previewItem.id}
-                  disabled={!ownedItems.includes(previewItem.id) && profile.coins < previewItem.price}
                   onClick={() => wear(previewItem)}
                 >
                   {worn[previewItem.slot] === previewItem.accessory
@@ -336,9 +344,8 @@ export default function Pet() {
               ) : (
                 <Button
                   size="sm"
-                  variant={profile.coins >= previewItem.price ? "accent" : "soft"}
+                  variant="accent"
                   icon={Coins}
-                  disabled={profile.coins < previewItem.price}
                   loading={busyId === previewItem.id}
                   onClick={async () => (await purchase(previewItem)) && showFeedback({ type: "ok", name: previewItem.name })}
                 >
@@ -371,14 +378,13 @@ export default function Pet() {
         <div className="pet-page__food-list">
           {foodItems.map((item) => {
             const amount = Number(foodInventory[item.id] ?? 0);
-            const afford = profile.coins >= item.price;
             return <Card key={item.id} className="pet-food" pad="sm">
               <span className="pet-food__icon" aria-hidden="true">{item.icon}</span>
               <span className="pet-food__name">{item.name}</span>
               <span className="pet-food__meta"><Coins size={13} /> {item.price} · +{item.effect?.satiety ?? 24}% сытости</span>
               {amount > 0 && <span className="pet-food__count">В запасе: {amount}</span>}
               <div className="pet-food__buttons">
-                <Button size="sm" variant={afford ? "accent" : "soft"} icon={Coins} disabled={!afford} loading={busyId === item.id} onClick={async () => (await purchase(item)) && showFeedback({ type: "ok", name: item.name })}>Купить</Button>
+                <Button size="sm" variant="accent" icon={Coins} loading={busyId === item.id} onClick={async () => (await purchase(item)) && showFeedback({ type: "ok", name: item.name })}>Купить</Button>
                 <Button size="sm" variant={amount > 0 ? "accent" : "soft"} icon={Cookie} disabled={amount <= 0} loading={busyId === `feed:${item.id}`} onClick={() => feed(item)}>Покормить</Button>
               </div>
             </Card>;
@@ -408,7 +414,7 @@ export default function Pet() {
         {pendingSpecies && <div className="pet-page__change-confirm" role="region" aria-labelledby="pet-change-title">
           <div className="pet-page__change-pets"><PetAvatar species={profile.pet.species} mood="idle" size={72} animated={false} decorative /><ArrowRight size={20} /><PetAvatar species={pendingSpecies} mood="happy" size={72} animated={false} decorative /></div>
           <div><strong id="pet-change-title">Сменить питомца?</strong><p>{petSpecies.find((item) => item.id === profile.pet.species)?.name} → {petSpecies.find((item) => item.id === pendingSpecies)?.name}. Будет списано 100 монет.</p></div>
-          <div className="pet-page__change-actions"><Button size="sm" variant="ghost" onClick={() => setPendingSpecies(null)}>Отмена</Button><Button size="sm" icon={Coins} loading={busyId === `species:${pendingSpecies}`} disabled={profile.coins < 100} onClick={() => chooseSpecies(pendingSpecies)}>Сменить за 100</Button></div>
+          <div className="pet-page__change-actions"><Button size="sm" variant="ghost" onClick={() => setPendingSpecies(null)}>Отмена</Button><Button size="sm" icon={Coins} loading={busyId === `species:${pendingSpecies}`} onClick={() => chooseSpecies(pendingSpecies)}>Сменить за 100</Button></div>
         </div>}
         </div>}
       </section>
@@ -456,11 +462,14 @@ export default function Pet() {
       </section>
 
       {feedback && (
-        <div className={`pet-page__toast pet-page__toast--${feedback.type === "poor" ? "poor" : "ok"}`} role="status" aria-live="polite">
+        <div className={`pet-page__toast pet-page__toast--${feedback.type === "poor" ? "poor" : "ok"}`} aria-live="polite">
+          <span className="pet-page__toast-message" role="status">
           {feedback.text ? <><Info size={16} strokeWidth={2.6} /> {feedback.text}</> :
            feedback.type === "poor" ? <><Info size={16} strokeWidth={2.6} /> Не хватает монет, реши ещё пару заданий</> :
            feedback.type === "fed" ? <><Check size={16} strokeWidth={3} /> {profile.pet.name} оценил «{feedback.name}»</> :
            <><Check size={16} strokeWidth={3} /> «{feedback.name}» куплено!</>}
+          </span>
+          {feedback.action === "practice" && <Button as={Link} to="/app/practice" size="sm" variant="soft">К практике</Button>}
         </div>
       )}
     </div>
@@ -492,6 +501,16 @@ function PetVitalBar({ icon, label, value, tone }) {
 
 function clampPercent(value) {
   return Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
+}
+
+function missingCoinsMessage(item, balance) {
+  return `До «${item.name}» не хватает ${coinsNeededText(item.price, balance)}. Заработай их за верные ответы в практике.`;
+}
+
+function coinsNeededText(price, balance) {
+  const missing = Math.max(1, price - Number(balance ?? 0));
+  const coinWord = missing % 10 === 1 && missing % 100 !== 11 ? "монеты" : "монет";
+  return `${missing} ${coinWord}`;
 }
 
 function petMoodLabel(stats) {
