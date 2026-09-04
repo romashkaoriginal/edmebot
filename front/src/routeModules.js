@@ -1,18 +1,13 @@
-// Split by role, not by page. Once a role bundle resolves, every section for
-// that role is ready and tab changes cannot trigger another dynamic import.
-export const loadRoleGate = () => import("./pages/RoleGate");
-export const loadStudentRoutes = () => import("./StudentRoutes");
-export const loadAdminRoutes = () => import("./AdminRoutes");
-
-let studentPreload;
-let adminPreload;
+// Telegram's iOS WebView may retain an old app shell while a release replaces
+// lazy route chunks. Keeping routes in the entry bundle prevents a mixed
+// release from throwing "failed to fetch dynamically imported module" during
+// the first switch to a student view.
+const alreadyAvailable = Promise.resolve();
 
 export function preloadStudentRoutes() {
-  studentPreload ??= loadStudentRoutes();
-  return studentPreload;
+  return alreadyAvailable;
 }
 
 export function preloadAdminRoutes() {
-  adminPreload ??= loadAdminRoutes();
-  return adminPreload;
+  return alreadyAvailable;
 }
