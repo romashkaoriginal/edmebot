@@ -512,13 +512,13 @@ export default function Pet() {
 function PetVitals({ stats }) {
   return (
     <Card className="pet-page__vitals" pad="md" aria-label="Состояние питомца">
-      <PetVitalBar icon="🍖" label="Сытость" value={stats.satiety} tone="satiety" hint="Восстанавливается кормом." />
-      <PetVitalBar icon="😊" label="Настроение" value={stats.mood} tone="mood" hint="Растёт от верных ответов в практике." />
+      <PetVitalBar icon="🍖" label="Сытость" value={stats.satiety} tone="satiety" />
+      <PetVitalBar icon="😊" label="Настроение" value={stats.mood} tone="mood" />
     </Card>
   );
 }
 
-function PetVitalBar({ icon, label, value, tone, hint }) {
+function PetVitalBar({ icon, label, value, tone }) {
   return (
     <div className={`pet-vital pet-vital--${tone}`}>
       <div className="pet-vital__head">
@@ -528,7 +528,6 @@ function PetVitalBar({ icon, label, value, tone, hint }) {
       <div className="pet-vital__track" role="progressbar" aria-label={label} aria-valuemin="0" aria-valuemax="100" aria-valuenow={value}>
         <i style={{ transform: `scaleX(${value / 100})` }} />
       </div>
-      <small className="pet-vital__hint">{hint}</small>
     </div>
   );
 }
