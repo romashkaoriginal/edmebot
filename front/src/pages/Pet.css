@@ -85,13 +85,21 @@
 .pet-vital--satiety .pet-vital__track i { background: var(--accent); }
 .pet-vital--mood .pet-vital__track i { background: var(--success); }
 .pet-page__food-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-2); }
-.pet-food { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 3px 8px; }
-.pet-food__icon { grid-row: 1 / 4; font-size: 1.65rem; }
-.pet-food__name { overflow: hidden; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
-.pet-food__meta, .pet-food__count { color: var(--muted); font-size: var(--text-xs); font-weight: 750; }
-.pet-food__meta { display: inline-flex; align-items: center; gap: 3px; }
-.pet-food__count { color: var(--primary-strong); }
-.pet-food__buttons { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 5px; }
+.pet-food { display: flex; min-width: 0; flex-direction: column; gap: var(--sp-2); }
+.pet-food__head { display: flex; min-width: 0; align-items: center; gap: var(--sp-2); }
+.pet-food__icon { display: grid; width: 46px; height: 46px; flex: 0 0 auto; place-items: center; border-radius: var(--r-md); background: var(--accent-soft); font-size: 1.55rem; }
+.pet-food__name { min-width: 0; overflow: hidden; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
+.pet-food__facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.pet-food__price, .pet-food__effect { min-width: 0; min-height: 48px; padding: 6px 7px; border-radius: var(--r-sm); background: var(--surface-2); color: var(--ink); }
+.pet-food__price { display: grid; grid-template-columns: 16px minmax(0, 1fr); column-gap: 4px; align-items: center; }
+.pet-food__price svg { grid-row: 1 / span 2; color: var(--accent-strong); }
+.pet-food__effect { display: flex; flex-direction: column; justify-content: center; }
+.pet-food__price b, .pet-food__effect b { font-size: var(--text-sm); font-weight: 900; line-height: 1; }
+.pet-food__price small, .pet-food__effect small { overflow: hidden; color: var(--muted); font-size: 11px; font-weight: 750; line-height: 1.15; text-overflow: ellipsis; white-space: nowrap; }
+.pet-food__effect b { color: var(--success); }
+.pet-food__count { color: var(--primary-strong); font-size: var(--text-xs); font-weight: 750; }
+.pet-food__count b { font-weight: 900; }
+.pet-food__buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: auto; }
 .pet-food__buttons .btn { width: 100%; min-width: 0; padding-inline: 8px; }
 .pet-page__section-head { margin-bottom: var(--sp-3); }
 .pet-page__section-head .section-title { margin: 0; }
@@ -143,6 +151,20 @@
 @media (min-width: 861px) { .pet-page__toast { bottom: var(--sp-6); } }
 @media (max-width: 760px) { .pet-page__shop { grid-template-columns: repeat(2, minmax(0, 1fr)); }.shopitem { grid-template-columns: 54px minmax(0, 1fr); gap: var(--sp-2); }.shopitem__icon { width: 54px; height: 54px; }.pet-page__change-confirm { grid-template-columns: 1fr; }.pet-page__change-pets { justify-content: center; }.pet-page__change-actions { justify-content: flex-start; } }
 @media (max-width: 560px) { .pet-page { gap: var(--sp-5); }.pet-page__room { min-height: 300px; }.pet-page__avatar { margin-bottom: 20px; }.pet-page__sun { top: 38px; right: 9%; width: 48px; height: 48px; }.pet-page__plant { left: 5%; scale: 0.8; transform-origin: bottom left; }.pet-page__cloud--one { left: 2%; }.pet-page__preview-bar { grid-template-columns: 44px minmax(0, 1fr); padding: 10px; }.pet-page__preview-icon { width: 44px; height: 44px; }.pet-page__preview-actions { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }.pet-page__preview-actions .btn { width: 100%; }.pet-page__preview-owned { justify-content: center; }.pet-page__actions { padding: var(--sp-2); }.pet-action { min-height: 50px; flex-direction: column; gap: 1px; padding: 5px; font-size: var(--text-xs); }.pet-page__species { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-2); }.petpick { min-height: 134px; }.pet-page__food-list { gap: 5px; }.pet-food.card--pad-sm { padding: 8px; }.pet-food { grid-template-columns: 1fr; justify-items: center; text-align: center; }.pet-food__icon { grid-row: auto; }.pet-food__buttons { grid-template-columns: 1fr; }.pet-food__buttons .btn { padding-inline: 6px; font-size: 12px; }.pet-page__shop { gap: var(--sp-2); }.shopitem { grid-template-columns: 1fr; justify-items: center; gap: 5px; min-height: 166px; text-align: center; }.shopitem .btn, .shopitem__owned, .shopitem__actions { grid-column: 1; justify-self: center; }.shopitem__actions { justify-content: center; }.shopitem__name { max-width: 100%; }.pet-page__mood { bottom: 8px; }.pet-page__room-chip--name { max-width: calc(100% - 112px); }.pet-page__lamp { right: 5%; scale: 0.82; transform-origin: bottom; }.pet-page__house { right: 7%; scale: 0.82; transform-origin: bottom right; }.pet-page__toast { width: calc(100vw - 32px); }.pet-page__toast .btn { padding-inline: var(--sp-3); } }
+
+/* Food cards stay readable on a phone: two generous columns beat three narrow
+   cards whose price and effect fragment into unrelated lines. */
+@media (max-width: 560px) {
+  .pet-page__food-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-2); }
+  .pet-food { text-align: left; }
+  .pet-food__head { gap: 6px; }
+  .pet-food__icon { width: 42px; height: 42px; font-size: 1.35rem; }
+  .pet-food__buttons { grid-template-columns: 1fr; }
+  .pet-food__buttons .btn { padding-inline: var(--sp-3); font-size: var(--text-sm); }
+}
+@media (max-width: 340px) {
+  .pet-page__food-list { grid-template-columns: 1fr; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .pet-page__room-item--preview { animation: none; }

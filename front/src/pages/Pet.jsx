@@ -386,10 +386,19 @@ export default function Pet() {
           {foodItems.map((item) => {
             const amount = Number(foodInventory[item.id] ?? 0);
             return <Card key={item.id} className="pet-food" pad="sm">
-              <span className="pet-food__icon" aria-hidden="true">{item.icon}</span>
-              <span className="pet-food__name">{item.name}</span>
-              <span className="pet-food__meta"><Coins size={13} /> {item.price} · +{item.effect?.satiety ?? 24}% сытости</span>
-              {amount > 0 && <span className="pet-food__count">В запасе: {amount}</span>}
+              <div className="pet-food__head">
+                <span className="pet-food__icon" aria-hidden="true">{item.icon}</span>
+                <span className="pet-food__name">{item.name}</span>
+              </div>
+              <div className="pet-food__facts">
+                <span className="pet-food__price" aria-label={`Цена: ${item.price} монет`}>
+                  <Coins size={16} aria-hidden="true" /><b>{item.price}</b><small>монет</small>
+                </span>
+                <span className="pet-food__effect" aria-label={`Восстанавливает ${item.effect?.satiety ?? 24}% сытости`}>
+                  <b>+{item.effect?.satiety ?? 24}%</b><small>сытость</small>
+                </span>
+              </div>
+              {amount > 0 && <span className="pet-food__count">В запасе: <b>{amount}</b></span>}
               <div className="pet-food__buttons">
                 <Button size="sm" variant="accent" icon={Coins} loading={busyId === item.id} onClick={async () => (await purchase(item)) && showFeedback({ type: "ok", name: item.name })}>Купить</Button>
                 <Button size="sm" variant={amount > 0 ? "accent" : "soft"} icon={Cookie} disabled={amount <= 0} loading={busyId === `feed:${item.id}`} onClick={() => feed(item)}>Покормить</Button>
