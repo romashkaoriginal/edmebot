@@ -176,9 +176,12 @@ function Fox({ mood, uid, children }) {
   return (
     <g className="pet__body">
       <Defs uid={uid} from="oklch(0.78 0.16 55)" to="oklch(0.64 0.17 45)" bodyFrom="oklch(0.72 0.16 50)" bodyTo="oklch(0.6 0.17 44)" />
-      {/* bushy tail curling from behind the body */}
-      <path d="M84 100 C112 100 110 72 92 74 C102 82 96 94 82 92 Z" fill="oklch(0.6 0.17 44)" />
-      <path d="M92 88 C100 86 100 80 96 78 C98 83 95 87 90 87 Z" fill="#fff" opacity="0.9" />
+      {/* A broad base hides beneath the torso, so the tail feels attached. */}
+      <g className="pet__tail pet__tail--fox">
+        <path d="M76 101 C94 112 114 100 111 81 C109 67 100 63 90 69 C100 75 102 84 97 91 C92 98 83 98 76 93 Z" fill="oklch(0.6 0.17 44)" />
+        <path d="M104 71 C112 78 112 89 105 96 C101 99 96 100 92 98 C99 94 103 88 102 82 C101 77 98 74 94 72 Z" fill="#fff" opacity="0.94" />
+        <path d="M82 96 C88 100 94 99 98 95 M86 91 C92 95 97 93 100 89" stroke="oklch(0.68 0.17 46)" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.8" />
+      </g>
       {/* torso */}
       <path d="M60 70 C40 70 34 84 36 96 C38 108 82 108 84 96 C86 84 80 70 60 70 Z" fill={`url(#body-${uid})`} />
       {/* chest bib */}
@@ -207,9 +210,14 @@ function Raccoon({ mood, uid, children }) {
   return (
     <g className="pet__body">
       <Defs uid={uid} from="oklch(0.72 0.02 265)" to="oklch(0.56 0.02 265)" bodyFrom="oklch(0.66 0.02 265)" bodyTo="oklch(0.5 0.02 265)" blush="oklch(0.72 0.12 20 / 0.5)" />
-      {/* ringed tail */}
-      <path d="M84 102 C110 100 108 74 90 74 C100 82 96 96 82 94 Z" fill="oklch(0.5 0.02 265)" />
-      <path d="M104 84 q4 4 0 8 M98 78 q5 5 0 10" stroke="oklch(0.28 0.02 265)" strokeWidth="4" fill="none" strokeLinecap="round" />
+      {/* A fuller, banded tail starts beneath the hip instead of beside it. */}
+      <g className="pet__tail pet__tail--raccoon">
+        <path d="M76 101 C92 109 113 99 111 81 C110 67 99 62 87 69 C97 73 101 80 99 87 C97 97 86 99 77 94 Z" fill="oklch(0.5 0.02 265)" />
+        <path d="M103 70 C109 74 112 80 111 85 L101 89 C102 82 100 76 96 73 Z" fill="oklch(0.26 0.02 265)" />
+        <path d="M101 89 C99 95 94 99 89 100 L85 92 C91 90 96 86 97 81 Z" fill="oklch(0.26 0.02 265)" />
+        <path d="M89 100 C84 101 80 99 77 95 L80 88 C84 92 88 93 92 92 Z" fill="oklch(0.26 0.02 265)" />
+        <path d="M78 95 C82 100 88 102 92 99 C87 99 83 97 80 92 Z" fill="oklch(0.78 0.01 265)" opacity="0.66" />
+      </g>
       {/* torso */}
       <path d="M60 70 C40 70 34 84 36 96 C38 108 82 108 84 96 C86 84 80 70 60 70 Z" fill={`url(#body-${uid})`} />
       <path d="M60 74 C51 74 48 92 60 102 C72 92 69 74 60 74 Z" fill="oklch(0.82 0.01 265)" opacity="0.9" />
@@ -236,9 +244,12 @@ function Squirrel({ mood, uid, children }) {
   return (
     <g className="pet__body">
       <Defs uid={uid} from="oklch(0.68 0.13 48)" to="oklch(0.54 0.14 42)" bodyFrom="oklch(0.64 0.13 46)" bodyTo="oklch(0.5 0.14 42)" />
-      {/* enormous curling tail — the squirrel signature */}
-      <path d="M80 104 C120 96 118 40 84 40 C108 52 104 84 74 84 C86 90 84 100 80 104 Z" fill="oklch(0.6 0.13 45)" />
-      <path d="M92 56 C104 60 104 78 88 82 C100 74 98 62 88 60 Z" fill="oklch(0.72 0.12 50)" opacity="0.7" />
+      {/* The tail overlaps the torso at its base, keeping the curl connected. */}
+      <g className="pet__tail pet__tail--squirrel">
+        <path d="M74 102 C95 112 118 91 111 63 C107 46 95 35 81 40 C94 48 101 61 97 73 C93 84 82 88 73 84 C80 90 80 98 74 102 Z" fill="oklch(0.6 0.13 45)" />
+        <path d="M82 43 C99 52 105 69 96 81 C92 86 85 88 78 85 C90 79 95 70 92 61 C90 53 85 48 79 46 Z" fill="oklch(0.72 0.12 50)" opacity="0.72" />
+        <path d="M108 61 C114 75 110 89 100 96 C105 86 105 77 100 69 Z" fill="oklch(0.54 0.14 42)" opacity="0.75" />
+      </g>
       {/* torso */}
       <path d="M60 72 C44 72 40 84 42 96 C44 108 78 108 80 96 C82 84 76 72 60 72 Z" fill={`url(#body-${uid})`} />
       <path d="M60 76 C52 76 49 92 60 102 C71 92 68 76 60 76 Z" fill="oklch(0.92 0.04 55)" opacity="0.9" />
