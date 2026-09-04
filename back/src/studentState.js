@@ -309,8 +309,10 @@ async function gradePractice(student, task, selected, instanceId) {
     );
     const profile = profileRows[0];
     let award = { gained: 0, coins: 0, leveledUp: false, alreadyRewarded: false };
-    const satietyDelta = correct ? -1 : -2;
-    const moodDelta = correct ? 3 : -3;
+    // A mistake is feedback, not a penalty for the pet. Correct answers cheer
+    // the pet up; an incorrect answer leaves both care stats unchanged.
+    const satietyDelta = correct ? -1 : 0;
+    const moodDelta = correct ? 3 : 0;
 
     if (correct) {
       const { rows: dayRows } = await client.query(

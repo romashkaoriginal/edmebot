@@ -75,6 +75,14 @@ test("records the mistake against the stored option, not the shown position", as
   assert.equal(mistake.params[4], 0);
 });
 
+test("does not lower pet stats after an incorrect answer", async () => {
+  const { result, statements } = await runGrading({ optionOrder: [2, 0, 3, 1], selected: 1, taskCorrect: 2 });
+  assert.equal(result.correct, false);
+  const petUpdate = statements.find((statement) => /^UPDATE student_profiles/.test(statement.text));
+  assert.ok(petUpdate, "updates the pet care timestamp without changing its stats");
+  assert.deepEqual(petUpdate.params, [1, 0, 0]);
+});
+
 test("still grades instances created before option shuffling", async () => {
   const { result } = await runGrading({ optionOrder: null, selected: 3, taskCorrect: 3 });
   assert.equal(result.correct, true);
