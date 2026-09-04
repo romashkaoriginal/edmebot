@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 import { useNavigate } from "../router";
 import { ShieldCheck, GraduationCap, ArrowRight, ChevronLeft } from "lucide-react";
 import Logo from "../components/brand/Logo";
@@ -109,7 +110,9 @@ export default function RoleGate() {
       // rendered the student routes with an empty or previous profile; a page
       // reload then worked only because the ID had reached localStorage.
       const data = await studentApi.profile({ timeoutMs: 15_000 });
-      hydrate(data, { replace: true });
+      // iOS Telegram can paint the new route before React commits an async
+      // state update. Commit the selected identity first, then navigate.
+      flushSync(() => hydrate(data, { replace: true }));
       navigate("/app");
     } catch {
       setStudentPickError("Не удалось открыть профиль ученика. Проверь соединение и попробуй ещё раз.");

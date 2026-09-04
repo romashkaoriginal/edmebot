@@ -44,7 +44,13 @@ export function BrowserRouter({ children }) {
     const next = `${target.pathname}${target.search}${target.hash}`;
     window.history[replace ? "replaceState" : "pushState"]({}, "", next);
     setLocation(nextLocation);
-    window.scrollTo({ top: 0, behavior: "auto" });
+    // Some embedded iOS WebViews only support the legacy scrollTo signature.
+    // A navigation must still succeed there when the options object throws.
+    try {
+      window.scrollTo({ top: 0, behavior: "auto" });
+    } catch {
+      window.scrollTo(0, 0);
+    }
   }, []);
 
   const value = useMemo(() => ({ location, navigate }), [location, navigate]);
