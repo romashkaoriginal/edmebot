@@ -7,7 +7,6 @@ import SectionTitle from "../components/ui/SectionTitle";
 import PetAvatar, { AccessoryPreview } from "../components/pet/PetAvatar";
 import { useApp } from "../store/AppStore";
 import { studentApi } from "../api/student";
-import { dateKey } from "../utils/date";
 import { petSpecies } from "../data/mock";
 import { Link } from "../router";
 import "./Pet.css";
@@ -96,7 +95,7 @@ export default function Pet() {
   const bond = profile.petBond ?? 0;
   const bondLevel = Math.floor(bond / 100) + 1;
   const bondProgress = bond % 100;
-  const studiedToday = profile.streakLastDoneOn === dateKey();
+  const petState = getPetState(petStats, profile.pet.name);
 
   const clearLater = useCallback((fn, ms) => {
     const timer = setTimeout(fn, ms);
@@ -245,6 +244,14 @@ export default function Pet() {
     });
   }
 
+  function openFood() {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.getElementById("pet-food")?.scrollIntoView({
+      behavior: reduceMotion ? "auto" : "smooth",
+      block: "center",
+    });
+  }
+
   if (!profile.petSelected && profile.onboardingStep === "pet") {
     return <PetFirstChoice hydrate={hydrate} />;
   }
@@ -317,8 +324,8 @@ export default function Pet() {
           {ownedItems.includes("s12") && <RoomItem item={{ id: "s12", name: "Домик" }} />}
           {ownedItems.includes("s8") && <RoomItem item={{ id: "s8", name: "Звезда" }} />}
           {previewItem?.category === "home" && !ownedItems.includes(previewItem.id) && <RoomItem item={previewItem} preview />}
-          <div className="pet-page__mood" role="status">{petMoodLabel(petStats)}</div>
-          <PetAvatar className="pet-page__avatar" species={profile.pet.species} mood={petStats.mood >= 70 || studiedToday ? "happy" : "idle"} accessories={previewAccessories} reaction={reaction} eating={eating} size={220} />
+          <PetSpeech state={petState} onOpenFood={openFood} reduceMotion={reduceMotion} />
+          <PetAvatar className="pet-page__avatar" species={profile.pet.species} mood={petState.expression} accessories={previewAccessories} reaction={reaction} eating={eating} size={220} />
         </div>
 
         {previewItem && (
@@ -505,13 +512,13 @@ export default function Pet() {
 function PetVitals({ stats }) {
   return (
     <Card className="pet-page__vitals" pad="md" aria-label="Состояние питомца">
-      <PetVitalBar icon="🍖" label="Сытость" value={stats.satiety} tone="satiety" />
-      <PetVitalBar icon="😊" label="Настроение" value={stats.mood} tone="mood" />
+      <PetVitalBar icon="🍖" label="Сытость" value={stats.satiety} tone="satiety" hint="Восстанавливается кормом." />
+      <PetVitalBar icon="😊" label="Настроение" value={stats.mood} tone="mood" hint="Растёт от верных ответов в практике." />
     </Card>
   );
 }
 
-function PetVitalBar({ icon, label, value, tone }) {
+function PetVitalBar({ icon, label, value, tone, hint }) {
   return (
     <div className={`pet-vital pet-vital--${tone}`}>
       <div className="pet-vital__head">
@@ -521,6 +528,7 @@ function PetVitalBar({ icon, label, value, tone }) {
       <div className="pet-vital__track" role="progressbar" aria-label={label} aria-valuemin="0" aria-valuemax="100" aria-valuenow={value}>
         <i style={{ transform: `scaleX(${value / 100})` }} />
       </div>
+      <small className="pet-vital__hint">{hint}</small>
     </div>
   );
 }
@@ -539,11 +547,72 @@ function coinsNeededText(price, balance) {
   return `${missing} ${coinWord}`;
 }
 
-function petMoodLabel(stats) {
-  if (stats.satiety < 25) return "Голоден: пора покормить";
-  if (stats.mood < 35) return "Нужно внимание и пара верных ответов";
-  if (stats.mood >= 80 && stats.satiety >= 70) return "Сыт и в отличном настроении";
-  return "Спокоен и готов заниматься";
+function getPetState(stats, name) {
+  const hungry = stats.satiety < 45;
+  const sad = stats.mood < 45;
+  const veryHungry = stats.satiety <= 20;
+  const verySad = stats.mood <= 20;
+  const expression = hungry || sad ? "sad" : stats.satiety >= 70 && stats.mood >= 70 ? "happy" : "idle";
+
+  if (hungry && sad) {
+    return {
+      key: "hungry-and-sad",
+      expression,
+      text: veryHungry || verySad
+        ? `${name}, кажется, совсем загрустил и проголодался. Покормим его, а потом решим пару заданий?`
+        : `${name} хочет перекусить и позаниматься с тобой. Так настроение станет лучше.`,
+      actions: ["food", "practice"],
+    };
+  }
+  if (hungry) {
+    return {
+      key: "hungry",
+      expression,
+      text: veryHungry ? `${name} очень проголодался. Выбери ему корм, пожалуйста.` : `${name} не прочь перекусить. Заглянем в питание?`,
+      actions: ["food"],
+    };
+  }
+  if (sad) {
+    return {
+      key: "sad",
+      expression,
+      text: verySad ? `${name} немного грустит. Давай решим несколько заданий вместе?` : `${name} хочет позаниматься с тобой — верные ответы поднимут ему настроение.`,
+      actions: ["practice"],
+    };
+  }
+
+  const phrases = [
+    `${name} рядом и верит в тебя. Готов к новым заданиям!`,
+    `У ${name} всё хорошо. Учиться вместе — весело!`,
+    `${name} радуется твоим стараниям. Продолжай в своём темпе!`,
+    `Сегодня можно сделать ещё один маленький шаг к цели. ${name} с тобой!`,
+  ];
+  const phraseIndex = Array.from(name).reduce((total, symbol) => total + symbol.codePointAt(0), 0) % phrases.length;
+  return { key: "content", expression, text: phrases[phraseIndex], actions: [] };
+}
+
+function PetSpeech({ state, onOpenFood, reduceMotion }) {
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={state.key}
+        className="pet-page__speech"
+        role="status"
+        initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6, scale: 0.98 }}
+        animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+        exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4, scale: 0.98 }}
+        transition={{ duration: reduceMotion ? 0.14 : 0.2, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <p>{state.text}</p>
+        {state.actions.length > 0 && (
+          <span className="pet-page__speech-actions">
+            {state.actions.includes("food") && <button type="button" onClick={onOpenFood}><Cookie size={14} /> К корму</button>}
+            {state.actions.includes("practice") && <Link to="/app/practice"><Sparkles size={14} /> К практике</Link>}
+          </span>
+        )}
+      </motion.div>
+    </AnimatePresence>
+  );
 }
 
 function RoomItem({ item, preview = false }) {

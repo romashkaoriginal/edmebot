@@ -276,9 +276,6 @@ function Owl({ mood, uid, children }) {
   return (
     <g className="pet__body">
       <Defs uid={uid} from="oklch(0.62 0.16 262)" to="oklch(0.46 0.18 263)" bodyFrom="oklch(0.58 0.17 262)" bodyTo="oklch(0.44 0.18 263)" blush="oklch(0.72 0.14 40 / 0.5)" />
-      {/* feet */}
-      <path d="M48 104 l-4 6 M48 104 l0 7 M48 104 l4 6" stroke="var(--accent-strong)" strokeWidth="3" strokeLinecap="round" />
-      <path d="M72 104 l-4 6 M72 104 l0 7 M72 104 l4 6" stroke="var(--accent-strong)" strokeWidth="3" strokeLinecap="round" />
       {/* one-piece rounded loaf body (owls have no neck) */}
       <path d="M60 20 C34 20 26 44 28 70 C30 96 90 96 92 70 C94 44 86 20 60 20 Z" fill={fur} />
       {/* wings hugging the sides */}
@@ -309,6 +306,12 @@ function Owl({ mood, uid, children }) {
       {/* beak */}
       <path d="M60 54 L54 62 L66 62 Z" fill="var(--accent)" />
       <path d="M60 62 L57 66 L63 66 Z" fill="var(--accent-strong)" />
+      {/* Short legs make the toes feel attached to the body instead of floating. */}
+      <g stroke="var(--accent-strong)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M49 94 L49 105 M71 94 L71 105" />
+        <path d="M49 105 l-4 6 M49 105 l0 7 M49 105 l4 6" />
+        <path d="M71 105 l-4 6 M71 105 l0 7 M71 105 l4 6" />
+      </g>
       {children}
     </g>
   );
@@ -320,9 +323,14 @@ function Cat({ mood, uid, children }) {
   return (
     <g className="pet__body">
       <Defs uid={uid} from="oklch(0.74 0.05 60)" to="oklch(0.6 0.06 55)" bodyFrom="oklch(0.7 0.05 58)" bodyTo="oklch(0.56 0.06 54)" />
-      {/* curled tail wrapping around the body */}
-      <path d="M82 104 C106 104 106 82 90 80 C100 84 98 96 82 96 Z" fill="oklch(0.58 0.06 54)" />
-      <path d="M96 90 q4 -2 6 2 M92 84 q4 -1 6 3" stroke={stripe} strokeWidth="3" fill="none" strokeLinecap="round" />
+      {/* A broad, striped tail starts under the hip and curls back around it. */}
+      <g className="pet__tail pet__tail--cat">
+        <path d="M67 102 C91 112 113 102 112 85 C111 70 99 65 87 72 C98 76 103 84 100 91 C97 100 83 100 67 94 Z" fill="oklch(0.58 0.06 54)" />
+        <path d="M103 73 C110 77 113 85 112 90 L102 94 C104 86 101 79 96 75 Z" fill="oklch(0.7 0.06 57)" opacity="0.82" />
+        <path d="M101 94 C98 100 91 102 85 101 L82 93 C89 94 96 90 99 85 Z" fill="oklch(0.49 0.06 52)" opacity="0.78" />
+        <path d="M76 99 C84 103 94 102 99 97" stroke={stripe} strokeWidth="2.6" fill="none" strokeLinecap="round" opacity="0.72" />
+        <path d="M91 75 C96 78 99 82 100 86 M85 78 C91 80 95 84 96 89" stroke={stripe} strokeWidth="2.4" fill="none" strokeLinecap="round" opacity="0.7" />
+      </g>
       {/* torso */}
       <path d="M60 72 C42 72 38 84 40 96 C42 108 78 108 80 96 C82 84 78 72 60 72 Z" fill={`url(#body-${uid})`} />
       <path d="M60 76 C52 76 49 92 60 102 C71 92 68 76 60 76 Z" fill="#fff" opacity="0.9" />
