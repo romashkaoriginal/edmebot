@@ -7,7 +7,7 @@ import FormModal from "../../components/admin/FormModal";
 import { adminApi } from "../../api/admin";
 import "./admin.css";
 
-const SUBJECTS = ["Математика", "Русский"];
+const SUBJECTS = ["Математика", "Русский", "Химия", "Физика"];
 const GRADES = [6, 7, 8, 9, 10, 11];
 const EMPTY = { title: "", description: "", due: "", subject: "", taskIds: [], questions: [], maxAttempts: 1 };
 const MOSCOW_UTC_OFFSET = "+03:00";
@@ -33,7 +33,7 @@ const HW_IMPORT_FIELDS = [
   { key: "title", desc: "заголовок домашки (обязательно)" },
   { key: "description", desc: "необязательно: что нужно сделать" },
   { key: "due", desc: "необязательно: срок, ГГГГ-ММ-ДД или ГГГГ-ММ-ДД ЧЧ:ММ" },
-  { key: "subject", desc: "обязательно: Математика или Русский" },
+  { key: "subject", desc: "обязательно: Математика, Русский, Химия или Физика" },
   { key: "task_ids", desc: "обязательно: минимум один ID задания через запятую" },
   { key: "max_attempts", desc: "от 1 до 20, по умолчанию 1" },
 ];

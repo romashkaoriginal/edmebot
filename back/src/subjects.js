@@ -3,6 +3,8 @@
 const SUBJECT_VARIANTS = [
   { canonical: "Математика", aliases: ["математика"] },
   { canonical: "Русский", aliases: ["русский", "русский язык"] },
+  { canonical: "Химия", aliases: ["химия"] },
+  { canonical: "Физика", aliases: ["физика"] },
 ];
 
 const SUBJECT_BY_ALIAS = new Map(

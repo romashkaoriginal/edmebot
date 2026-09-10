@@ -1,10 +1,12 @@
-import { Calculator, PenLine } from "lucide-react";
+import { Calculator, PenLine, FlaskConical, Atom } from "lucide-react";
 import { subjectLabel } from "../../utils/subjects";
 import "./SubjectPicker.css";
 
 const SUBJECT_META = {
   "Математика": { icon: Calculator, label: "Математика" },
   "Русский": { icon: PenLine, label: "Русский язык" },
+  "Химия": { icon: FlaskConical, label: "Химия" },
+  "Физика": { icon: Atom, label: "Физика" },
 };
 
 export default function SubjectPicker({ subjects, section, onSelect }) {

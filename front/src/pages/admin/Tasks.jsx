@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   ListChecks, Plus, Trash2, X, Upload, ChevronLeft, ChevronRight,
-  Calculator, PenLine, Folder, Eye, EyeOff, Pencil, CheckCircle2,
+  Calculator, PenLine, FlaskConical, Atom, Folder, Eye, EyeOff, Pencil, CheckCircle2,
 } from "lucide-react";
 import Button from "../../components/ui/Button";
 import SectionTitle from "../../components/ui/SectionTitle";
@@ -12,7 +12,7 @@ import "./admin.css";
 
 const TASK_IMPORT_FIELDS = [
   { key: "grade", desc: "класс, число 5–11" },
-  { key: "subject", desc: "Русский или Математика" },
+  { key: "subject", desc: "Русский, Математика, Химия или Физика" },
   { key: "topic", desc: "название темы, напр. Дроби" },
   { key: "prompt", desc: "текст задания" },
   { key: "option_a … option_f", desc: "варианты ответа (минимум a и b)" },
@@ -25,6 +25,8 @@ const TASK_IMPORT_FIELDS = [
 const SUBJECTS = [
   { name: "Математика", icon: Calculator, tone: "primary" },
   { name: "Русский", icon: PenLine, tone: "accent" },
+  { name: "Химия", icon: FlaskConical, tone: "primary" },
+  { name: "Физика", icon: Atom, tone: "accent" },
 ];
 const GRADES = [6, 7, 8, 9, 10, 11];
 const DIFFICULTIES = [
