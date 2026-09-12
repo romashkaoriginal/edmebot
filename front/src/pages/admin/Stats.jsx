@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import {
   BarChart3, Search, Target, CheckCircle2, Percent, ChevronRight,
   Flame, Trophy, Coins, BookOpen, PawPrint,
@@ -7,6 +7,7 @@ import Card from "../../components/ui/Card";
 import SectionTitle from "../../components/ui/SectionTitle";
 import ProgressBar from "../../components/ui/ProgressBar";
 import { adminApi } from "../../api/admin";
+import { SUBJECTS } from "../../utils/subjects";
 import "./admin.css";
 
 const GRADES = [6, 7, 8, 9, 10, 11];
@@ -42,15 +43,22 @@ export default function Stats() {
       .catch((e) => setError(e.message));
   }, [selectedId]);
 
-  const subjects = useMemo(
-    () => [...new Set(summary.map((s) => s.subject).filter(Boolean))],
-    [summary]
-  );
+  const subjects = SUBJECTS;
+
+  const studentSubjects = (student) => {
+    const assigned = student.subjects?.filter((item) => item?.subject) ?? [];
+    return assigned.length ? assigned : student.subject ? [{ subject: student.subject, grade: student.grade }] : [];
+  };
+
+  const subjectSummary = (student) => studentSubjects(student)
+    .map(({ subject, grade }) => `${grade ? `${grade} класс · ` : ""}${subject}`)
+    .join(" / ") || "предмет не назначен";
 
   const filtered = summary.filter((s) => {
-    if (gradeFilter !== "all" && String(s.grade) !== gradeFilter) return false;
-    if (subjectFilter !== "all" && s.subject !== subjectFilter) return false;
-    return `${s.name} ${s.subject ?? ""}`.toLowerCase().includes(search.trim().toLowerCase());
+    const assigned = studentSubjects(s);
+    if (gradeFilter !== "all" && !assigned.some(({ grade }) => String(grade) === gradeFilter)) return false;
+    if (subjectFilter !== "all" && !assigned.some(({ subject }) => subject === subjectFilter)) return false;
+    return `${s.name} ${assigned.map(({ subject }) => subject).join(" ")}`.toLowerCase().includes(search.trim().toLowerCase());
   });
 
   const selected = summary.find((s) => String(s.id) === String(selectedId));
@@ -106,7 +114,7 @@ export default function Stats() {
                   <div className="arow__main">
                     <div className="arow__title">{s.name}</div>
                     <div className="arow__meta">
-                      {s.grade} класс · {s.subject}
+                      {subjectSummary(s)}
                     </div>
                   </div>
                   <div className="apick-stat">
@@ -130,7 +138,7 @@ export default function Stats() {
                 <span className="aavatar aavatar--lg" aria-hidden="true">{initials(selected.name)}</span>
                 <div>
                   <h2 className="astats-detail__name">{selected.name}</h2>
-                  <p className="arow__meta">{selected.grade} класс · {selected.subject}</p>
+                  <p className="arow__meta">{subjectSummary(selected)}</p>
                 </div>
                 <div className="aaccuracy" style={{ "--accuracy": `${selected.accuracy}%` }} aria-label={`Точность ${selected.accuracy}%`}>
                   <span>{selected.accuracy}%</span>

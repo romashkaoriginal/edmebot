@@ -10,7 +10,7 @@ import FormModal from "../../components/admin/FormModal";
 import { adminApi } from "../../api/admin";
 import "./admin.css";
 
-const SUBJECTS = ["Математика", "Русский"];
+const SUBJECTS = ["Математика", "Русский", "Химия", "Физика"];
 const GRADES = [6, 7, 8, 9, 10, 11];
 const EMPTY = {
   firstName: "",

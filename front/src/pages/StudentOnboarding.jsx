@@ -68,7 +68,7 @@ export default function StudentOnboarding() {
         <section className="sonboard__panel">
           <div>
             <h1>Что будем изучать?</h1>
-            <p>Можно выбрать оба предмета — или начать с одного и добавить второй позже.</p>
+            <p>Можно выбрать один или несколько предметов и добавить остальные позже.</p>
           </div>
           <div className="sonboard__subjects" role="group" aria-label="Предметы">
             {SUBJECTS.map(({ name, icon: Icon, label, hint }) => {
@@ -90,7 +90,7 @@ export default function StudentOnboarding() {
             })}
           </div>
           <Button size="lg" full iconRight={ArrowRight} disabled={!selected.length} onClick={() => setStep("grade")}>
-            {selected.length === 2 ? "Продолжить с двумя предметами" : "Продолжить"}
+            {selected.length > 1 ? `Продолжить с ${selected.length} предметами` : "Продолжить"}
           </Button>
         </section>
       ) : (

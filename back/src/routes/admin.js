@@ -827,12 +827,25 @@ router.get("/stats", requireRole("admin", "tutor"), async (_req, res, next) => {
   try {
     const { rows } = await db.query(
       `SELECT s.id, s.name, s.grade, s.subject,
-              COUNT(a.id)::int AS attempts,
-              COUNT(a.id) FILTER (WHERE a.correct)::int AS correct
+              COALESCE(enrollments.subjects, '[]'::jsonb) AS subjects,
+              COALESCE(attempt_totals.attempts, 0)::int AS attempts,
+              COALESCE(attempt_totals.correct, 0)::int AS correct
          FROM students s
-         LEFT JOIN attempts a ON a.student_id = s.id
+         LEFT JOIN LATERAL (
+           SELECT jsonb_agg(
+             jsonb_build_object('subject', ss.subject, 'grade', ss.grade)
+             ORDER BY ss.created_at ASC
+           ) AS subjects
+             FROM student_subjects ss
+            WHERE ss.student_id = s.id
+         ) enrollments ON TRUE
+         LEFT JOIN LATERAL (
+           SELECT COUNT(*)::int AS attempts,
+                  COUNT(*) FILTER (WHERE a.correct)::int AS correct
+             FROM attempts a
+            WHERE a.student_id = s.id
+         ) attempt_totals ON TRUE
         WHERE NOT EXISTS (SELECT 1 FROM users u WHERE u.tg_id = s.tg_id)
-         GROUP BY s.id
          ORDER BY s.id ASC`
     );
     const students = rows.map((r) => ({

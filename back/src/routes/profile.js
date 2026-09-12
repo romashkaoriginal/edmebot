@@ -36,7 +36,7 @@ router.get("/", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-const ONBOARD_SUBJECTS = ["Математика", "Русский"];
+const ONBOARD_SUBJECTS = ["Математика", "Русский", "Химия", "Физика"];
 
 // Self-serve onboarding: a brand-new (auto-provisioned "pending") student
 // picks a subject + grade so they can take that subject's diagnostic. This
