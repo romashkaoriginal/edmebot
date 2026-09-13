@@ -82,12 +82,14 @@ const MOOD_LABEL = { happy: "радостное", idle: "спокойное", sa
  *   crownW — half-width of the head at the crown (hat width)
  */
 const ANCHOR = {
-  fox: { neckY: 71, neckW: 21, chestY: 96, eyeCx: [48, 72], eyeCy: 51, eyeR: 10, crownY: 24, crownW: 24 },
-  raccoon: { neckY: 72, neckW: 22, chestY: 98, eyeCx: [48, 72], eyeCy: 51, eyeR: 10, crownY: 22, crownW: 25 },
-  squirrel: { neckY: 73, neckW: 19, chestY: 98, eyeCx: [49, 71], eyeCy: 49, eyeR: 10, crownY: 23, crownW: 23 },
+  fox: { neckY: 71, neckW: 21, chestY: 96, eyeCx: [48, 72], eyeCy: 51, eyeR: 10, crownY: 24, crownW: 24, feetY: 98 },
+  raccoon: { neckY: 72, neckW: 22, chestY: 98, eyeCx: [48, 72], eyeCy: 51, eyeR: 10, crownY: 22, crownW: 25, feetY: 98 },
+  squirrel: { neckY: 73, neckW: 19, chestY: 98, eyeCx: [49, 71], eyeCy: 49, eyeR: 10, crownY: 23, crownW: 23, feetY: 98 },
   // Owl has no neck: the "scarf" sits high, right under the eye discs on the loaf.
-  owl: { neckY: 62, neckW: 26, chestY: 86, eyeCx: [47, 73], eyeCy: 48, eyeR: 11, crownY: 18, crownW: 28 },
-  cat: { neckY: 72, neckW: 20, chestY: 98, eyeCx: [48, 72], eyeCy: 50, eyeR: 10, crownY: 26, crownW: 24 },
+  // It also has slender bare legs (not a torso taper), so footwear needs its own,
+  // lower feetY — otherwise boots swallow the legs and float under the belly.
+  owl: { neckY: 62, neckW: 26, chestY: 86, eyeCx: [47, 73], eyeCy: 48, eyeR: 11, crownY: 18, crownW: 28, feetY: 104 },
+  cat: { neckY: 72, neckW: 20, chestY: 98, eyeCx: [48, 72], eyeCy: 50, eyeR: 10, crownY: 26, crownW: 24, feetY: 98 },
 };
 
 /* ---------------- Shared facial features ---------------- */
@@ -458,8 +460,8 @@ function Pendant({ anchor }) {
   return <g className="acc acc--neck"><path d={`M44 ${y - 4} Q60 ${y + 18} 76 ${y - 4}`} fill="none" stroke="oklch(0.58 0.14 75)" strokeWidth="2.5" /><circle cx="60" cy={y + 13} r="5" fill="var(--accent)" stroke="oklch(0.58 0.14 75)" strokeWidth="2" /></g>;
 }
 
-function Boots() {
-  return <g className="acc acc--feet" fill="oklch(0.38 0.08 45)"><path d="M36 98 h19 v11 H32 q-4 0-2-5 q2-4 6-6 Z" /><path d="M65 98 h19 q4 2 6 6 q2 5-2 5 H65 Z" /><path d="M38 99 h15" stroke="var(--accent)" strokeWidth="3" /><path d="M67 99 h15" stroke="var(--accent)" strokeWidth="3" /></g>;
+function Boots({ anchor }) {
+  return <g className="acc acc--feet" fill="oklch(0.38 0.08 45)" transform={`translate(0 ${(anchor?.feetY ?? 98) - 98})`}><path d="M36 98 h19 v11 H32 q-4 0-2-5 q2-4 6-6 Z" /><path d="M65 98 h19 q4 2 6 6 q2 5-2 5 H65 Z" /><path d="M38 99 h15" stroke="var(--accent)" strokeWidth="3" /><path d="M67 99 h15" stroke="var(--accent)" strokeWidth="3" /></g>;
 }
 
 function PinkTiara({ anchor }) {
@@ -476,16 +478,22 @@ function PinkTiara({ anchor }) {
 }
 
 function PinkDress({ anchor }) {
-  const top = anchor.neckY + 3;
+  const neck = anchor.neckW * 0.6; // narrow neckline so the head reads as emerging from a collar, not sitting on a rim
+  const top = anchor.neckY + 1;
   const bottom = Math.min(111, anchor.chestY + 10);
   const shoulder = anchor.neckW + 5;
+  const hem = shoulder + 6; // a dress flares out, so the hem must stay wider than the body's widest point
   return (
     <g className="acc acc--body">
-      <path d={`M${60 - shoulder} ${top + 4} Q60 ${top - 3} ${60 + shoulder} ${top + 4} L${76} ${bottom} Q60 ${bottom + 7} 44 ${bottom} Z`} fill="oklch(0.72 0.18 350)" />
-      <path d={`M47 ${top + 17} Q60 ${top + 22} 73 ${top + 17}`} fill="none" stroke="oklch(0.91 0.08 345)" strokeWidth="4" />
+      <path
+        d={`M${60 - neck} ${top - 2} Q60 ${top + 5} ${60 + neck} ${top - 2}
+            L${60 + shoulder} ${top + 6} L${60 + hem} ${bottom} Q60 ${bottom + 7} ${60 - hem} ${bottom} L${60 - shoulder} ${top + 6} Z`}
+        fill="oklch(0.72 0.18 350)"
+      />
+      <path d={`M${60 - neck} ${top - 2} Q60 ${top + 5} ${60 + neck} ${top - 2}`} fill="none" stroke="oklch(0.91 0.08 345)" strokeWidth="2.5" />
       <path d={`M60 ${top + 19} l-8 -5 v10 Z M60 ${top + 19} l8 -5 v10 Z`} fill="oklch(0.58 0.2 345)" />
       <circle cx="60" cy={top + 19} r="2.8" fill="oklch(0.92 0.07 350)" />
-      <path d={`M48 ${bottom - 5} Q60 ${bottom + 1} 72 ${bottom - 5}`} fill="none" stroke="oklch(0.86 0.11 345)" strokeWidth="2.5" />
+      <path d={`M${60 - hem * 0.75} ${bottom - 5} Q60 ${bottom + 1} ${60 + hem * 0.75} ${bottom - 5}`} fill="none" stroke="oklch(0.86 0.11 345)" strokeWidth="2.5" />
     </g>
   );
 }
@@ -501,8 +509,8 @@ function PearlCollar({ anchor }) {
   );
 }
 
-function PinkShoes() {
-  return <g className="acc acc--feet"><path d="M35 99 h20 v10 H31 q-4 0-2-5 q2-4 6-5 Z" fill="oklch(0.72 0.18 350)" /><path d="M65 99 h20 q4 1 6 5 q2 5-2 5 H65 Z" fill="oklch(0.72 0.18 350)" /><path d="M38 100 q7 5 14 0 M68 100 q7 5 14 0" fill="none" stroke="oklch(0.93 0.07 345)" strokeWidth="2.5" /><circle cx="45" cy="101" r="2.5" fill="#fff" /><circle cx="75" cy="101" r="2.5" fill="#fff" /></g>;
+function PinkShoes({ anchor }) {
+  return <g className="acc acc--feet" transform={`translate(0 ${(anchor?.feetY ?? 98) - 98})`}><path d="M35 99 h20 v10 H31 q-4 0-2-5 q2-4 6-5 Z" fill="oklch(0.72 0.18 350)" /><path d="M65 99 h20 q4 1 6 5 q2 5-2 5 H65 Z" fill="oklch(0.72 0.18 350)" /><path d="M38 100 q7 5 14 0 M68 100 q7 5 14 0" fill="none" stroke="oklch(0.93 0.07 345)" strokeWidth="2.5" /><circle cx="45" cy="101" r="2.5" fill="#fff" /><circle cx="75" cy="101" r="2.5" fill="#fff" /></g>;
 }
 
 function SpaceHelmet({ anchor }) {
@@ -521,13 +529,14 @@ function SpaceSuit({ anchor }) {
   const top = anchor.neckY + 1;
   const bottom = Math.min(110, anchor.chestY + 9);
   const w = anchor.neckW + 5;
+  const hem = w + 4; // the suit must stay at least as wide as the body's widest point at the hem
   return (
     <g className="acc acc--body">
-      <path d={`M${60 - w} ${top + 5} Q60 ${top - 2} ${60 + w} ${top + 5} L78 ${bottom} Q60 ${bottom + 4} 42 ${bottom} Z`} fill="oklch(0.91 0.025 255)" stroke="oklch(0.57 0.12 260)" strokeWidth="1.8" />
+      <path d={`M${60 - w} ${top + 5} Q60 ${top - 2} ${60 + w} ${top + 5} L${60 + hem} ${bottom} Q60 ${bottom + 4} ${60 - hem} ${bottom} Z`} fill="oklch(0.91 0.025 255)" stroke="oklch(0.57 0.12 260)" strokeWidth="1.8" />
       <path d={`M60 ${top + 2} V${bottom - 3}`} stroke="oklch(0.57 0.12 260)" strokeWidth="2" />
       <rect x="49" y={top + 11} width="22" height="14" rx="3" fill="oklch(0.35 0.13 265)" />
       <circle cx="55" cy={top + 17} r="2" fill="oklch(0.76 0.18 45)" /><circle cx="62" cy={top + 17} r="2" fill="oklch(0.72 0.16 150)" />
-      <path d={`M44 ${bottom - 6} H76`} stroke="oklch(0.74 0.16 45)" strokeWidth="3" />
+      <path d={`M${60 - hem * 0.85} ${bottom - 6} H${60 + hem * 0.85}`} stroke="oklch(0.74 0.16 45)" strokeWidth="3" />
     </g>
   );
 }
@@ -538,8 +547,8 @@ function SpaceVisor({ anchor }) {
   return <g className="acc acc--eyes"><path d={`M${left - 10} ${y - 8} Q60 ${y - 13} ${right + 10} ${y - 8} L${right + 7} ${y + 8} Q60 ${y + 13} ${left - 7} ${y + 8} Z`} fill="oklch(0.46 0.16 255 / 0.7)" stroke="oklch(0.75 0.14 220)" strokeWidth="2" /><path d={`M${left - 3} ${y - 6} Q60 ${y - 9} ${right + 3} ${y - 5}`} fill="none" stroke="#fff" strokeWidth="2" opacity="0.75" /></g>;
 }
 
-function MoonBoots() {
-  return <g className="acc acc--feet"><path d="M34 97 h21 v12 H29 q-3-6 5-12 Z M65 97 h21 q8 6 5 12 H65 Z" fill="oklch(0.87 0.035 255)" stroke="oklch(0.55 0.13 265)" strokeWidth="1.8" /><path d="M33 104 h21 M66 104 h21" stroke="oklch(0.72 0.17 45)" strokeWidth="3" /></g>;
+function MoonBoots({ anchor }) {
+  return <g className="acc acc--feet" transform={`translate(0 ${(anchor?.feetY ?? 98) - 98})`}><path d="M34 97 h21 v12 H29 q-3-6 5-12 Z M65 97 h21 q8 6 5 12 H65 Z" fill="oklch(0.87 0.035 255)" stroke="oklch(0.55 0.13 265)" strokeWidth="1.8" /><path d="M33 104 h21 M66 104 h21" stroke="oklch(0.72 0.17 45)" strokeWidth="3" /></g>;
 }
 
 function HeroMask({ anchor }) {
@@ -552,18 +561,21 @@ function HeroSuit({ anchor }) {
   const top = anchor.neckY + 2;
   const bottom = Math.min(110, anchor.chestY + 9);
   const w = anchor.neckW + 6;
+  const hem = w + 4; // the suit must stay at least as wide as the body's widest point at the hem
+  const capeOut = w + 26;
+  const capeIn = w - 4;
   return (
     <g className="acc acc--body">
-      <path d={`M${60 - w} ${top + 3} L34 ${bottom - 5} L47 ${bottom - 9} L43 ${top + 9} Z M${60 + w} ${top + 3} L86 ${bottom - 5} L73 ${bottom - 9} L77 ${top + 9} Z`} fill="oklch(0.64 0.21 25)" />
-      <path d={`M${60 - w} ${top + 4} Q60 ${top - 3} ${60 + w} ${top + 4} L77 ${bottom} Q60 ${bottom + 4} 43 ${bottom} Z`} fill="oklch(0.48 0.19 282)" />
+      <path d={`M${60 - w} ${top + 3} L${60 - capeOut} ${bottom - 5} L${60 - capeIn} ${bottom - 9} L${60 - capeIn - 4} ${top + 9} Z M${60 + w} ${top + 3} L${60 + capeOut} ${bottom - 5} L${60 + capeIn} ${bottom - 9} L${60 + capeIn + 4} ${top + 9} Z`} fill="oklch(0.64 0.21 25)" />
+      <path d={`M${60 - w} ${top + 4} Q60 ${top - 3} ${60 + w} ${top + 4} L${60 + hem} ${bottom} Q60 ${bottom + 4} ${60 - hem} ${bottom} Z`} fill="oklch(0.48 0.19 282)" />
       <path d={`M60 ${top + 9} l7 8 -7 10 -7-10 Z`} fill="oklch(0.8 0.17 75)" />
-      <path d={`M46 ${bottom - 7} H74`} stroke="oklch(0.78 0.17 75)" strokeWidth="4" />
+      <path d={`M${60 - hem * 0.75} ${bottom - 7} H${60 + hem * 0.75}`} stroke="oklch(0.78 0.17 75)" strokeWidth="4" />
     </g>
   );
 }
 
-function HeroBoots() {
-  return <g className="acc acc--feet" fill="oklch(0.62 0.21 25)"><path d="M34 96 h21 v13 H29 q-3-6 5-13 Z M65 96 h21 q8 7 5 13 H65 Z" /><path d="M35 100 h19 M66 100 h19" stroke="oklch(0.82 0.17 75)" strokeWidth="3" /></g>;
+function HeroBoots({ anchor }) {
+  return <g className="acc acc--feet" fill="oklch(0.62 0.21 25)" transform={`translate(0 ${(anchor?.feetY ?? 98) - 98})`}><path d="M34 96 h21 v13 H29 q-3-6 5-13 Z M65 96 h21 q8 7 5 13 H65 Z" /><path d="M35 100 h19 M66 100 h19" stroke="oklch(0.82 0.17 75)" strokeWidth="3" /></g>;
 }
 
 function HeroHeadband({ anchor }) {
@@ -580,18 +592,19 @@ function ScholarBeret({ anchor }) {
 
 function ScholarGlasses({ anchor }) {
   const { eyeCx: [left, right], eyeCy: y, eyeR } = anchor;
-  return <g className="acc acc--eyes" fill="oklch(0.95 0.02 260 / 0.18)" stroke="oklch(0.31 0.07 292)" strokeWidth="2.2"><circle cx={left} cy={y} r={eyeR - 1} /><circle cx={right} cy={y} r={eyeR - 1} /><path d={`M${left + eyeR - 1} ${y} H${right - eyeR + 1}`} /></g>;
+  return <g className="acc acc--eyes" fill="oklch(0.95 0.02 260 / 0.18)" stroke="oklch(0.31 0.07 292)" strokeWidth="2.2"><circle cx={left} cy={y} r={eyeR + 1} /><circle cx={right} cy={y} r={eyeR + 1} /><path d={`M${left + eyeR + 1} ${y} H${right - eyeR - 1}`} /></g>;
 }
 
 function ScholarVest({ anchor }) {
   const top = anchor.neckY + 3;
   const bottom = Math.min(109, anchor.chestY + 8);
   const w = anchor.neckW + 4;
-  return <g className="acc acc--body"><path d={`M${60 - w} ${top + 2} L53 ${top + 1} L60 ${top + 13} L67 ${top + 1} L${60 + w} ${top + 2} L76 ${bottom} Q60 ${bottom + 4} 44 ${bottom} Z`} fill="oklch(0.48 0.14 292)" /><path d={`M60 ${top + 13} V${bottom - 2}`} stroke="oklch(0.88 0.04 295)" strokeWidth="2" /><circle cx="60" cy={top + 20} r="1.7" fill="oklch(0.85 0.04 295)" /><circle cx="60" cy={top + 27} r="1.7" fill="oklch(0.85 0.04 295)" /><path d={`M48 ${bottom - 7} H72`} stroke="oklch(0.74 0.17 45)" strokeWidth="3" /></g>;
+  const hem = w + 4; // the vest must stay at least as wide as the body's widest point at the hem
+  return <g className="acc acc--body"><path d={`M${60 - w} ${top + 2} L53 ${top + 1} L60 ${top + 13} L67 ${top + 1} L${60 + w} ${top + 2} L${60 + hem} ${bottom} Q60 ${bottom + 4} ${60 - hem} ${bottom} Z`} fill="oklch(0.48 0.14 292)" /><path d={`M60 ${top + 13} V${bottom - 2}`} stroke="oklch(0.88 0.04 295)" strokeWidth="2" /><circle cx="60" cy={top + 20} r="1.7" fill="oklch(0.85 0.04 295)" /><circle cx="60" cy={top + 27} r="1.7" fill="oklch(0.85 0.04 295)" /><path d={`M${60 - hem * 0.75} ${bottom - 7} H${60 + hem * 0.75}`} stroke="oklch(0.74 0.17 45)" strokeWidth="3" /></g>;
 }
 
-function ScholarShoes() {
-  return <g className="acc acc--feet"><path d="M35 100 h20 v9 H30 q-2-5 5-9 Z M65 100 h20 q7 4 5 9 H65 Z" fill="oklch(0.94 0.02 290)" stroke="oklch(0.38 0.13 292)" strokeWidth="1.8" /><path d="M37 102 h15 M68 102 h15" stroke="oklch(0.72 0.17 45)" strokeWidth="2.5" /></g>;
+function ScholarShoes({ anchor }) {
+  return <g className="acc acc--feet" transform={`translate(0 ${(anchor?.feetY ?? 98) - 98})`}><path d="M35 100 h20 v9 H30 q-2-5 5-9 Z M65 100 h20 q7 4 5 9 H65 Z" fill="oklch(0.94 0.02 290)" stroke="oklch(0.38 0.13 292)" strokeWidth="1.8" /><path d="M37 102 h15 M68 102 h15" stroke="oklch(0.72 0.17 45)" strokeWidth="2.5" /></g>;
 }
 
 function StarGlasses({ anchor }) {
@@ -605,11 +618,12 @@ function StageJacket({ anchor }) {
   const top = anchor.neckY + 3;
   const bottom = Math.min(110, anchor.chestY + 9);
   const w = anchor.neckW + 5;
-  return <g className="acc acc--body"><path d={`M${60 - w} ${top + 3} Q60 ${top - 2} ${60 + w} ${top + 3} L77 ${bottom} Q60 ${bottom + 4} 43 ${bottom} Z`} fill="oklch(0.32 0.11 290)" /><path d={`M48 ${top + 2} L60 ${top + 16} L72 ${top + 2} M60 ${top + 16} V${bottom - 2}`} fill="none" stroke="oklch(0.8 0.19 350)" strokeWidth="3" /><path d={`M46 ${bottom - 6} H74`} stroke="oklch(0.75 0.18 200)" strokeWidth="3" /><circle cx="52" cy={top + 20} r="2.5" fill="oklch(0.84 0.18 75)" /></g>;
+  const hem = w + 4; // the jacket must stay at least as wide as the body's widest point at the hem
+  return <g className="acc acc--body"><path d={`M${60 - w} ${top + 3} Q60 ${top - 2} ${60 + w} ${top + 3} L${60 + hem} ${bottom} Q60 ${bottom + 4} ${60 - hem} ${bottom} Z`} fill="oklch(0.32 0.11 290)" /><path d={`M48 ${top + 2} L60 ${top + 16} L72 ${top + 2} M60 ${top + 16} V${bottom - 2}`} fill="none" stroke="oklch(0.8 0.19 350)" strokeWidth="3" /><path d={`M${60 - hem * 0.75} ${bottom - 6} H${60 + hem * 0.75}`} stroke="oklch(0.75 0.18 200)" strokeWidth="3" /><circle cx="52" cy={top + 20} r="2.5" fill="oklch(0.84 0.18 75)" /></g>;
 }
 
-function NeonShoes() {
-  return <g className="acc acc--feet"><path d="M34 99 h21 v10 H29 q-2-6 5-10 Z M65 99 h21 q7 4 5 10 H65 Z" fill="oklch(0.3 0.09 290)" /><path d="M32 106 h23 M65 106 h23" stroke="oklch(0.78 0.18 190)" strokeWidth="3" /><path d="M38 101 h14 M68 101 h14" stroke="oklch(0.82 0.2 350)" strokeWidth="2" /></g>;
+function NeonShoes({ anchor }) {
+  return <g className="acc acc--feet" transform={`translate(0 ${(anchor?.feetY ?? 98) - 98})`}><path d="M34 99 h21 v10 H29 q-2-6 5-10 Z M65 99 h21 q7 4 5 10 H65 Z" fill="oklch(0.3 0.09 290)" /><path d="M32 106 h23 M65 106 h23" stroke="oklch(0.78 0.18 190)" strokeWidth="3" /><path d="M38 101 h14 M68 101 h14" stroke="oklch(0.82 0.2 350)" strokeWidth="2" /></g>;
 }
 
 function StarHeadphones({ anchor }) {
