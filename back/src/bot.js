@@ -6,10 +6,18 @@ const { rateLimit } = require("express-rate-limit");
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const APP_URL = process.env.APP_URL; // frontend URL (Vercel), e.g. https://edmebot.vercel.app
+// Telegram WebView can keep the Mini App HTML for a long time. Bump this
+// value when the frontend deploy must be fetched instead of a cached bundle.
+const APP_URL_VERSION = process.env.APP_URL_VERSION || "2026-09-13-2";
 const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
 const WEBHOOK_PATH = "/api/telegram/webhook";
 
 let bot = null;
+
+function appUrlWithVersion() {
+  if (!APP_URL) return APP_URL;
+  return `${APP_URL}${APP_URL.includes("?") ? "&" : "?"}v=${encodeURIComponent(APP_URL_VERSION)}`;
+}
 
 async function rememberContact(user) {
   if (!user?.id) return;
@@ -71,7 +79,7 @@ function init(app) {
   bot.onText(/^\/start/, (msg) => {
     bot.sendMessage(msg.chat.id, "Добро пожаловать в EDme! Открой приложение, чтобы начать 👇", {
       reply_markup: {
-        inline_keyboard: [[{ text: "Открыть EDme", web_app: { url: APP_URL } }]],
+        inline_keyboard: [[{ text: "Открыть EDme", web_app: { url: appUrlWithVersion() } }]],
       },
     });
   });
