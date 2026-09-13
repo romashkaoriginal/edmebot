@@ -462,6 +462,162 @@ function Boots() {
   return <g className="acc acc--feet" fill="oklch(0.38 0.08 45)"><path d="M36 98 h19 v11 H32 q-4 0-2-5 q2-4 6-6 Z" /><path d="M65 98 h19 q4 2 6 6 q2 5-2 5 H65 Z" /><path d="M38 99 h15" stroke="var(--accent)" strokeWidth="3" /><path d="M67 99 h15" stroke="var(--accent)" strokeWidth="3" /></g>;
 }
 
+function PinkTiara({ anchor }) {
+  const y = anchor.crownY + 3;
+  const w = Math.min(anchor.crownW, 23);
+  return (
+    <g className="acc acc--head">
+      <path d={`M${60 - w} ${y} L${60 - w + 4} ${y - 15} L51 ${y - 7} L60 ${y - 21} L69 ${y - 7} L${60 + w - 4} ${y - 15} L${60 + w} ${y} Z`} fill="oklch(0.76 0.18 350)" stroke="oklch(0.57 0.19 345)" strokeWidth="1.8" />
+      <circle cx="60" cy={y - 12} r="3.4" fill="oklch(0.9 0.09 330)" />
+      <circle cx={60 - w + 5} cy={y - 9} r="2.2" fill="#fff" />
+      <circle cx={60 + w - 5} cy={y - 9} r="2.2" fill="#fff" />
+    </g>
+  );
+}
+
+function PinkDress({ anchor }) {
+  const top = anchor.neckY + 3;
+  const bottom = Math.min(111, anchor.chestY + 10);
+  const shoulder = anchor.neckW + 5;
+  return (
+    <g className="acc acc--body">
+      <path d={`M${60 - shoulder} ${top + 4} Q60 ${top - 3} ${60 + shoulder} ${top + 4} L${76} ${bottom} Q60 ${bottom + 7} 44 ${bottom} Z`} fill="oklch(0.72 0.18 350)" />
+      <path d={`M47 ${top + 17} Q60 ${top + 22} 73 ${top + 17}`} fill="none" stroke="oklch(0.91 0.08 345)" strokeWidth="4" />
+      <path d={`M60 ${top + 19} l-8 -5 v10 Z M60 ${top + 19} l8 -5 v10 Z`} fill="oklch(0.58 0.2 345)" />
+      <circle cx="60" cy={top + 19} r="2.8" fill="oklch(0.92 0.07 350)" />
+      <path d={`M48 ${bottom - 5} Q60 ${bottom + 1} 72 ${bottom - 5}`} fill="none" stroke="oklch(0.86 0.11 345)" strokeWidth="2.5" />
+    </g>
+  );
+}
+
+function PearlCollar({ anchor }) {
+  const y = anchor.neckY + 1;
+  return (
+    <g className="acc acc--neck" fill="#fff" stroke="oklch(0.76 0.05 330)" strokeWidth="0.8">
+      {[-15, -10, -5, 0, 5, 10, 15].map((x, index) => <circle key={x} cx={60 + x} cy={y + 5 + Math.abs(index - 3) * -0.7} r="3.1" />)}
+      <path d={`M56 ${y + 8} Q60 ${y + 17} 64 ${y + 8}`} fill="none" stroke="oklch(0.65 0.1 75)" strokeWidth="1.5" />
+      <circle cx="60" cy={y + 14} r="3" fill="oklch(0.78 0.17 350)" stroke="none" />
+    </g>
+  );
+}
+
+function PinkShoes() {
+  return <g className="acc acc--feet"><path d="M35 99 h20 v10 H31 q-4 0-2-5 q2-4 6-5 Z" fill="oklch(0.72 0.18 350)" /><path d="M65 99 h20 q4 1 6 5 q2 5-2 5 H65 Z" fill="oklch(0.72 0.18 350)" /><path d="M38 100 q7 5 14 0 M68 100 q7 5 14 0" fill="none" stroke="oklch(0.93 0.07 345)" strokeWidth="2.5" /><circle cx="45" cy="101" r="2.5" fill="#fff" /><circle cx="75" cy="101" r="2.5" fill="#fff" /></g>;
+}
+
+function SpaceHelmet({ anchor }) {
+  const top = anchor.crownY - 6;
+  const height = anchor.eyeCy - top + 25;
+  return (
+    <g className="acc acc--head">
+      <ellipse cx="60" cy={top + height / 2} rx={anchor.crownW + 7} ry={height / 2} fill="oklch(0.9 0.04 245 / 0.18)" stroke="oklch(0.63 0.13 255)" strokeWidth="3" />
+      <path d={`M${34} ${anchor.eyeCy + 17} Q60 ${anchor.eyeCy + 23} 86 ${anchor.eyeCy + 17}`} fill="none" stroke="oklch(0.39 0.16 273)" strokeWidth="4" />
+      <path d={`M42 ${top + 8} Q50 ${top + 2} 58 ${top + 4}`} fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" opacity="0.9" />
+    </g>
+  );
+}
+
+function SpaceSuit({ anchor }) {
+  const top = anchor.neckY + 1;
+  const bottom = Math.min(110, anchor.chestY + 9);
+  const w = anchor.neckW + 5;
+  return (
+    <g className="acc acc--body">
+      <path d={`M${60 - w} ${top + 5} Q60 ${top - 2} ${60 + w} ${top + 5} L78 ${bottom} Q60 ${bottom + 4} 42 ${bottom} Z`} fill="oklch(0.91 0.025 255)" stroke="oklch(0.57 0.12 260)" strokeWidth="1.8" />
+      <path d={`M60 ${top + 2} V${bottom - 3}`} stroke="oklch(0.57 0.12 260)" strokeWidth="2" />
+      <rect x="49" y={top + 11} width="22" height="14" rx="3" fill="oklch(0.35 0.13 265)" />
+      <circle cx="55" cy={top + 17} r="2" fill="oklch(0.76 0.18 45)" /><circle cx="62" cy={top + 17} r="2" fill="oklch(0.72 0.16 150)" />
+      <path d={`M44 ${bottom - 6} H76`} stroke="oklch(0.74 0.16 45)" strokeWidth="3" />
+    </g>
+  );
+}
+
+function SpaceVisor({ anchor }) {
+  const [left, right] = anchor.eyeCx;
+  const y = anchor.eyeCy;
+  return <g className="acc acc--eyes"><path d={`M${left - 10} ${y - 8} Q60 ${y - 13} ${right + 10} ${y - 8} L${right + 7} ${y + 8} Q60 ${y + 13} ${left - 7} ${y + 8} Z`} fill="oklch(0.46 0.16 255 / 0.7)" stroke="oklch(0.75 0.14 220)" strokeWidth="2" /><path d={`M${left - 3} ${y - 6} Q60 ${y - 9} ${right + 3} ${y - 5}`} fill="none" stroke="#fff" strokeWidth="2" opacity="0.75" /></g>;
+}
+
+function MoonBoots() {
+  return <g className="acc acc--feet"><path d="M34 97 h21 v12 H29 q-3-6 5-12 Z M65 97 h21 q8 6 5 12 H65 Z" fill="oklch(0.87 0.035 255)" stroke="oklch(0.55 0.13 265)" strokeWidth="1.8" /><path d="M33 104 h21 M66 104 h21" stroke="oklch(0.72 0.17 45)" strokeWidth="3" /></g>;
+}
+
+function HeroMask({ anchor }) {
+  const [left, right] = anchor.eyeCx;
+  const y = anchor.eyeCy;
+  return <g className="acc acc--eyes"><path d={`M${left - 12} ${y - 8} Q${left} ${y - 13} 60 ${y - 5} Q${right} ${y - 13} ${right + 12} ${y - 8} L${right + 8} ${y + 8} Q${right} ${y + 12} 60 ${y + 4} Q${left} ${y + 12} ${left - 8} ${y + 8} Z`} fill="oklch(0.43 0.19 285)" /><ellipse cx={left} cy={y} rx="6" ry="4" fill="#fff" /><ellipse cx={right} cy={y} rx="6" ry="4" fill="#fff" /></g>;
+}
+
+function HeroSuit({ anchor }) {
+  const top = anchor.neckY + 2;
+  const bottom = Math.min(110, anchor.chestY + 9);
+  const w = anchor.neckW + 6;
+  return (
+    <g className="acc acc--body">
+      <path d={`M${60 - w} ${top + 3} L34 ${bottom - 5} L47 ${bottom - 9} L43 ${top + 9} Z M${60 + w} ${top + 3} L86 ${bottom - 5} L73 ${bottom - 9} L77 ${top + 9} Z`} fill="oklch(0.64 0.21 25)" />
+      <path d={`M${60 - w} ${top + 4} Q60 ${top - 3} ${60 + w} ${top + 4} L77 ${bottom} Q60 ${bottom + 4} 43 ${bottom} Z`} fill="oklch(0.48 0.19 282)" />
+      <path d={`M60 ${top + 9} l7 8 -7 10 -7-10 Z`} fill="oklch(0.8 0.17 75)" />
+      <path d={`M46 ${bottom - 7} H74`} stroke="oklch(0.78 0.17 75)" strokeWidth="4" />
+    </g>
+  );
+}
+
+function HeroBoots() {
+  return <g className="acc acc--feet" fill="oklch(0.62 0.21 25)"><path d="M34 96 h21 v13 H29 q-3-6 5-13 Z M65 96 h21 q8 7 5 13 H65 Z" /><path d="M35 100 h19 M66 100 h19" stroke="oklch(0.82 0.17 75)" strokeWidth="3" /></g>;
+}
+
+function HeroHeadband({ anchor }) {
+  const y = anchor.crownY + 10;
+  const w = anchor.crownW + 2;
+  return <g className="acc acc--head"><path d={`M${60 - w} ${y} Q60 ${y - 7} ${60 + w} ${y} L${60 + w - 1} ${y + 6} Q60 ${y} ${60 - w + 1} ${y + 6} Z`} fill="oklch(0.68 0.21 25)" /><path d={`M${60 + w - 1} ${y + 2} l13 -6 -6 11 9 4 -16 2 Z`} fill="oklch(0.8 0.17 75)" /></g>;
+}
+
+function ScholarBeret({ anchor }) {
+  const y = anchor.crownY + 3;
+  const w = anchor.crownW;
+  return <g className="acc acc--head"><ellipse cx="60" cy={y - 8} rx={w} ry="12" fill="oklch(0.38 0.13 292)" /><path d={`M${60 - w} ${y - 6} Q60 ${y + 2} ${60 + w} ${y - 6}`} fill="none" stroke="oklch(0.29 0.1 292)" strokeWidth="4" /><circle cx="60" cy={y - 21} r="3" fill="oklch(0.72 0.17 45)" /></g>;
+}
+
+function ScholarGlasses({ anchor }) {
+  const { eyeCx: [left, right], eyeCy: y, eyeR } = anchor;
+  return <g className="acc acc--eyes" fill="oklch(0.95 0.02 260 / 0.18)" stroke="oklch(0.31 0.07 292)" strokeWidth="2.2"><circle cx={left} cy={y} r={eyeR - 1} /><circle cx={right} cy={y} r={eyeR - 1} /><path d={`M${left + eyeR - 1} ${y} H${right - eyeR + 1}`} /></g>;
+}
+
+function ScholarVest({ anchor }) {
+  const top = anchor.neckY + 3;
+  const bottom = Math.min(109, anchor.chestY + 8);
+  const w = anchor.neckW + 4;
+  return <g className="acc acc--body"><path d={`M${60 - w} ${top + 2} L53 ${top + 1} L60 ${top + 13} L67 ${top + 1} L${60 + w} ${top + 2} L76 ${bottom} Q60 ${bottom + 4} 44 ${bottom} Z`} fill="oklch(0.48 0.14 292)" /><path d={`M60 ${top + 13} V${bottom - 2}`} stroke="oklch(0.88 0.04 295)" strokeWidth="2" /><circle cx="60" cy={top + 20} r="1.7" fill="oklch(0.85 0.04 295)" /><circle cx="60" cy={top + 27} r="1.7" fill="oklch(0.85 0.04 295)" /><path d={`M48 ${bottom - 7} H72`} stroke="oklch(0.74 0.17 45)" strokeWidth="3" /></g>;
+}
+
+function ScholarShoes() {
+  return <g className="acc acc--feet"><path d="M35 100 h20 v9 H30 q-2-5 5-9 Z M65 100 h20 q7 4 5 9 H65 Z" fill="oklch(0.94 0.02 290)" stroke="oklch(0.38 0.13 292)" strokeWidth="1.8" /><path d="M37 102 h15 M68 102 h15" stroke="oklch(0.72 0.17 45)" strokeWidth="2.5" /></g>;
+}
+
+function StarGlasses({ anchor }) {
+  const [left, right] = anchor.eyeCx;
+  const y = anchor.eyeCy;
+  const star = (cx) => `${cx},${y - 10} ${cx + 3},${y - 3} ${cx + 10},${y - 3} ${cx + 5},${y + 2} ${cx + 7},${y + 9} ${cx},${y + 5} ${cx - 7},${y + 9} ${cx - 5},${y + 2} ${cx - 10},${y - 3} ${cx - 3},${y - 3}`;
+  return <g className="acc acc--eyes" fill="oklch(0.78 0.2 350)" stroke="oklch(0.49 0.18 292)" strokeWidth="1.7"><polygon points={star(left)} /><polygon points={star(right)} /><path d={`M${left + 8} ${y} H${right - 8}`} /></g>;
+}
+
+function StageJacket({ anchor }) {
+  const top = anchor.neckY + 3;
+  const bottom = Math.min(110, anchor.chestY + 9);
+  const w = anchor.neckW + 5;
+  return <g className="acc acc--body"><path d={`M${60 - w} ${top + 3} Q60 ${top - 2} ${60 + w} ${top + 3} L77 ${bottom} Q60 ${bottom + 4} 43 ${bottom} Z`} fill="oklch(0.32 0.11 290)" /><path d={`M48 ${top + 2} L60 ${top + 16} L72 ${top + 2} M60 ${top + 16} V${bottom - 2}`} fill="none" stroke="oklch(0.8 0.19 350)" strokeWidth="3" /><path d={`M46 ${bottom - 6} H74`} stroke="oklch(0.75 0.18 200)" strokeWidth="3" /><circle cx="52" cy={top + 20} r="2.5" fill="oklch(0.84 0.18 75)" /></g>;
+}
+
+function NeonShoes() {
+  return <g className="acc acc--feet"><path d="M34 99 h21 v10 H29 q-2-6 5-10 Z M65 99 h21 q7 4 5 10 H65 Z" fill="oklch(0.3 0.09 290)" /><path d="M32 106 h23 M65 106 h23" stroke="oklch(0.78 0.18 190)" strokeWidth="3" /><path d="M38 101 h14 M68 101 h14" stroke="oklch(0.82 0.2 350)" strokeWidth="2" /></g>;
+}
+
+function StarHeadphones({ anchor }) {
+  const [left, right] = anchor.eyeCx;
+  const y = anchor.eyeCy;
+  return <g className="acc acc--ears" fill="none" stroke="oklch(0.75 0.2 350)" strokeWidth="4"><path d={`M${left - 11} ${y} C${left - 11} ${y - 31} ${right + 11} ${y - 31} ${right + 11} ${y}`} /><rect x={left - 16} y={y - 7} width="10" height="20" rx="4" fill="oklch(0.42 0.17 292)" /><rect x={right + 6} y={y - 7} width="10" height="20" rx="4" fill="oklch(0.42 0.17 292)" /><circle cx={left - 11} cy={y + 3} r="3" fill="oklch(0.85 0.18 75)" stroke="none" /><circle cx={right + 11} cy={y + 3} r="3" fill="oklch(0.85 0.18 75)" stroke="none" /></g>;
+}
+
 const ACCESSORY = {
   scarf: Scarf,
   bowtie: Bowtie,
@@ -472,6 +628,26 @@ const ACCESSORY = {
   headphones: Headphones,
   pendant: Pendant,
   boots: Boots,
+  pink_tiara: PinkTiara,
+  pink_dress: PinkDress,
+  pearl_collar: PearlCollar,
+  pink_shoes: PinkShoes,
+  space_helmet: SpaceHelmet,
+  space_suit: SpaceSuit,
+  space_visor: SpaceVisor,
+  moon_boots: MoonBoots,
+  hero_mask: HeroMask,
+  hero_suit: HeroSuit,
+  hero_boots: HeroBoots,
+  hero_headband: HeroHeadband,
+  scholar_beret: ScholarBeret,
+  scholar_glasses: ScholarGlasses,
+  scholar_vest: ScholarVest,
+  scholar_shoes: ScholarShoes,
+  star_glasses: StarGlasses,
+  stage_jacket: StageJacket,
+  neon_shoes: NeonShoes,
+  star_headphones: StarHeadphones,
 };
 
 /**
@@ -489,6 +665,26 @@ const PREVIEW_VIEWBOX = {
   headphones: "28 14 64 56",
   pendant: "34 60 52 40",
   boots: "24 92 72 22",
+  pink_tiara: "30 0 60 34",
+  pink_dress: "32 68 56 45",
+  pearl_collar: "36 66 48 34",
+  pink_shoes: "24 92 72 22",
+  space_helmet: "24 4 72 76",
+  space_suit: "32 68 56 45",
+  space_visor: "30 34 60 34",
+  moon_boots: "24 92 72 22",
+  hero_mask: "28 34 64 34",
+  hero_suit: "28 68 64 45",
+  hero_boots: "24 92 72 22",
+  hero_headband: "25 10 75 35",
+  scholar_beret: "30 0 60 34",
+  scholar_glasses: "30 35 60 32",
+  scholar_vest: "32 68 56 44",
+  scholar_shoes: "24 94 72 20",
+  star_glasses: "28 34 64 34",
+  stage_jacket: "32 68 56 44",
+  neon_shoes: "24 94 72 20",
+  star_headphones: "28 14 64 56",
 };
 export function AccessoryPreview({ accessory, size = 44 }) {
   const A = ACCESSORY[accessory];

@@ -23,10 +23,13 @@ export default function Pet() {
   // Render straight from the prefetched payload when it is already warm, so
   // opening the tab does not flash an empty shop while the request repeats.
   const [shopItems, setShopItems] = useState(() => studentApi.peekPet()?.shop ?? []);
+  const [outfits, setOutfits] = useState(() => studentApi.peekPet()?.outfits ?? []);
   const [cat, setCat] = useState("look");
+  const [lookFilter, setLookFilter] = useState("all");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [pendingSpecies, setPendingSpecies] = useState(null);
   const [previewItem, setPreviewItem] = useState(null);
+  const [previewOutfit, setPreviewOutfit] = useState(null);
   const [feedback, setFeedback] = useState(null);
   const [worn, setWorn] = useState(profile.wornItems ?? {});
   const [busyId, setBusyId] = useState(null);
@@ -44,9 +47,10 @@ export default function Pet() {
     // Keep the prefetched shop for an instant first paint, but always refresh
     // the profile snapshot before hydrating global XP, coins and streak.
     studentApi.pet({ fresh: true })
-      .then(({ shop = [], ...petProfile }) => {
+      .then(({ shop = [], outfits: nextOutfits = [], ...petProfile }) => {
         if (cancelled) return;
         setShopItems(shop);
+        setOutfits(nextOutfits);
         hydrate({ profile: petProfile });
       })
       .catch(() => {
@@ -81,10 +85,17 @@ export default function Pet() {
   }
 
   const wornAccessories = Object.values(worn).filter(Boolean);
-  const previewAccessories = previewItem
-    ? Object.values({ ...worn, [previewItem.slot]: previewItem.accessory }).filter(Boolean)
-    : wornAccessories;
-  const items = shopItems.filter((item) => item.category === cat);
+  const previewOutfitItems = previewOutfit
+    ? previewOutfit.itemIds.map((id) => shopItems.find((item) => item.id === id)).filter(Boolean)
+    : [];
+  const previewWorn = previewOutfitItems.reduce(
+    (next, item) => ({ ...next, [item.slot]: item.accessory }),
+    previewItem ? { ...worn, [previewItem.slot]: previewItem.accessory } : worn
+  );
+  const previewAccessories = Object.values(previewWorn).filter(Boolean);
+  const items = shopItems.filter((item) =>
+    item.category === cat && (cat !== "look" || lookFilter === "all" || item.outfit === lookFilter)
+  );
   const foodItems = shopItems.filter((item) => item.category === "food");
   const foodInventory = profile.foodInventory ?? {};
   const ownedFood = shopItems.find((item) => item.category === "food" && Number(foodInventory[item.id] ?? 0) > 0);
@@ -221,12 +232,15 @@ export default function Pet() {
 
   function selectCategory(categoryId, index) {
     setCat(categoryId);
+    setLookFilter("all");
     setPreviewItem(null);
+    setPreviewOutfit(null);
     requestAnimationFrame(() => document.getElementById(`pet-tab-${index}`)?.focus());
   }
 
   function previewInRoom(item) {
     setPreviewItem(item);
+    setPreviewOutfit(null);
     requestAnimationFrame(() => {
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       document.getElementById("pet-room")?.scrollIntoView({
@@ -234,6 +248,61 @@ export default function Pet() {
         block: "start",
       });
     });
+  }
+
+  function previewOutfitInRoom(outfit) {
+    setPreviewOutfit(outfit);
+    setPreviewItem(null);
+    requestAnimationFrame(() => {
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      document.getElementById("pet-room")?.scrollIntoView({
+        behavior: prefersReducedMotion ? "auto" : "smooth",
+        block: "start",
+      });
+    });
+  }
+
+  function outfitDetails(outfit) {
+    const outfitItems = outfit.itemIds.map((id) => shopItems.find((item) => item.id === id)).filter(Boolean);
+    const missingItems = outfitItems.filter((item) => !ownedItems.includes(item.id));
+    return {
+      items: outfitItems,
+      accessories: outfitItems.map((item) => item.accessory),
+      ownedCount: outfitItems.length - missingItems.length,
+      missingPrice: missingItems.reduce((sum, item) => sum + item.price, 0),
+      complete: missingItems.length === 0 && outfitItems.length > 0,
+      worn: outfitItems.length > 0 && outfitItems.every((item) => worn[item.slot] === item.accessory),
+    };
+  }
+
+  async function wearOutfit(outfit) {
+    const details = outfitDetails(outfit);
+    if (!details.items.length) return;
+    setBusyId(`outfit:${outfit.id}`);
+    try {
+      let data;
+      if (details.complete) {
+        const nextWorn = details.items.reduce((next, item) => ({ ...next, [item.slot]: item.accessory }), { ...worn });
+        data = await studentApi.updatePet({ wornItems: nextWorn });
+      } else {
+        data = await studentApi.buyPetOutfit(outfit.id);
+      }
+      setWorn(data.profile.wornItems ?? {});
+      hydrate({ profile: data.profile });
+      setPreviewOutfit(null);
+      cheer();
+      showFeedback({ type: "ok", text: details.complete ? `Образ «${outfit.name}» надет` : `Образ «${outfit.name}» собран и надет` });
+    } catch (error) {
+      showFeedback({
+        type: "poor",
+        text: error.message === "not_enough_coins"
+          ? `До образа «${outfit.name}» не хватает ${coinsNeededText(details.missingPrice, profile.coins)}.`
+          : "Не удалось собрать образ. Проверь соединение и попробуй ещё раз.",
+        action: error.message === "not_enough_coins" ? "practice" : null,
+      });
+    } finally {
+      setBusyId(null);
+    }
   }
 
   function openCatalog() {
@@ -264,7 +333,7 @@ export default function Pet() {
       </header>
 
       <Card className="pet-page__hero" pad="none" id="pet-room">
-        <div className={`pet-page__room ${previewItem ? "pet-page__room--previewing" : ""}`} aria-label={`Комната питомца ${profile.pet.name}`}>
+        <div className={`pet-page__room ${previewItem || previewOutfit ? "pet-page__room--previewing" : ""}`} aria-label={`Комната питомца ${profile.pet.name}`}>
           {editingName ? (
             <div className="pet-page__room-chip pet-page__room-chip--name pet-page__name-edit">
               <input
@@ -328,18 +397,29 @@ export default function Pet() {
           <PetAvatar className="pet-page__avatar" species={profile.pet.species} mood={petState.expression} accessories={previewAccessories} reaction={reaction} eating={eating} size={220} />
         </div>
 
-        {previewItem && (
+        {(previewItem || previewOutfit) && (
           <div className="pet-page__preview-bar" aria-live="polite">
             <span className="pet-page__preview-icon" aria-hidden="true">
-              {previewItem.accessory ? <AccessoryPreview accessory={previewItem.accessory} size={42} /> : previewItem.icon}
+              {previewOutfit
+                ? <PetAvatar species={profile.pet.species} mood="happy" accessories={previewOutfitItems.map((item) => item.accessory)} size={48} animated={false} decorative />
+                : previewItem.accessory ? <AccessoryPreview accessory={previewItem.accessory} size={42} /> : previewItem.icon}
             </span>
             <span className="pet-page__preview-copy">
-              <strong>Примерка: {previewItem.name}</strong>
-              <small>{previewItem.category === "look" ? "Так предмет выглядит на питомце" : "Так предмет выглядит в комнате"}</small>
+              <strong>Примерка: {previewOutfit?.name ?? previewItem.name}</strong>
+              <small>{previewOutfit
+                ? `${previewOutfitItems.length} вещи сочетаются в одном образе`
+                : previewItem.category === "look" ? "Так предмет выглядит на питомце" : "Так предмет выглядит в комнате"}</small>
             </span>
             <span className="pet-page__preview-actions">
-              <Button size="sm" variant="ghost" onClick={() => setPreviewItem(null)}>Сбросить</Button>
-              {previewItem.category === "look" ? (
+              <Button size="sm" variant="ghost" onClick={() => { setPreviewItem(null); setPreviewOutfit(null); }}>Сбросить</Button>
+              {previewOutfit ? (() => {
+                const details = outfitDetails(previewOutfit);
+                return (
+                  <Button size="sm" variant="accent" icon={details.complete ? Shirt : Coins} loading={busyId === `outfit:${previewOutfit.id}`} disabled={details.worn} onClick={() => wearOutfit(previewOutfit)}>
+                    {details.worn ? "Образ надет" : details.complete ? "Надеть образ" : `Собрать за ${details.missingPrice}`}
+                  </Button>
+                );
+              })() : previewItem.category === "look" ? (
                 <Button
                   size="sm"
                   variant={worn[previewItem.slot] === previewItem.accessory ? "soft" : "accent"}
@@ -450,7 +530,7 @@ export default function Pet() {
               id={`pet-tab-${index}`}
               key={category.id}
               className={`pet-page__cat ${cat === category.id ? "pet-page__cat--on" : ""}`}
-              onClick={() => setCat(category.id)}
+              onClick={() => selectCategory(category.id, index)}
               onKeyDown={(event) => {
                 if (event.key === "ArrowRight") { event.preventDefault(); selectCategory(CATEGORIES[(index + 1) % CATEGORIES.length].id, (index + 1) % CATEGORIES.length); }
                 if (event.key === "ArrowLeft") { event.preventDefault(); selectCategory(CATEGORIES[(index - 1 + CATEGORIES.length) % CATEGORIES.length].id, (index - 1 + CATEGORIES.length) % CATEGORIES.length); }
@@ -464,6 +544,52 @@ export default function Pet() {
             </button>
           ))}
         </div>
+
+        {cat === "look" && outfits.length > 0 && (
+          <div className="pet-page__outfit-section">
+            <div className="pet-page__outfit-heading">
+              <div><h3>Готовые образы</h3><p>Примерь комплект целиком. Уже купленные вещи повторно не оплачиваются.</p></div>
+              <span>{outfits.length} сетов</span>
+            </div>
+            <div className="pet-page__outfits">
+              {outfits.map((outfit) => {
+                const details = outfitDetails(outfit);
+                return (
+                  <article className={`outfit-card outfit-card--${outfit.tone} ${details.worn ? "outfit-card--worn" : ""}`} key={outfit.id}>
+                    <div className="outfit-card__pet" aria-hidden="true">
+                      <PetAvatar species={profile.pet.species} mood="happy" accessories={details.accessories} size={112} animated={false} decorative />
+                    </div>
+                    <div className="outfit-card__content">
+                      <div className="outfit-card__title"><strong>{outfit.name}</strong>{details.worn && <span><Check size={13} /> Надет</span>}</div>
+                      <p>{outfit.tagline}</p>
+                      <span className="outfit-card__progress">{details.ownedCount} из {details.items.length} вещей уже есть</span>
+                    </div>
+                    <div className="outfit-card__actions">
+                      <Button size="sm" variant="soft" onClick={() => previewOutfitInRoom(outfit)}>Примерить</Button>
+                      <Button
+                        size="sm"
+                        variant="accent"
+                        icon={details.complete ? Shirt : Coins}
+                        loading={busyId === `outfit:${outfit.id}`}
+                        disabled={details.worn}
+                        aria-label={details.worn ? `Образ «${outfit.name}» надет` : details.complete ? `Надеть образ «${outfit.name}»` : `Собрать образ «${outfit.name}» за ${details.missingPrice} монет`}
+                        onClick={() => wearOutfit(outfit)}
+                      >
+                        {details.worn ? "Надет" : details.complete ? "Надеть" : `${details.missingPrice}`}
+                      </Button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+            <div className="pet-page__look-filters" aria-label="Фильтр одежды">
+              <button className={lookFilter === "all" ? "is-active" : ""} aria-pressed={lookFilter === "all"} onClick={() => setLookFilter("all")}>Все вещи</button>
+              {outfits.map((outfit) => (
+                <button key={outfit.id} className={lookFilter === outfit.id ? "is-active" : ""} aria-pressed={lookFilter === outfit.id} onClick={() => setLookFilter(outfit.id)}>{outfit.name}</button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="pet-page__shop" id="pet-shop-panel" role="tabpanel" aria-live="polite">
           {items.map((item) => {

@@ -9,7 +9,7 @@ router.use(requireStudent);
 router.get("/", async (req, res, next) => {
   try {
     const current = await state.getState(req.student);
-    res.json({ ...current.profile, shop: seed.shopItems });
+    res.json({ ...current.profile, shop: seed.shopItems, outfits: seed.outfits });
   } catch (e) { next(e); }
 });
 
@@ -18,6 +18,16 @@ router.post("/buy", async (req, res, next) => {
     const item = seed.shopItems.find((entry) => entry.id === req.body?.itemId);
     if (!item) return res.status(404).json({ error: "item_not_found" });
     const result = await state.buyItem(req.student, item);
+    if (result.error) return res.status(400).json(result);
+    res.json({ ok: true, profile: result.state.profile });
+  } catch (e) { next(e); }
+});
+
+router.post("/buy-outfit", async (req, res, next) => {
+  try {
+    const outfit = seed.outfits.find((entry) => entry.id === req.body?.outfitId);
+    if (!outfit) return res.status(404).json({ error: "outfit_not_found" });
+    const result = await state.buyOutfit(req.student, outfit);
     if (result.error) return res.status(400).json(result);
     res.json({ ok: true, profile: result.state.profile });
   } catch (e) { next(e); }

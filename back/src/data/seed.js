@@ -121,10 +121,38 @@ const shopItems = [
   { id: "s14", category: "look", name: "Наушники", price: 95, icon: "🎧", slot: "ears", accessory: "headphones" },
   { id: "s15", category: "look", name: "Кулон", price: 65, icon: "📿", slot: "neck", accessory: "pendant" },
   { id: "s16", category: "look", name: "Ботинки", price: 105, icon: "🥾", slot: "feet", accessory: "boots" },
+  { id: "s17", category: "look", name: "Розовая тиара", price: 115, icon: "👑", slot: "head", accessory: "pink_tiara", outfit: "pink-princess" },
+  { id: "s18", category: "look", name: "Платье с бантом", price: 145, icon: "👗", slot: "body", accessory: "pink_dress", outfit: "pink-princess" },
+  { id: "s19", category: "look", name: "Жемчужный воротник", price: 75, icon: "🤍", slot: "neck", accessory: "pearl_collar", outfit: "pink-princess" },
+  { id: "s20", category: "look", name: "Розовые туфельки", price: 90, icon: "🎀", slot: "feet", accessory: "pink_shoes", outfit: "pink-princess" },
+  { id: "s21", category: "look", name: "Космошлем", price: 135, icon: "🪐", slot: "head", accessory: "space_helmet", outfit: "space-explorer" },
+  { id: "s22", category: "look", name: "Скафандр", price: 155, icon: "🚀", slot: "body", accessory: "space_suit", outfit: "space-explorer" },
+  { id: "s23", category: "look", name: "Звёздный визор", price: 95, icon: "✨", slot: "eyes", accessory: "space_visor", outfit: "space-explorer" },
+  { id: "s24", category: "look", name: "Лунные ботинки", price: 105, icon: "🌙", slot: "feet", accessory: "moon_boots", outfit: "space-explorer" },
+  { id: "s25", category: "look", name: "Маска героя", price: 85, icon: "⚡", slot: "eyes", accessory: "hero_mask", outfit: "superhero" },
+  { id: "s26", category: "look", name: "Костюм и плащ", price: 165, icon: "🦸", slot: "body", accessory: "hero_suit", outfit: "superhero" },
+  { id: "s27", category: "look", name: "Сапоги героя", price: 100, icon: "🥾", slot: "feet", accessory: "hero_boots", outfit: "superhero" },
+  { id: "s28", category: "look", name: "Повязка чемпиона", price: 70, icon: "🏅", slot: "head", accessory: "hero_headband", outfit: "superhero" },
+  { id: "s29", category: "look", name: "Берет отличника", price: 80, icon: "🎓", slot: "head", accessory: "scholar_beret", outfit: "smart-academy" },
+  { id: "s30", category: "look", name: "Круглые очки", price: 85, icon: "🤓", slot: "eyes", accessory: "scholar_glasses", outfit: "smart-academy" },
+  { id: "s31", category: "look", name: "Жилет академии", price: 125, icon: "📚", slot: "body", accessory: "scholar_vest", outfit: "smart-academy" },
+  { id: "s32", category: "look", name: "Кеды отличника", price: 90, icon: "👟", slot: "feet", accessory: "scholar_shoes", outfit: "smart-academy" },
+  { id: "s33", category: "look", name: "Звёздные очки", price: 100, icon: "⭐", slot: "eyes", accessory: "star_glasses", outfit: "stage-star" },
+  { id: "s34", category: "look", name: "Сценическая куртка", price: 150, icon: "🎸", slot: "body", accessory: "stage_jacket", outfit: "stage-star" },
+  { id: "s35", category: "look", name: "Неоновые кеды", price: 110, icon: "👟", slot: "feet", accessory: "neon_shoes", outfit: "stage-star" },
+  { id: "s36", category: "look", name: "Наушники-звёзды", price: 120, icon: "🎧", slot: "ears", accessory: "star_headphones", outfit: "stage-star" },
   { id: "s6", category: "home", name: "Коврик", price: 90, icon: "🟫" },
   { id: "s7", category: "home", name: "Лампа", price: 110, icon: "💡" },
   { id: "s12", category: "home", name: "Домик", price: 180, icon: "🏠" },
   { id: "s8", category: "home", name: "Звезда", price: 250, icon: "⭐" },
+];
+
+const outfits = [
+  { id: "pink-princess", name: "Розовая принцесса", tagline: "Тиара, платье и туфельки в одном образе", itemIds: ["s17", "s18", "s19", "s20"], tone: "pink" },
+  { id: "space-explorer", name: "Космоисследователь", tagline: "Полный комплект для экспедиции к звёздам", itemIds: ["s21", "s22", "s23", "s24"], tone: "space" },
+  { id: "superhero", name: "Супергерой", tagline: "Маска, плащ и сапоги для большого подвига", itemIds: ["s25", "s26", "s27", "s28"], tone: "hero" },
+  { id: "smart-academy", name: "Звезда академии", tagline: "Умный образ для новых учебных побед", itemIds: ["s29", "s30", "s31", "s32"], tone: "academy" },
+  { id: "stage-star", name: "Звезда сцены", tagline: "Яркий комплект для собственного концерта", itemIds: ["s33", "s34", "s35", "s36"], tone: "stage" },
 ];
 
 const weekActivity = [
@@ -144,4 +172,4 @@ const profile = {
   ownedItems: ["s3"],
 };
 
-module.exports = { topics, diagnostic, taskBank, homework, achievements, shopItems, weekActivity, profile };
+module.exports = { topics, diagnostic, taskBank, homework, achievements, shopItems, outfits, weekActivity, profile };

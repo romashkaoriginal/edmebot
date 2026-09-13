@@ -427,6 +427,42 @@ async function buyItem(student, item) {
   return { state: await getState(student) };
 }
 
+async function buyOutfit(student, outfit) {
+  const outfitItems = outfit.itemIds
+    .map((itemId) => seed.shopItems.find((item) => item.id === itemId && item.category === "look"))
+    .filter(Boolean);
+  if (outfitItems.length !== outfit.itemIds.length) return { error: "outfit_invalid" };
+
+  const result = await db.transaction(async (client) => {
+    await ensure(student, client);
+    const { rows } = await client.query(
+      "SELECT * FROM student_profiles WHERE student_id = $1 FOR UPDATE",
+      [student.id]
+    );
+    const profile = rows[0];
+    const ownedItems = Array.isArray(profile.owned_items) ? profile.owned_items : [];
+    const missingItems = outfitItems.filter((item) => !ownedItems.includes(item.id));
+    const totalPrice = missingItems.reduce((sum, item) => sum + item.price, 0);
+    if (profile.coins < totalPrice) return { error: "not_enough_coins" };
+
+    const nextOwnedItems = [...ownedItems, ...missingItems.map((item) => item.id)];
+    const nextWornItems = {
+      ...(profile.worn_items ?? {}),
+      ...Object.fromEntries(outfitItems.map((item) => [item.slot, item.accessory])),
+    };
+    const updated = await client.query(
+      `UPDATE student_profiles
+          SET coins = coins - $2, owned_items = $3, worn_items = $4, updated_at = now()
+        WHERE student_id = $1 AND coins >= $2
+        RETURNING student_id`,
+      [student.id, totalPrice, JSON.stringify(nextOwnedItems), JSON.stringify(nextWornItems)]
+    );
+    return updated.rowCount ? {} : { error: "not_enough_coins" };
+  });
+  if (result.error) return result;
+  return { state: await getState(student) };
+}
+
 async function feedPet(student, itemId) {
   const item = seed.shopItems.find((entry) => entry.id === itemId && entry.category === "food");
   if (!item) return { error: "item_not_found" };
@@ -522,4 +558,4 @@ async function updatePet(student, { species, wornItems, name } = {}) {
   return { state: await getState(student) };
 }
 
-module.exports = { ensure, getState, submitDiagnostic, gradePractice, buyItem, feedPet, renamePet, updatePet };
+module.exports = { ensure, getState, submitDiagnostic, gradePractice, buyItem, buyOutfit, feedPet, renamePet, updatePet };

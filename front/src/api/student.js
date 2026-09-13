@@ -121,6 +121,11 @@ export const studentApi = {
     invalidateResource("pet");
     return result;
   },
+  buyPetOutfit: async (outfitId) => {
+    const result = await studentFetch("/api/pet/buy-outfit", { method: "POST", body: JSON.stringify({ outfitId }) });
+    invalidateResource("pet");
+    return result;
+  },
   feedPet: async (itemId) => {
     const result = await studentFetch("/api/pet/feed", { method: "POST", body: JSON.stringify({ itemId }) });
     invalidateResource("pet");
