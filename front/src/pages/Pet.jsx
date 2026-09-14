@@ -17,6 +17,8 @@ const CATEGORIES = [
 ];
 
 const PET_NAMES = ["Искра", "Плюша", "Финик", "Луна", "Тоша", "Пиксель", "Бусинка", "Персик", "Снежок", "Чип"];
+// Kept in sync with the backend's changePrice in updatePet (studentState.js).
+const SPECIES_CHANGE_PRICE = 350;
 
 export default function Pet() {
   const { profile, ownedItems, hydrate, setPetSpecies, setPetName } = useApp();
@@ -496,9 +498,9 @@ export default function Pet() {
       </section>
 
       <section className="pet-page__collection">
-        <button type="button" className="pet-page__settings-toggle" onClick={() => setSettingsOpen((value) => !value)} aria-expanded={settingsOpen}><Sparkles size={18} /><span><b>Сменить питомца</b><small>Смена вида стоит 100 монет</small></span><ArrowRight size={18} className={settingsOpen ? "is-open" : ""} /></button>
+        <button type="button" className="pet-page__settings-toggle" onClick={() => setSettingsOpen((value) => !value)} aria-expanded={settingsOpen}><Sparkles size={18} /><span><b>Сменить питомца</b><small>Смена вида стоит {SPECIES_CHANGE_PRICE} монет</small></span><ArrowRight size={18} className={settingsOpen ? "is-open" : ""} /></button>
         {settingsOpen && <div className="pet-page__settings-panel">
-        <div className="pet-page__section-head"><SectionTitle>Сменить питомца · 100 монет</SectionTitle><p>Чтобы вернуться к прежнему виду, потребуется новая смена.</p></div>
+        <div className="pet-page__section-head"><SectionTitle>Сменить питомца · {SPECIES_CHANGE_PRICE} монет</SectionTitle><p>Чтобы вернуться к прежнему виду, потребуется новая смена.</p></div>
         <div className="pet-page__species">
           {petSpecies.map((species) => (
             <button
@@ -516,7 +518,7 @@ export default function Pet() {
         </div>
         {pendingSpecies && <div className="pet-page__change-confirm" role="region" aria-labelledby="pet-change-title">
           <div className="pet-page__change-pets"><PetAvatar species={profile.pet.species} mood="idle" size={72} animated={false} decorative /><ArrowRight size={20} /><PetAvatar species={pendingSpecies} mood="happy" size={72} animated={false} decorative /></div>
-          <div><strong id="pet-change-title">Сменить питомца?</strong><p>{petSpecies.find((item) => item.id === profile.pet.species)?.name} → {petSpecies.find((item) => item.id === pendingSpecies)?.name}. Будет списано 100 монет.</p></div>
+          <div><strong id="pet-change-title">Сменить питомца?</strong><p>{petSpecies.find((item) => item.id === profile.pet.species)?.name} → {petSpecies.find((item) => item.id === pendingSpecies)?.name}. Будет списано {SPECIES_CHANGE_PRICE} монет.</p></div>
           <div className="pet-page__change-actions"><Button size="sm" variant="ghost" onClick={() => setPendingSpecies(null)}>Отмена</Button><Button size="sm" icon={Coins} loading={busyId === `species:${pendingSpecies}`} onClick={() => chooseSpecies(pendingSpecies)}>Сменить за 100</Button></div>
         </div>}
         </div>}
@@ -805,7 +807,7 @@ function PetFirstChoice({ hydrate }) {
       <header className="pet-choice__head">
         <span className="pet-choice__step"><Check size={15} strokeWidth={3} /> Диагностика готова</span>
         <h1 id="pet-choice-title">Выбери своего питомца</h1>
-        <p>Первый выбор бесплатный. Сменить питомца позже можно за 100 монет.</p>
+        <p>Первый выбор бесплатный. Сменить питомца позже можно за {SPECIES_CHANGE_PRICE} монет.</p>
       </header>
 
       <div className="pet-choice__list" role="radiogroup" aria-label="Вид питомца">

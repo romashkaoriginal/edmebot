@@ -12,12 +12,53 @@ import "./admin.css";
 
 const SUBJECTS = ["Математика", "Русский", "Химия", "Физика"];
 const GRADES = [6, 7, 8, 9, 10, 11];
+// A student's access is considered "истекает" once this many days are left,
+// so staff get a heads-up before it lapses rather than finding out after.
+const EXPIRING_SOON_DAYS = 3;
 const EMPTY = {
   firstName: "",
   lastName: "",
   tgId: "",
   subjects: [{ subject: "Математика", grade: 7 }],
+  accessUntil: "", // "" = бессрочно, otherwise "YYYY-MM-DD"
 };
+
+// Days left until access_until (end of that day), or null for unlimited/no
+// deadline. Negative means already expired.
+function daysUntil(accessUntil) {
+  if (!accessUntil) return null;
+  const ms = new Date(accessUntil).getTime() - Date.now();
+  return Math.ceil(ms / (24 * 60 * 60 * 1000));
+}
+
+// Access status shown as a badge on the student's card. Independent from
+// `onboardingStep`-driven "регистрируется"/"trial завершён" tags below — this
+// one is purely about the access_until countdown for a student who does have
+// an active or about-to-lapse access grant.
+function accessStatus(student) {
+  if (student.status !== "active") return null;
+  if (!student.access_until) return { key: "unlimited", label: "бессрочно" };
+  const left = daysUntil(student.access_until);
+  if (left <= 0) return { key: "expired", label: "доступ истёк" };
+  if (left <= EXPIRING_SOON_DAYS) return { key: "expiring", label: `истекает через ${left} ${dayWord(left)}` };
+  return { key: "active", label: `осталось ${left} ${dayWord(left)}` };
+}
+
+// Local calendar date as "YYYY-MM-DD" (not UTC — toISOString would shift the
+// date near midnight), used as the date input's default value and min bound.
+function todayIso() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function dayWord(n) {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return "день";
+  if ([2, 3, 4].includes(mod10) && ![12, 13, 14].includes(mod100)) return "дня";
+  return "дней";
+}
 
 export default function Students() {
   const [students, setStudents] = useState([]);
@@ -83,13 +124,16 @@ export default function Students() {
     try {
       if (editingId) {
         // On edit we only touch name/tg/primary subject; per-subject changes
-        // happen in the expandable "Предметы" panel of the row.
+        // happen in the expandable "Предметы" panel of the row. accessUntil is
+        // always sent ("" clears it to бессрочно) so the form is the single
+        // source of truth for the access period once opened.
         await adminApi.updateStudent(editingId, {
           firstName: form.firstName,
           lastName: form.lastName,
           tgId: form.tgId,
           subject: subjects[0]?.subject,
           grade: subjects[0]?.grade,
+          accessUntil: form.accessUntil || null,
         });
       } else {
         await adminApi.createStudent({
@@ -97,6 +141,7 @@ export default function Students() {
           lastName: form.lastName,
           tgId: form.tgId,
           subjects: isDemoDraft ? [] : subjects,
+          accessUntil: form.accessUntil || null,
         });
       }
       reset();
@@ -114,6 +159,7 @@ export default function Students() {
       lastName: s.last_name || "",
       tgId: s.is_demo ? "демо" : s.tg_id || "",
       subjects: [{ subject: s.subject || "Математика", grade: s.grade || 7 }],
+      accessUntil: s.access_until ? s.access_until.slice(0, 10) : "",
     });
     setFormOpen(true);
   }
@@ -313,6 +359,44 @@ export default function Students() {
             </label>
           )}
 
+          <div className="afield">
+            <span>Срок доступа</span>
+            <div className="aaccess-mode">
+              <label>
+                <input
+                  type="radio"
+                  name="access-mode"
+                  checked={!form.accessUntil}
+                  onChange={() => setForm((f) => ({ ...f, accessUntil: "" }))}
+                />
+                Бессрочно
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="access-mode"
+                  checked={Boolean(form.accessUntil)}
+                  onChange={() => setForm((f) => ({ ...f, accessUntil: f.accessUntil || todayIso() }))}
+                />
+                До даты
+              </label>
+            </div>
+            {form.accessUntil && (
+              <div className="aaccess-dates">
+                <span>Доступ открыт по</span>
+                <input
+                  className="ainput"
+                  type="date"
+                  value={form.accessUntil}
+                  min={todayIso()}
+                  onChange={(e) => setForm((f) => ({ ...f, accessUntil: e.target.value }))}
+                  required
+                />
+                <span>включительно</span>
+              </div>
+            )}
+          </div>
+
           {error && <p className="aerror">{error}</p>}
           <div className="aform__actions">
             <Button type="submit" icon={editingId ? Pencil : Plus}>
@@ -385,6 +469,7 @@ export default function Students() {
             {visibleStudents.map((s) => {
               const open = expandedId === s.id;
               const isDemo = Boolean(s.is_demo || /^demo(?::|$)/i.test(s.tg_id || ""));
+              const access = accessStatus(s);
               return (
                 <div className={`arow arow--card${open ? " is-open" : ""}`} key={s.id}>
                   <div className="arow__lead">
@@ -402,6 +487,16 @@ export default function Students() {
                                 : "У ученика сейчас нет доступа к практике и домашним заданиям"}
                           >
                             {s.trial_used ? "trial завершён" : !s.subject ? "регистрируется" : "доступ закрыт"}
+                          </span>
+                        )}
+                        {access && access.key !== "unlimited" && (
+                          <span
+                            className={`atag ${access.key === "expiring" ? "atag--expiring" : "atag--active"}`}
+                            title={access.key === "expiring"
+                              ? "Срок доступа скоро истечёт — продлите его в редактировании ученика"
+                              : "Срок действия доступа, назначенный в редактировании ученика"}
+                          >
+                            {access.label}
                           </span>
                         )}
                         {isDemo && <span className="atag atag--demo">демо</span>}

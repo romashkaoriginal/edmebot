@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const db = require("../db");
 const { requireAuth, requireRole } = require("../middleware/auth");
 const { SUBJECT_VARIANTS, normalizeSubject } = require("../subjects");
+const { parseAccessUntilDay } = require("../utils/access");
 
 const router = express.Router();
 
@@ -240,18 +241,25 @@ router.post("/students", requireRole("admin"), async (req, res, next) => {
     const subjects = readSubjects(req.body);
     const demo = isDemoTelegramId(tgId);
     if (!demo && !subjects.length) return bad(res, "at_least_one_subject_required");
+    // accessUntil: omitted/null = unlimited ("бессрочно"), "YYYY-MM-DD" = access
+    // runs through the end of that calendar day.
+    const accessUntil = parseAccessUntilDay(req.body?.accessUntil);
+    if (accessUntil === "invalid") return bad(res, "invalid_access_until");
     const { rows: staffRows } = await db.query("SELECT 1 FROM users WHERE tg_id = $1", [tgId]);
     if (staffRows.length) return bad(res, "staff_account_cannot_be_student", 409);
     // The first subject is the "primary" one (kept on students for display/
     // back-compat); the rest go into student_subjects. status defaults to
     // 'active' — a student created here already has a subject.
     const primary = subjects[0] ?? { grade: null, subject: null };
+    // An admin-set date already in the past means the student is created
+    // locked out rather than briefly appearing active.
+    const initialStatus = accessUntil && accessUntil <= new Date() ? "pending" : "active";
     const student = await db.transaction(async (client) => {
       const { rows } = await client.query(
         `INSERT INTO students
-           (tg_id, name, first_name, last_name, grade, subject, access_kind)
-         VALUES ($1,$2,$3,$4,$5,$6,'assigned') RETURNING *`,
-        [tgId, name, cleanText(firstName, 60) || null, cleanText(lastName, 60) || null, primary.grade, primary.subject]
+           (tg_id, name, first_name, last_name, grade, subject, access_kind, access_until, status)
+         VALUES ($1,$2,$3,$4,$5,$6,'assigned',$7,$8) RETURNING *`,
+        [tgId, name, cleanText(firstName, 60) || null, cleanText(lastName, 60) || null, primary.grade, primary.subject, accessUntil || null, initialStatus]
       );
       for (const s of subjects) {
         await client.query(
@@ -290,6 +298,13 @@ router.put("/students/:id", requireRole("admin"), async (req, res, next) => {
     if (hasPrimaryChange && (
       !Number.isInteger(cleanGrade) || cleanGrade < 6 || cleanGrade > 11 || !cleanPrimarySubject
     )) return bad(res, "invalid_subject_or_grade");
+    // accessUntil: field omitted -> leave untouched; null/"" -> "бессрочно";
+    // "YYYY-MM-DD" -> access runs through the end of that day. Assigning any
+    // access (a future date or unlimited) re-activates a student whose access
+    // had lapsed into 'pending', since that's the whole point of doing it.
+    const hasAccessChange = req.body?.accessUntil !== undefined;
+    const accessUntil = parseAccessUntilDay(req.body?.accessUntil);
+    if (accessUntil === "invalid") return bad(res, "invalid_access_until");
     const rows = await db.transaction(async (client) => {
       const { rows: currentRows } = await client.query(
         "SELECT * FROM students WHERE id = $1 FOR UPDATE",
@@ -311,14 +326,34 @@ router.put("/students/:id", requireRole("admin"), async (req, res, next) => {
                last_name = CASE WHEN $8 THEN $9 ELSE last_name END,
                grade = COALESCE($3, grade),
                subject = COALESCE($4, subject),
-               tg_id = COALESCE($5, tg_id)
+               tg_id = COALESCE($5, tg_id),
+               access_until = CASE WHEN $10 THEN $11 ELSE access_until END,
+               access_kind = CASE WHEN $10 THEN 'assigned' ELSE access_kind END
          WHERE id = $1 RETURNING *`,
         [
           req.params.id, name, cleanGrade, cleanPrimarySubject, cleanTgId,
           firstName != null, cleanText(firstName, 60) || null,
           lastName != null, cleanText(lastName, 60) || null,
+          hasAccessChange, accessUntil || null,
         ]
       );
+      // Reconcile status with the new access_until right away rather than
+      // waiting for the student's next login: a student whose access had
+      // lapsed to 'pending' is reactivated the moment staff grant access
+      // again (a future date or unlimited), and one given a past date is
+      // locked out immediately instead of appearing 'active' until they
+      // happen to open the app.
+      if (hasAccessChange) {
+        const stillHasAccess = accessUntil === null || accessUntil > new Date();
+        const nextStatus = stillHasAccess ? "active" : "pending";
+        if (nextStatus !== current.status) {
+          const reconciled = await client.query(
+            "UPDATE students SET status = $2 WHERE id = $1 RETURNING *",
+            [req.params.id, nextStatus]
+          );
+          return reconciled.rows;
+        }
+      }
       return updated.rows;
     });
     if (!rows.length) return bad(res, "not_found", 404);

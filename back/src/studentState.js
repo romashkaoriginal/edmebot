@@ -2,9 +2,25 @@ const db = require("./db");
 const seed = require("./data/seed");
 
 const XP_BY_DIFFICULTY = { easy: 10, medium: 15, hard: 25 };
-const PET_DECAY_INTERVAL_MS = 6 * 60 * 60 * 1000;
+// Decay is recomputed in 30-minute steps so it reads as smooth wear rather than
+// a jarring 6-hour cliff, and both stats are calibrated to run out in 48h of
+// total neglect (96 steps): satiety loses 1%/step on its own, mood loses 1%/step
+// on its own too (learning fades from disuse exactly like food does) plus an
+// extra 1%/step once satiety has actually dropped below 30 — being hungry makes
+// the pet visibly unhappier on top of time passing. Correct answers are the only
+// thing that adds mood back (see gradePractice), so this is the sole source of
+// decline: no action ever subtracts satiety/mood as a punishment.
+const PET_DECAY_STEP_MS = 30 * 60 * 1000;
+const PET_DECAY_SATIETY_PER_STEP = 1;
+const PET_DECAY_MOOD_PER_STEP = 1;
+const PET_DECAY_HUNGER_MOOD_PENALTY_PER_STEP = 1;
+const PET_DECAY_HUNGER_THRESHOLD = 30;
+// A cap on how many steps one catch-up computes in a single getState call: a
+// student away for months still only needs the stats walked down to 0, not a
+// runaway loop crunching thousands of steps server-side. 200 steps = 100h, well
+// past where both stats have already bottomed out at 0.
+const PET_DECAY_MAX_STEPS = 200;
 const PRACTICE_ANSWER_GRACE_MS = 12 * 60 * 60 * 1000;
-const PET_DECAY_MAX_STEPS = 16;
 const APP_TIME_ZONE = process.env.APP_TIME_ZONE || "Europe/Moscow";
 
 function statusFromMastery(mastery) {
@@ -31,11 +47,20 @@ function foodEffect(item) {
 function petDecay(row) {
   if (!row) return null;
   const lastChecked = row.pet_decay_checked_at ? new Date(row.pet_decay_checked_at).getTime() : Date.now();
-  const steps = Math.min(PET_DECAY_MAX_STEPS, Math.floor((Date.now() - lastChecked) / PET_DECAY_INTERVAL_MS));
+  const steps = Math.min(PET_DECAY_MAX_STEPS, Math.floor((Date.now() - lastChecked) / PET_DECAY_STEP_MS));
   if (steps <= 0) return null;
-  const satiety = clampStat((row.pet_satiety ?? 80) - steps * 4);
-  const hungerPenalty = satiety < 30 ? steps * 2 : 0;
-  const mood = clampStat((row.pet_mood ?? 80) - steps * 2 - hungerPenalty);
+  const satietyStart = clampStat(row.pet_satiety ?? 80);
+  const moodStart = clampStat(row.pet_mood ?? 80);
+  const satiety = clampStat(satietyStart - steps * PET_DECAY_SATIETY_PER_STEP);
+  // The hunger penalty only applies once satiety has actually crossed the
+  // threshold, and only for the steps spent below it — so a pet that was fed
+  // partway through the gap isn't charged the penalty for time it wasn't hungry.
+  const stepsHungry = satietyStart <= PET_DECAY_HUNGER_THRESHOLD
+    ? steps
+    : Math.max(0, steps - Math.ceil((satietyStart - PET_DECAY_HUNGER_THRESHOLD) / PET_DECAY_SATIETY_PER_STEP));
+  const mood = clampStat(
+    moodStart - steps * PET_DECAY_MOOD_PER_STEP - stepsHungry * PET_DECAY_HUNGER_MOOD_PENALTY_PER_STEP
+  );
   return { steps, satiety, mood };
 }
 
@@ -519,7 +544,9 @@ async function updatePet(student, { species, wornItems, name } = {}) {
     const profile = rows[0];
     const nextSpecies = species ?? profile.pet_species;
     const changesSpecies = species !== undefined && species !== profile.pet_species;
-    const changePrice = profile.pet_selected && changesSpecies ? 100 : 0;
+    // Kept in line with the shop's ~3.5x pricing pass: a cosmetic species swap
+    // costs about as much as a single mid-tier outfit piece.
+    const changePrice = profile.pet_selected && changesSpecies ? 350 : 0;
     if (changePrice && profile.coins < changePrice) return { error: "not_enough_coins" };
     const nextName = name === undefined
       ? profile.pet_name
@@ -558,4 +585,8 @@ async function updatePet(student, { species, wornItems, name } = {}) {
   return { state: await getState(student) };
 }
 
-module.exports = { ensure, getState, submitDiagnostic, gradePractice, buyItem, buyOutfit, feedPet, renamePet, updatePet };
+module.exports = {
+  ensure, getState, submitDiagnostic, gradePractice, buyItem, buyOutfit, feedPet, renamePet, updatePet,
+  // Exported for petDecay.test.js only — not part of the HTTP-facing API.
+  petDecay,
+};

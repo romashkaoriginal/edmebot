@@ -571,6 +571,13 @@
 .atag--demo { background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
 .atag--done { background: var(--success-soft); color: var(--success); }
 .atag--active { background: var(--primary-soft); color: var(--primary-strong); }
+.atag--expiring { background: var(--danger-soft); color: var(--danger); }
+
+/* Access-period controls in the student form. */
+.aaccess-mode { display: flex; gap: var(--sp-3, 12px); margin-bottom: 8px; }
+.aaccess-mode label { display: inline-flex; align-items: center; gap: 6px; font-weight: 650; cursor: pointer; }
+.aaccess-dates { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.aaccess-dates span { color: var(--muted); font-size: var(--text-sm); }
 
 .achip {
   display: inline-block;
