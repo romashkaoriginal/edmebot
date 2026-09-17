@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-CERT_DIR="$PGDATA"
+CERT_DIR="/etc/postgresql/ssl"
 if [ ! -f "$CERT_DIR/server.crt" ]; then
   mkdir -p "$CERT_DIR"
   openssl req -new -x509 -days 3650 -nodes -text \
