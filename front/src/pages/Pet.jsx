@@ -5,6 +5,7 @@ import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import SectionTitle from "../components/ui/SectionTitle";
 import PetAvatar, { AccessoryPreview } from "../components/pet/PetAvatar";
+import RoomScene, { RoomItemPreview, ROOM_SLOTS } from "../components/pet/RoomScene";
 import { useApp } from "../store/AppStore";
 import { studentApi } from "../api/student";
 import { petSpecies } from "../data/mock";
@@ -86,7 +87,11 @@ export default function Pet() {
     }
   }
 
-  const wornAccessories = Object.values(worn).filter(Boolean);
+  // worn holds both PetAvatar slots (neck/head/eyes/...) and room slots
+  // (wallpaper/floor/rug/...) in one map, so anything headed to PetAvatar's
+  // `accessories` prop must drop the room ones first.
+  const isRoomSlot = (slot) => ROOM_SLOTS.includes(slot);
+  const wornAccessories = Object.entries(worn).filter(([slot, v]) => v && !isRoomSlot(slot)).map(([, v]) => v);
   const previewOutfitItems = previewOutfit
     ? previewOutfit.itemIds.map((id) => shopItems.find((item) => item.id === id)).filter(Boolean)
     : [];
@@ -94,7 +99,12 @@ export default function Pet() {
     (next, item) => ({ ...next, [item.slot]: item.accessory }),
     previewItem ? { ...worn, [previewItem.slot]: previewItem.accessory } : worn
   );
-  const previewAccessories = Object.values(previewWorn).filter(Boolean);
+  const previewAccessories = Object.entries(previewWorn).filter(([slot, v]) => v && !isRoomSlot(slot)).map(([, v]) => v);
+  // Room gear (wallpaper/floor/rug/lamp/furniture/decor) is worn exactly like
+  // clothing — one skin per slot — so it comes straight out of the same
+  // `worn` map, just restricted to the room's own slots.
+  const roomSkins = Object.fromEntries(ROOM_SLOTS.map((slot) => [slot, worn[slot] ?? null]).filter(([, v]) => v));
+  const previewRoomSlot = previewItem?.category === "home" ? previewItem.slot : null;
   const items = shopItems.filter((item) =>
     item.category === cat && (cat !== "look" || lookFilter === "all" || item.outfit === lookFilter)
   );
@@ -386,15 +396,7 @@ export default function Pet() {
             </div>
           )}
 
-          <span className="pet-page__sun" aria-hidden="true" />
-          <span className="pet-page__cloud pet-page__cloud--one" aria-hidden="true" />
-          <span className="pet-page__cloud pet-page__cloud--two" aria-hidden="true" />
-          <div className="pet-page__plant" aria-hidden="true"><i /><i /><i /></div>
-          {ownedItems.includes("s6") && <RoomItem item={{ id: "s6", name: "Коврик" }} />}
-          {ownedItems.includes("s7") && <RoomItem item={{ id: "s7", name: "Лампа" }} />}
-          {ownedItems.includes("s12") && <RoomItem item={{ id: "s12", name: "Домик" }} />}
-          {ownedItems.includes("s8") && <RoomItem item={{ id: "s8", name: "Звезда" }} />}
-          {previewItem?.category === "home" && !ownedItems.includes(previewItem.id) && <RoomItem item={previewItem} preview />}
+          <RoomScene skins={roomSkins} previewSlot={previewRoomSlot} previewSkin={previewItem?.accessory} />
           <PetSpeech state={petState} onOpenFood={openFood} reduceMotion={reduceMotion} />
           <PetAvatar className="pet-page__avatar" species={profile.pet.species} mood={petState.expression} accessories={previewAccessories} reaction={reaction} eating={eating} size={220} />
         </div>
@@ -404,6 +406,7 @@ export default function Pet() {
             <span className="pet-page__preview-icon" aria-hidden="true">
               {previewOutfit
                 ? <PetAvatar species={profile.pet.species} mood="happy" accessories={previewOutfitItems.map((item) => item.accessory)} size={48} animated={false} decorative />
+                : previewItem.category === "home" ? <RoomItemPreview slot={previewItem.slot} skin={previewItem.accessory} size={42} />
                 : previewItem.accessory ? <AccessoryPreview accessory={previewItem.accessory} size={42} /> : previewItem.icon}
             </span>
             <span className="pet-page__preview-copy">
@@ -421,7 +424,7 @@ export default function Pet() {
                     {details.worn ? "Образ надет" : details.complete ? "Надеть образ" : `Собрать за ${details.missingPrice}`}
                   </Button>
                 );
-              })() : previewItem.category === "look" ? (
+              })() : previewItem.slot ? (
                 <Button
                   size="sm"
                   variant={worn[previewItem.slot] === previewItem.accessory ? "soft" : "accent"}
@@ -430,9 +433,9 @@ export default function Pet() {
                   onClick={() => wear(previewItem)}
                 >
                   {worn[previewItem.slot] === previewItem.accessory
-                    ? "Снять"
+                    ? (previewItem.category === "home" ? "Убрать" : "Снять")
                     : ownedItems.includes(previewItem.id)
-                      ? "Надеть"
+                      ? (previewItem.category === "home" ? "Поставить" : "Надеть")
                       : `Купить за ${previewItem.price}`}
                 </Button>
               ) : ownedItems.includes(previewItem.id) ? (
@@ -599,13 +602,22 @@ export default function Pet() {
             const isWorn = item.slot && worn[item.slot] === item.accessory;
             return (
                 <Card key={item.id} className={`shopitem ${previewItem?.id === item.id ? "shopitem--previewing" : ""}`} pad="sm">
-                <span className={`shopitem__icon shopitem__icon--${item.category}`} aria-hidden="true">{item.accessory ? <AccessoryPreview accessory={item.accessory} size={52} /> : item.icon}</span>
+                <span className={`shopitem__icon shopitem__icon--${item.category}`} aria-hidden="true">
+                  {item.category === "home"
+                    ? <RoomItemPreview slot={item.slot} skin={item.accessory} size={52} />
+                    : item.accessory ? <AccessoryPreview accessory={item.accessory} size={52} /> : item.icon}
+                </span>
                 <div className="shopitem__meta"><span className="shopitem__name">{item.name}</span>{!owned && <span className="shopitem__price"><Coins size={13} /> {item.price}</span>}</div>
-                {cat === "look" ? (
-                  <div className="shopitem__actions"><Button size="sm" variant={previewItem?.id === item.id ? "accent" : "soft"} aria-pressed={previewItem?.id === item.id} onClick={() => previewInRoom(item)}>{previewItem?.id === item.id ? "Примеряется" : owned ? "Посмотреть" : "Примерить"}</Button>{owned && <Button size="sm" variant={isWorn ? "soft" : "accent"} icon={isWorn ? Check : Shirt} loading={busyId === item.id} onClick={() => wear(item)}>{isWorn ? "Снять" : "Надеть"}</Button>}</div>
-                ) : (
-                  <div className="shopitem__actions"><Button size="sm" variant={previewItem?.id === item.id ? "accent" : "soft"} aria-pressed={previewItem?.id === item.id} onClick={() => previewInRoom(item)}>{previewItem?.id === item.id ? "Показан наверху" : owned ? "Посмотреть" : "Примерить"}</Button>{owned && <span className="shopitem__owned"><Check size={14} /> В комнате</span>}</div>
-                )}
+                <div className="shopitem__actions">
+                  <Button size="sm" variant={previewItem?.id === item.id ? "accent" : "soft"} aria-pressed={previewItem?.id === item.id} onClick={() => previewInRoom(item)}>
+                    {previewItem?.id === item.id ? (cat === "look" ? "Примеряется" : "Показан наверху") : owned ? "Посмотреть" : "Примерить"}
+                  </Button>
+                  {owned && (
+                    <Button size="sm" variant={isWorn ? "soft" : "accent"} icon={isWorn ? Check : Shirt} loading={busyId === item.id} onClick={() => wear(item)}>
+                      {isWorn ? (cat === "look" ? "Снять" : "Убрать") : (cat === "look" ? "Надеть" : "Поставить")}
+                    </Button>
+                  )}
+                </div>
               </Card>
             );
           })}
@@ -737,22 +749,6 @@ function PetSpeech({ state, onOpenFood, reduceMotion }) {
         )}
       </motion.div>
     </AnimatePresence>
-  );
-}
-
-function RoomItem({ item, preview = false }) {
-  if (!item) return null;
-  const kind = { s6: "rug", s7: "lamp", s12: "house", s8: "star" }[item.id];
-  if (!kind) return null;
-  return (
-    <span
-      className={`pet-page__${kind} ${preview ? "pet-page__room-item--preview" : ""}`}
-      role="img"
-      aria-label={`${item.name}${preview ? " — примерка" : ""}`}
-    >
-      {kind === "star" ? "★" : null}
-      {(kind === "lamp" || kind === "house") && <i />}
-    </span>
   );
 }
 

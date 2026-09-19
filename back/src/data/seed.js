@@ -157,10 +157,38 @@ const shopItems = [
   { id: "s43", category: "look", name: "Бант на макушку", price: 140, icon: "🎀", slot: "head", accessory: "ribbon_bow" },
   { id: "s45", category: "look", name: "Сандалии", price: 190, icon: "🩴", slot: "feet", accessory: "sandals" },
   { id: "s46", category: "look", name: "Шляпа волшебника", price: 455, icon: "🧙", slot: "head", accessory: "wizard_hat" },
-  { id: "s6", category: "home", name: "Коврик", price: 315, icon: "🟫" },
-  { id: "s7", category: "home", name: "Лампа", price: 385, icon: "💡" },
-  { id: "s12", category: "home", name: "Домик", price: 630, icon: "🏠" },
-  { id: "s8", category: "home", name: "Звезда", price: 875, icon: "⭐" },
+  // Room gear works like clothing: one slot, several skins, exactly one worn
+  // per slot (see wornItems in updatePet). "accessory" here is the skin id
+  // RoomScene/RoomItemPreview render — same field name as "look" items so the
+  // existing wear/owned/slot machinery needs no home-specific branch.
+  // "sky" wallpaper and "grass" floor are the default look of an empty slot
+  // (see ROOM_DEFAULT_SKIN on the front end) — not purchasable, so they are
+  // deliberately not listed here.
+  { id: "h2", category: "home", name: "Полоска", price: 260, icon: "🎀", slot: "wallpaper", accessory: "stripe" },
+  { id: "h3", category: "home", name: "Звёздное небо", price: 340, icon: "✨", slot: "wallpaper", accessory: "starry" },
+  { id: "h4", category: "home", name: "Мятные горошины", price: 240, icon: "🟢", slot: "wallpaper", accessory: "mint" },
+  { id: "h5", category: "home", name: "Меловая доска", price: 300, icon: "🖍️", slot: "wallpaper", accessory: "chalkboard" },
+  { id: "h7", category: "home", name: "Паркет", price: 220, icon: "🪵", slot: "floor", accessory: "wood" },
+  { id: "h8", category: "home", name: "Плитка", price: 210, icon: "◻️", slot: "floor", accessory: "tile" },
+  { id: "h9", category: "home", name: "Облачный пол", price: 260, icon: "☁️", slot: "floor", accessory: "clouds" },
+  { id: "s6", category: "home", name: "Круглый коврик", price: 190, icon: "🟫", slot: "rug", accessory: "round" },
+  { id: "h10", category: "home", name: "Полосатый коврик", price: 230, icon: "🟥", slot: "rug", accessory: "oval_stripe" },
+  { id: "h11", category: "home", name: "Коврик-шестиугольник", price: 260, icon: "🔷", slot: "rug", accessory: "hexagon" },
+  { id: "h12", category: "home", name: "Коврик-звезда", price: 300, icon: "⭐", slot: "rug", accessory: "star_shape" },
+  { id: "s7", category: "home", name: "Торшер", price: 250, icon: "💡", slot: "lamp", accessory: "floor_lamp" },
+  { id: "h13", category: "home", name: "Гирлянда", price: 270, icon: "🎇", slot: "lamp", accessory: "fairy_lights" },
+  { id: "h14", category: "home", name: "Лунный светильник", price: 320, icon: "🌙", slot: "lamp", accessory: "moon_lamp" },
+  { id: "h15", category: "home", name: "Фонарик", price: 240, icon: "🏮", slot: "lamp", accessory: "lantern" },
+  { id: "s12", category: "home", name: "Домик", price: 480, icon: "🏠", slot: "furniture", accessory: "house" },
+  { id: "h16", category: "home", name: "Кроватка", price: 560, icon: "🛏️", slot: "furniture", accessory: "bed" },
+  { id: "h17", category: "home", name: "Книжный шкаф", price: 520, icon: "📚", slot: "furniture", accessory: "bookshelf" },
+  { id: "h18", category: "home", name: "Письменный стол", price: 500, icon: "🖥️", slot: "furniture", accessory: "desk" },
+  { id: "h19", category: "home", name: "Ящик с игрушками", price: 380, icon: "🧸", slot: "furniture", accessory: "toybox" },
+  { id: "s8", category: "home", name: "Звезда на стену", price: 200, icon: "⭐", slot: "decor", accessory: "star" },
+  { id: "h20", category: "home", name: "Картина", price: 280, icon: "🖼️", slot: "decor", accessory: "painting" },
+  { id: "h21", category: "home", name: "Аквариум", price: 420, icon: "🐠", slot: "decor", accessory: "aquarium" },
+  { id: "h22", category: "home", name: "Шарики", price: 230, icon: "🎈", slot: "decor", accessory: "balloons" },
+  { id: "h23", category: "home", name: "Кубки", price: 350, icon: "🏆", slot: "decor", accessory: "trophies" },
 ];
 
 const outfits = [

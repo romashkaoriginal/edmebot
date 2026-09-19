@@ -1,0 +1,15 @@
+.room-scene { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; }
+.room-scene__item--preview { animation: room-item-in 220ms var(--ease-out); filter: drop-shadow(0 0 8px color-mix(in oklch, var(--primary) 55%, transparent)); }
+.room-scene__rug { filter: drop-shadow(0 2px 3px oklch(0.3 0.05 60 / 0.18)); }
+.room-scene__star { filter: drop-shadow(0 2px 2px oklch(0.5 0.12 75 / 0.25)); }
+.room-scene__twinkle { animation: room-twinkle 1.8s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+
+.room-item-preview { display: block; }
+
+@keyframes room-item-in { from { opacity: 0; transform: translateY(8px) scale(0.96); } }
+@keyframes room-twinkle { 0%, 100% { opacity: 0.45; scale: 0.85; } 50% { opacity: 1; scale: 1.15; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .room-scene__item--preview { animation: none; }
+  .room-scene__twinkle { animation: none; opacity: 0.85; }
+}

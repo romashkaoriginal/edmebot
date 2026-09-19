@@ -9,7 +9,7 @@ const connectionString = process.env.DATABASE_URL;
 // Bump whenever SCHEMA changes. init() skips the whole schema block when the
 // recorded version is already current, so a new CREATE/ALTER never reaches an
 // existing database unless this number moves.
-const SCHEMA_VERSION = 4;
+const SCHEMA_VERSION = 5;
 const databaseConfig = buildDatabaseConfig(connectionString);
 const pool = new Pool(databaseConfig);
 
@@ -333,6 +333,19 @@ ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS pet_satiety INTEGER NOT NU
 ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS pet_mood INTEGER NOT NULL DEFAULT 80;
 ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS pet_decay_checked_at TIMESTAMPTZ NOT NULL DEFAULT now();
 ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS food_inventory JSONB NOT NULL DEFAULT '{}';
+
+-- Room gear ("home" shop items) switched from always-visible clutter to
+-- slot-based skins like clothing (s6/s7/s8/s12 gained slot+accessory: rug,
+-- floor_lamp, star, house). Anyone who already owned one of these now needs
+-- it recorded in worn_items or it silently vanishes from their room; only
+-- backfill the slot when nothing else already occupies it.
+UPDATE student_profiles
+   SET worn_items = worn_items
+     || CASE WHEN owned_items @> '["s6"]'  AND NOT (worn_items ? 'rug')       THEN '{"rug": "round"}'::jsonb       ELSE '{}'::jsonb END
+     || CASE WHEN owned_items @> '["s7"]'  AND NOT (worn_items ? 'lamp')      THEN '{"lamp": "floor_lamp"}'::jsonb ELSE '{}'::jsonb END
+     || CASE WHEN owned_items @> '["s8"]'  AND NOT (worn_items ? 'decor')     THEN '{"decor": "star"}'::jsonb      ELSE '{}'::jsonb END
+     || CASE WHEN owned_items @> '["s12"]' AND NOT (worn_items ? 'furniture') THEN '{"furniture": "house"}'::jsonb ELSE '{}'::jsonb END
+ WHERE owned_items @> '["s6"]' OR owned_items @> '["s7"]' OR owned_items @> '["s8"]' OR owned_items @> '["s12"]';
 
 CREATE TABLE IF NOT EXISTS student_topics (
   student_id   BIGINT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
