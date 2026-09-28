@@ -11,6 +11,7 @@ import { subjectLabel } from "../utils/subjects";
 import { useApp } from "../store/AppStore";
 import { answerHaptic } from "../utils/haptics";
 import useModalFocus from "../hooks/useModalFocus";
+import useBodyScrollLock from "../hooks/useBodyScrollLock";
 import "./RunMode.css";
 
 const SESSION_TTL = 6 * 60 * 60 * 1000;
@@ -43,6 +44,7 @@ export default function DiagnosticRun() {
   const [loadVersion, setLoadVersion] = useState(0);
   const explanationRef = useRef(null);
   useModalFocus(explanationRef, { active: showExplanation, onClose: () => setShowExplanation(false) });
+  useBodyScrollLock();
 
   useEffect(() => {
     let cancelled = false;

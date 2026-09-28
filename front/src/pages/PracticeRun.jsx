@@ -11,6 +11,7 @@ import { answerHaptic } from "../utils/haptics";
 import { dateKey } from "../utils/date";
 import useModalFocus from "../hooks/useModalFocus";
 import useFitScale from "../hooks/useFitScale";
+import useBodyScrollLock from "../hooks/useBodyScrollLock";
 import "./RunMode.css";
 import "./PracticeRun.css";
 
@@ -56,6 +57,9 @@ export default function PracticeRun() {
   const [liveAward, setLiveAward] = useState(null);
   const explanationRef = useRef(null);
   useModalFocus(explanationRef, { active: showExplanation, onClose: () => setShowExplanation(false) });
+  // A run screen must never rubber-band/scroll, even by a stray drag — the
+  // whole point of the fixed layout is that a swipe can't move anything.
+  useBodyScrollLock();
 
   useEffect(() => {
     let cancelled = false;

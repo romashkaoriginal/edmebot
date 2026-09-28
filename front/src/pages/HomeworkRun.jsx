@@ -7,6 +7,7 @@ import Card from "../components/ui/Card";
 import OptionList from "../components/shared/OptionList";
 import { studentApi } from "../api/student";
 import useModalFocus from "../hooks/useModalFocus";
+import useBodyScrollLock from "../hooks/useBodyScrollLock";
 import "./RunMode.css";
 import "./PracticeRun.css";
 import "./HomeworkRun.css";
@@ -32,6 +33,7 @@ export default function HomeworkRun() {
   const [result, setResult] = useState(null);
   const explanationRef = useRef(null);
   useModalFocus(explanationRef, { active: showExplanation, onClose: () => setShowExplanation(false) });
+  useBodyScrollLock();
 
   useEffect(() => {
     if (!homeworkId) return;
