@@ -133,9 +133,9 @@
 .run__action-error button { min-height: 44px; padding-inline: 10px; border-radius: var(--r-sm); background: var(--surface); color: var(--danger); font-weight: 850; }
 .run__prompt {
   flex: 0 1 auto;
-  font-size: clamp(1.12rem, 2.8vh, var(--text-xl));
+  font-size: calc(var(--fit-scale, 1) * clamp(1.12rem, 2.8vh, var(--text-xl)));
   line-height: 1.15;
-  margin: clamp(4px, 0.8vh, var(--sp-2)) 0 clamp(5px, 1vh, var(--sp-2));
+  margin: calc(var(--fit-scale, 1) * clamp(4px, 0.8vh, var(--sp-2))) 0 calc(var(--fit-scale, 1) * clamp(5px, 1vh, var(--sp-2)));
   text-wrap: balance;
 }
 .run__question {
@@ -168,16 +168,17 @@
 .run__assist:empty { display: none; }
 .run__assist .btn { min-height: 44px; padding-inline: 14px; border-radius: var(--r-md); background: var(--primary-soft); color: var(--primary-strong); }
 
-/* The card is a fixed-height column: header, prompt, assist and the action row
-   keep their natural size, and the answer list is the single element that
-   shrinks. When the options still don't fit (long text, small iPhones), they
-   scroll inside the list instead of being clipped by the action row. */
+/* The card is a fixed-height column that never scrolls during a question:
+   --fit-scale (written by useFitScale, see PracticeRun.jsx) shrinks the
+   prompt, option text and spacing together until everything fits the card's
+   own height, instead of clipping content or scrolling the list. */
+.run__question {
+  --fit-scale: 1;
+}
 .run__question .optlist {
   flex: 1 1 auto;
   min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior-y: contain;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
   /* Room for focus rings and the scale/shake animations on the option buttons. */
   padding: 2px;
   margin: -2px;

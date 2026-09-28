@@ -4,7 +4,7 @@
   flex: 1;
   min-height: 0;
   justify-content: flex-start;
-  gap: clamp(6px, 1.1vh, 10px);
+  gap: calc(var(--fit-scale, 1) * clamp(6px, 1.1vh, 10px));
 }
 .opt {
   display: flex;
@@ -12,8 +12,8 @@
   gap: var(--sp-3);
   width: 100%;
   text-align: left;
-  padding: clamp(8px, 1.2vh, 12px);
-  min-height: clamp(44px, 6.5vh, 54px);
+  padding: calc(var(--fit-scale, 1) * clamp(8px, 1.2vh, 12px));
+  min-height: calc(var(--fit-scale, 1) * clamp(38px, 6.5vh, 54px));
   background: var(--surface);
   border: 2px solid var(--line);
   border-radius: var(--r-md);
@@ -40,8 +40,8 @@
 .opt__marker {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: calc(var(--fit-scale, 1) * 30px);
+  height: calc(var(--fit-scale, 1) * 30px);
   border-radius: var(--r-pill);
   background: var(--surface-2);
   color: var(--muted);
@@ -52,7 +52,7 @@
 }
 .opt__text {
   flex: 1;
-  font-size: clamp(0.86rem, 1.85vh, 1rem);
+  font-size: calc(var(--fit-scale, 1) * clamp(0.86rem, 1.85vh, 1rem));
   line-height: 1.25;
 }
 .opt__icon {

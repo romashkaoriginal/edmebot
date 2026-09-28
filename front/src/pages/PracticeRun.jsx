@@ -10,6 +10,7 @@ import { studentApi } from "../api/student";
 import { answerHaptic } from "../utils/haptics";
 import { dateKey } from "../utils/date";
 import useModalFocus from "../hooks/useModalFocus";
+import useFitScale from "../hooks/useFitScale";
 import "./RunMode.css";
 import "./PracticeRun.css";
 
@@ -141,6 +142,8 @@ export default function PracticeRun() {
     setLoadVersion((value) => value + 1);
   }
 
+  const fitRef = useFitScale([tasks?.[idx]?.prompt, tasks?.[idx]?.options, graded, hintText]);
+
   if (tasks === null) {
     return <div className="run"><div className="run__body">{loadError ? <RunError message={loadError} onRetry={() => setLoadVersion((value) => value + 1)} /> : <div className="run__loading" aria-label="Загружаем задания"><span /><span /><span /></div>}</div></div>;
   }
@@ -255,7 +258,7 @@ export default function PracticeRun() {
       </header>
 
       <div className="run__body">
-        <Card className={`run__question ${graded ? `run__question--${graded}` : ""}`} pad="lg">
+        <Card ref={fitRef} className={`run__question ${graded ? `run__question--${graded}` : ""}`} pad="lg">
           <div className="pr__qhead"><span className="run__qlabel">{topicLabel}</span><span className={`pr__diff pr__diff--${task.difficulty}`}>{diffLabel(task.difficulty)}</span></div>
           <h1 className="run__prompt">{task.prompt}</h1>
 

@@ -292,8 +292,16 @@
   width: 100%;
   max-width: 560px;
 }
-.app--onboarding.app { grid-template-columns: 1fr; min-height: 100dvh; }
-.app--onboarding .app__content { min-height: 100dvh; display: grid; place-items: center; }
+.app--onboarding.app { grid-template-columns: 1fr; height: 100dvh; overflow: hidden; }
+.app--onboarding .app__main { overflow: hidden; }
+.app--onboarding .app__content {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
 .app--pet-choice.app,
 .app--pet-choice .app__main { height: 100dvh; min-height: 0; overflow: hidden; }
 .app--pet-choice .app__content { height: 100dvh; min-height: 0; overflow-x: hidden; overflow-y: auto; }

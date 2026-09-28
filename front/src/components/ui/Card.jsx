@@ -1,9 +1,12 @@
+import { forwardRef } from "react";
 import "./Card.css";
 
-export default function Card({ as: Tag = "div", pad = "md", className = "", children, ...props }) {
+const Card = forwardRef(function Card({ as: Tag = "div", pad = "md", className = "", children, ...props }, ref) {
   return (
-    <Tag className={`card card--pad-${pad} ${className}`} {...props}>
+    <Tag ref={ref} className={`card card--pad-${pad} ${className}`} {...props}>
       {children}
     </Tag>
   );
-}
+});
+
+export default Card;
