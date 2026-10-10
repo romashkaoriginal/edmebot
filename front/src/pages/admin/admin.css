@@ -538,6 +538,23 @@
   flex-shrink: 0;
 }
 
+@media (max-width: 620px) {
+  .arow--card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-3);
+  }
+  .arow__lead { width: 100%; }
+  .arow__main { overflow-wrap: anywhere; }
+  .arow__meta { line-height: 1.45; overflow-wrap: anywhere; }
+  .arow__actions {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  .arow__panel { width: 100%; min-width: 0; }
+}
+
 /* Avatar with initials — gives lists a face and warms up the grid. */
 .aavatar {
   display: grid;

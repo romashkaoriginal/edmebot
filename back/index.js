@@ -86,11 +86,16 @@ app.use((err, req, res, _next) => {
   const isUploadError = err?.name === 'MulterError';
   const isBodyTooLarge = err?.type === 'entity.too.large';
   const isInvalidDatabaseInput = ['22P02', '22003', '23514'].includes(err?.code);
-  console.error({
+  console.error(JSON.stringify({
+    at: new Date().toISOString(),
+    event: 'request_error',
     requestId: req.requestId,
+    method: req.method,
+    path: req.path,
+    status: isCorsError ? 403 : isUploadError || isBodyTooLarge ? 413 : isInvalidDatabaseInput ? 400 : 500,
     error: err?.name || 'Error',
     message: isCorsError ? 'CORS origin denied' : String(err?.message || 'internal_error').slice(0, 240),
-  });
+  }));
   const status = isCorsError ? 403 : isUploadError || isBodyTooLarge ? 413 : isInvalidDatabaseInput ? 400 : 500;
   const error = isCorsError
     ? 'origin_not_allowed'

@@ -189,7 +189,8 @@ export default function AppLayout({ children }) {
   if (!crmLocked && onboardingStep === "subject" && !pathname.startsWith("/app/onboarding")) {
     return <Navigate to="/app/onboarding" replace />;
   }
-  if (!crmLocked && onboardingStep === "diagnostic" && !pathname.startsWith("/app/diagnostic")) {
+  if (!crmLocked && onboardingStep === "diagnostic" &&
+      !pathname.startsWith("/app/diagnostic") && !pathname.startsWith("/app/onboarding")) {
     return <Navigate to="/app/diagnostic" replace />;
   }
   if (!crmLocked && onboardingStep === "pet" && !pathname.startsWith("/app/pet")) {

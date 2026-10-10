@@ -8,7 +8,8 @@ function redirectFor({ onboardingStep, isActive, pathname, focus = false }) {
   const onboardingIncomplete = onboardingStep !== "complete";
 
   if (onboardingStep === "subject" && !pathname.startsWith("/app/onboarding")) return "/app/onboarding";
-  if (onboardingStep === "diagnostic" && !pathname.startsWith("/app/diagnostic")) return "/app/diagnostic";
+  if (onboardingStep === "diagnostic" &&
+      !pathname.startsWith("/app/diagnostic") && !pathname.startsWith("/app/onboarding")) return "/app/diagnostic";
   if (onboardingStep === "pet" && !pathname.startsWith("/app/pet")) return "/app/pet";
   if (onboardingStep === "trial" && !pathname.startsWith("/app/trial")) return "/app/trial";
   // The guarded line: a self-serve student stays "pending" for the whole of
@@ -59,6 +60,11 @@ test("every onboarding step settles for a pending student", () => {
     assert.equal(result.cycle, undefined, `${onboardingStep} cycles: ${JSON.stringify(result.cycle)}`);
     assert.equal(result.settledAt, expected, `${onboardingStep} must settle on ${expected}`);
   }
+});
+
+test("a student with an unavailable diagnostic can return to subject and grade selection", () => {
+  assert.equal(redirectFor({ onboardingStep: "diagnostic", isActive: false, pathname: "/app/onboarding" }), null);
+  assert.equal(redirectFor({ onboardingStep: "diagnostic", isActive: false, pathname: "/app/profile" }), "/app/diagnostic");
 });
 
 test("a finished student without access is still sent to the trial screen", () => {

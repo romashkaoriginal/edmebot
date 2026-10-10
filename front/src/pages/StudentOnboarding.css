@@ -17,6 +17,7 @@
    rather than looking like a radio that picks exactly one. */
 .sonboard__subject { position: relative; cursor: pointer; border: 2px solid transparent; }
 .sonboard__subject.is-selected { border-color: var(--primary); }
+.sonboard__subject.is-unavailable { cursor: not-allowed; opacity: .56; }
 .sonboard__subject-input { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
 .sonboard__subject-input:focus-visible ~ .sonboard__subject-check { outline: 3px solid var(--accent); outline-offset: 2px; }
 /* Outranks the generic `.sonboard__subject span` colour so an unchecked box
@@ -41,6 +42,8 @@
   color: var(--primary);
 }
 .sonboard__subject-icon { margin-top: var(--sp-2); }
+.sonboard__availability { margin: 0; font-size: var(--text-sm); line-height: 1.45; }
+.sonboard__availability-error { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); color: var(--danger); font-weight: 700; }
 @media (prefers-reduced-motion: reduce) {
   .sonboard__subject, .sonboard__subject-check { transition: none; }
 }
@@ -50,6 +53,25 @@
 .sonboard__grades span { color: var(--muted); font-size: var(--text-sm); font-weight: 700; }
 .sonboard__grades button.is-selected { background: var(--primary); color: var(--on-primary); }
 .sonboard__grades button.is-selected span { color: var(--on-primary); }
+.sonboard__grades button small { color: var(--muted); font-size: 11px; font-weight: 700; line-height: 1.15; }
+.sonboard__grades button.is-selected small { color: var(--on-primary); }
+.sonboard__grades button.is-unavailable { opacity: .58; }
 .sonboard__actions { display: grid; grid-template-columns: auto 1fr; gap: var(--sp-2); }
 .sonboard__error { color: var(--danger) !important; font-weight: 700; }
-@media (max-width: 520px) { .sonboard__panel { padding: var(--sp-4); } .sonboard__subjects { grid-template-columns: 1fr; } .sonboard__subject { min-height: 104px; } }
+@media (max-width: 520px) {
+  .sonboard__panel { padding: var(--sp-4); gap: var(--sp-4); }
+  .sonboard__subjects { grid-template-columns: 1fr; }
+  .sonboard__subject { min-height: 96px; }
+  .sonboard__sticky-actions,
+  .sonboard__actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    margin: 0 calc(-1 * var(--sp-4)) calc(-1 * var(--sp-4));
+    padding: var(--sp-3) var(--sp-4) calc(var(--sp-3) + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--line);
+    border-radius: 0 0 var(--r-lg) var(--r-lg);
+    background: var(--surface);
+  }
+  .sonboard__availability-error { align-items: flex-start; flex-direction: column; }
+}

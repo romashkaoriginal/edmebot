@@ -97,6 +97,21 @@ curl -s https://www.edme.of.by/api/health
 Плюс — открой бота в Telegram и проверь Mini App вручную (сборка фронта
 кешируется в Telegram WebView, иногда нужно закрыть/открыть чат заново).
 
+### Вход, регистрация и отказы доступа
+
+Backend пишет события одной JSON-строкой. В них есть `requestId`, внутренний
+`studentId` (если пользователь уже найден), причина отказа и шаг регистрации.
+Telegram initData, ответы на задания и тело запроса не записываются.
+
+```bash
+cd /opt/edmebot
+docker compose logs --since=24h --no-color backend | grep -E '"event":"(access_denied|request_error|registration_started|registration_step_blocked|onboarding_step_changed|onboarding_subjects_updated|diagnostic_unavailable|crm_access_changed|crm_sync_failed|crm_reconciliation_failed|crm_webhook_processing_failed)"'
+```
+
+Для одного ученика добавь к команде `grep` выражение `"studentId":123`.
+`request_error` содержит необработанные ошибки API, а `crm_sync_failed` — ошибки
+синхронизации с CRM.
+
 ---
 
 ## 5. Секреты — если нужно поменять токен/пароль

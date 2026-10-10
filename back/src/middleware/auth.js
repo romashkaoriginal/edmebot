@@ -1,5 +1,34 @@
 const crypto = require("crypto");
 const db = require("../db");
+const { denyAccess, logEvent } = require("../utils/eventLog");
+
+function crmAccessDenialReason(student) {
+  if (process.env.MOYKLASS_ENFORCE_LINKS === "true" && !student.moyklass_user_id) return "crm_link_required";
+  if (!student.moyklass_user_id) return null;
+  if (!student.crm_access_enabled) return "crm_access_disabled";
+  if (!student.access_until) return "crm_access_deadline_missing";
+  if (student.access_until && new Date(student.access_until) <= new Date()) return "access_expired";
+  if (student.status !== "active") return "crm_student_access_pending";
+  return null;
+}
+
+function activeStudentDenialReason(student) {
+  const crmReason = crmAccessDenialReason(student);
+  if (crmReason) return crmReason;
+  if (student.status !== "active") return "student_access_pending";
+  return null;
+}
+
+function accessContext(student) {
+  return {
+    studentStatus: student.status,
+    trialUsed: Boolean(student.trial_used),
+    accessKind: student.access_kind ?? null,
+    crmLinked: Boolean(student.moyklass_user_id),
+    crmAccessEnabled: Boolean(student.crm_access_enabled),
+    hasAccessDeadline: Boolean(student.access_until),
+  };
+}
 
 function verifyTelegramInitData(initData) {
   try {
@@ -49,16 +78,16 @@ function verifyTelegramInitData(initData) {
 async function requireAuth(req, res, next) {
   try {
     const initData = req.header("x-telegram-init-data");
-    if (!initData) return res.status(401).json({ error: "unauthorized" });
+    if (!initData) return denyAccess(req, res, 401, "telegram_auth_required", {}, "unauthorized");
 
     const telegramUser = verifyTelegramInitData(initData);
-    if (!telegramUser) return res.status(401).json({ error: "unauthorized" });
+    if (!telegramUser) return denyAccess(req, res, 401, "telegram_auth_invalid", {}, "unauthorized");
 
     const { rows } = await db.query(
       "SELECT * FROM users WHERE tg_id = $1",
       [String(telegramUser.id)]
     );
-    if (!rows.length) return res.status(401).json({ error: "unauthorized" });
+    if (!rows.length) return denyAccess(req, res, 401, "staff_account_missing", {}, "unauthorized");
 
     req.user = rows[0];
     next();
@@ -70,15 +99,15 @@ async function requireAuth(req, res, next) {
 async function requireStudent(req, res, next) {
   try {
     const initData = req.header("x-telegram-init-data");
-    if (!initData) return res.status(401).json({ error: "telegram_auth_required" });
+    if (!initData) return denyAccess(req, res, 401, "telegram_auth_required");
     const telegramUser = verifyTelegramInitData(initData);
-    if (!telegramUser) return res.status(401).json({ error: "telegram_auth_invalid" });
+    if (!telegramUser) return denyAccess(req, res, 401, "telegram_auth_invalid");
 
     const tgId = String(telegramUser.id);
     const { rows: staffRows } = await db.query("SELECT * FROM users WHERE tg_id = $1", [tgId]);
     if (staffRows.length) {
       const demoStudentId = req.header("x-demo-student-id");
-      if (!demoStudentId) return res.status(403).json({ error: "staff_account" });
+      if (!demoStudentId) return denyAccess(req, res, 403, "staff_account");
       const { rows: demoRows } = await db.query(
         `SELECT * FROM students
           WHERE id = $1
@@ -86,7 +115,7 @@ async function requireStudent(req, res, next) {
             AND (tg_id = 'demo' OR tg_id LIKE 'demo:%')`,
         [demoStudentId]
       );
-      if (!demoRows.length) return res.status(403).json({ error: "demo_student_required" });
+      if (!demoRows.length) return denyAccess(req, res, 403, "demo_student_required");
       req.telegramUser = telegramUser;
       req.user = staffRows[0];
       req.student = demoRows[0];
@@ -112,6 +141,10 @@ async function requireStudent(req, res, next) {
       rows = inserted.rows.length
         ? inserted.rows
         : (await db.query("SELECT * FROM students WHERE tg_id = $1", [tgId])).rows;
+      if (inserted.rows.length) {
+        req.student = inserted.rows[0];
+        logEvent("registration_started", req, { studentId: req.student.id, source: "telegram_first_open" });
+      }
     }
     req.telegramUser = telegramUser;
     req.student = rows[0];
@@ -124,28 +157,25 @@ async function requireStudent(req, res, next) {
 // Chain after requireStudent on routes that a "pending" (self-serve,
 // not-yet-assigned) student must not reach — practice and homework.
 async function requireActiveStudent(req, res, next) {
-  if (req.student.status !== "active" ||
-      (process.env.MOYKLASS_ENFORCE_LINKS === "true" && !req.student.moyklass_user_id) ||
-      (req.student.moyklass_user_id && !req.student.crm_access_enabled) ||
-      (req.student.moyklass_user_id && !req.student.access_until) ||
-      (req.student.access_until && new Date(req.student.access_until) <= new Date())) {
-    return res.status(403).json({ error: "onboarding_incomplete" });
-  }
+  const reason = activeStudentDenialReason(req.student);
+  if (reason) return denyAccess(req, res, 403, reason, accessContext(req.student), "onboarding_incomplete");
   try {
     const { rows } = await db.query("SELECT onboarding_step FROM student_profiles WHERE student_id = $1", [req.student.id]);
-    if (rows[0]?.onboarding_step !== "complete") return res.status(403).json({ error: "onboarding_incomplete" });
+    if (rows[0]?.onboarding_step !== "complete") {
+      return denyAccess(req, res, 403, "onboarding_incomplete", {
+        ...accessContext(req.student),
+        onboardingStep: rows[0]?.onboarding_step ?? "missing",
+      });
+    }
     next();
   } catch (e) { next(e); }
 }
 
 function requireCrmAccess(req, res, next) {
-  if (process.env.MOYKLASS_ENFORCE_LINKS === "true" && !req.student.moyklass_user_id) {
-    return res.status(403).json({ error: "crm_link_required" });
-  }
-  if (req.student.moyklass_user_id &&
-      (req.student.status !== "active" || !req.student.crm_access_enabled || !req.student.access_until ||
-        new Date(req.student.access_until) <= new Date())) {
-    return res.status(403).json({ error: "crm_access_denied" });
+  const reason = crmAccessDenialReason(req.student);
+  if (reason) {
+    const responseError = reason === "crm_link_required" ? "crm_link_required" : "crm_access_denied";
+    return denyAccess(req, res, 403, reason, accessContext(req.student), responseError);
   }
   next();
 }
@@ -153,7 +183,10 @@ function requireCrmAccess(req, res, next) {
 function requireRole(...roles) {
   return (req, res, next) => {
     if (!req.user || !roles.includes(req.user.role)) {
-      return res.status(403).json({ error: "forbidden" });
+      return denyAccess(req, res, 403, "role_forbidden", {
+        userRole: req.user?.role ?? null,
+        requiredRoles: roles,
+      }, "forbidden");
     }
     next();
   };

@@ -68,6 +68,7 @@ export const studentApi = {
   // homework, analytics or pet snapshot.
   clearSessionCache,
   recordOpen: () => studentFetch("/api/profile/open", { method: "POST" }),
+  onboardingOptions: () => studentFetch("/api/profile/onboarding-options"),
   profile: ({ subject, signal, timeoutMs } = {}) => studentFetch(
     `/api/profile${subject ? `?${new URLSearchParams({ subject })}` : ""}`,
     { signal, timeoutMs }

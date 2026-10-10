@@ -3,6 +3,8 @@ const db = require("../db");
 const state = require("../studentState");
 const { requireStudent } = require("../middleware/auth");
 const { trialStartError } = require("../utils/trial");
+const { getDiagnosticAvailability } = require("../utils/diagnosticAvailability");
+const { logEvent } = require("../utils/eventLog");
 const { normalizeSubject } = require("../subjects");
 
 const router = express.Router();
@@ -50,6 +52,12 @@ router.post("/open", async (req, res, next) => {
 
 const ONBOARD_SUBJECTS = ["Математика", "Русский язык", "Химия", "Физика", "Английский язык"];
 
+router.get("/onboarding-options", async (req, res, next) => {
+  try {
+    res.json(await getDiagnosticAvailability());
+  } catch (error) { next(error); }
+});
+
 // Self-serve onboarding: a brand-new (auto-provisioned "pending") student
 // picks a subject + grade so they can take that subject's diagnostic. This
 // does not grant access yet: the student explicitly starts the one-time trial
@@ -57,10 +65,16 @@ const ONBOARD_SUBJECTS = ["Математика", "Русский язык", "Х
 router.post("/onboard", async (req, res, next) => {
   try {
     if (req.student.moyklass_user_id || process.env.MOYKLASS_ENFORCE_LINKS === "true") {
+      logEvent("registration_step_blocked", req, { studentId: req.student.id, reason: "subjects_managed_in_crm" });
       return res.status(409).json({ error: "subjects_managed_in_crm" });
     }
     const current = await state.getState(req.student);
     if (!["subject", "diagnostic"].includes(current.profile.onboardingStep)) {
+      logEvent("registration_step_blocked", req, {
+        studentId: req.student.id,
+        reason: "onboarding_step_invalid",
+        onboardingStep: current.profile.onboardingStep,
+      });
       return res.status(409).json({ error: "onboarding_step_invalid" });
     }
     // A student may enrol in several subjects at once. `subject` (singular) is
@@ -69,13 +83,35 @@ router.post("/onboard", async (req, res, next) => {
     const requested = Array.isArray(subjects) ? subjects : [subject];
     const chosen = [...new Set(requested.filter((item) => ONBOARD_SUBJECTS.includes(item)))];
     if (!chosen.length || chosen.length !== new Set(requested).size) {
+      logEvent("registration_step_blocked", req, { studentId: req.student.id, reason: "invalid_subject" });
       return res.status(400).json({ error: "invalid_subject" });
     }
     const g = Number(grade);
-    if (!Number.isInteger(g) || g < 5 || g > 11) return res.status(400).json({ error: "invalid_grade" });
+    if (!Number.isInteger(g) || g < 5 || g > 11) {
+      logEvent("registration_step_blocked", req, { studentId: req.student.id, reason: "invalid_grade" });
+      return res.status(400).json({ error: "invalid_grade" });
+    }
+    const availability = await getDiagnosticAvailability();
+    const readyPairs = new Set(availability.combinations.filter((item) => item.ready).map((item) => `${item.grade}:${item.subject}`));
+    const unavailableSubjects = chosen.filter((item) => !readyPairs.has(`${g}:${item}`));
+    if (unavailableSubjects.length) {
+      logEvent("registration_step_blocked", req, {
+        studentId: req.student.id,
+        reason: "diagnostic_unavailable",
+        grade: g,
+        subjects: unavailableSubjects,
+      });
+      return res.status(422).json({ error: "diagnostic_unavailable", unavailableSubjects });
+    }
     const primary = chosen[0];
 
     await db.transaction(async (client) => {
+      if (current.profile.onboardingStep === "diagnostic") {
+        await client.query(
+          "DELETE FROM student_subjects WHERE student_id = $1 AND NOT (subject = ANY($2::text[]))",
+          [req.student.id, chosen]
+        );
+      }
       for (const item of chosen) {
         await client.query(
           `INSERT INTO student_subjects (student_id, subject, grade) VALUES ($1,$2,$3)
@@ -96,6 +132,13 @@ router.post("/onboard", async (req, res, next) => {
     });
     const refreshed = await db.query("SELECT * FROM students WHERE id = $1", [req.student.id]);
     const { profile } = await state.getState(refreshed.rows[0], primary);
+    logEvent(current.profile.onboardingStep === "diagnostic" ? "onboarding_subjects_updated" : "onboarding_step_changed", req, {
+      studentId: req.student.id,
+      from: current.profile.onboardingStep,
+      to: "diagnostic",
+      grade: g,
+      subjects: chosen,
+    });
     res.json({ ok: true, profile });
   } catch (e) { next(e); }
 });
@@ -140,7 +183,21 @@ router.post("/trial/start", async (req, res, next) => {
       );
       return { student: rows[0] };
     });
-    if (started.error) return res.status(started.status).json({ error: started.error });
+    if (started.error) {
+      logEvent("registration_step_blocked", req, {
+        studentId: req.student.id,
+        reason: started.error,
+        onboardingStep: "trial",
+      });
+      return res.status(started.status).json({ error: started.error });
+    }
+    logEvent("onboarding_step_changed", req, {
+      studentId: req.student.id,
+      from: "trial",
+      to: "complete",
+      accessKind: "trial",
+      accessUntil: started.student.access_until,
+    });
     return res.json(await state.getState(started.student));
   } catch (e) { return next(e); }
 });

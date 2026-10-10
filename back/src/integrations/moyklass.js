@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const db = require("../db");
 const { MoyklassClient } = require("./moyklassClient");
 const { TAG_NAMES, alias, attribute, parseAccess, desiredTagNames } = require("./moyklassAccess");
+const { logEvent } = require("../utils/eventLog");
 
 const client = new MoyklassClient();
 let running = false;
@@ -75,7 +76,7 @@ function fingerprint(access) {
 async function recordError(studentId, error) {
   const message = String(error.message || error).slice(0, 240);
   await db.query("UPDATE students SET crm_last_error = $2 WHERE id = $1", [studentId, message]).catch(() => {});
-  console.error("Moyklass sync failed", { studentId, message });
+  logEvent("crm_sync_failed", null, { studentId, message });
   return message;
 }
 
@@ -138,6 +139,17 @@ async function applyUser(user, studentId) {
     return [current];
   });
   if (!rows.length) return;
+  if (changed) {
+    logEvent("crm_access_changed", null, {
+      studentId,
+      status: active ? "active" : "pending",
+      accessEnabled: access.enabled,
+      accessKind: access.kind,
+      accessUntil: access.deadline?.toISOString() ?? null,
+      subjects: access.subjects,
+      reason: access.error,
+    });
+  }
   // Re-read before closing an expired grant: an operator could have extended it
   // between the first GET and this write.
   if (access.enabled && access.deadline && access.deadline <= new Date()) {
@@ -240,8 +252,11 @@ async function reconcile() {
 
 function start() {
   if (!isEnabled() || timer) return;
-  void reconcile().catch((error) => console.error("Moyklass reconciliation failed", error.message));
-  timer = setInterval(() => void reconcile().catch((error) => console.error("Moyklass reconciliation failed", error.message)), 5 * 60_000);
+  const runReconciliation = () => void reconcile().catch((error) => logEvent("crm_reconciliation_failed", null, {
+    message: String(error.message || error).slice(0, 240),
+  }));
+  runReconciliation();
+  timer = setInterval(runReconciliation, 5 * 60_000);
   timer.unref?.();
 }
 

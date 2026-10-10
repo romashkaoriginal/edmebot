@@ -2,11 +2,12 @@ const express = require("express");
 const crypto = require("crypto");
 const db = require("../db");
 const state = require("../studentState");
+const { MIN_DIAGNOSTIC_QUESTIONS } = require("../utils/diagnosticAvailability");
+const { logEvent } = require("../utils/eventLog");
 const { requireStudent, requireCrmAccess } = require("../middleware/auth");
 
 const router = express.Router();
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const MIN_DIAGNOSTIC_QUESTIONS = 5;
 router.use(requireStudent, requireCrmAccess);
 
 function shuffle(items) {
@@ -48,17 +49,29 @@ router.get("/", async (req, res, next) => {
       req.query.subject ? [req.student.id, req.query.subject] : [req.student.id]
     );
     if (req.student.moyklass_user_id && req.query.subject && !enrollments.length) {
+      logEvent("access_denied", req, {
+        studentId: req.student.id,
+        status: 403,
+        reason: "not_enrolled_in_subject",
+      });
       return res.status(403).json({ error: "not_enrolled_in_subject" });
     }
     const enrolled = enrollments.length
       ? enrollments
       : [{ subject: req.query.subject || req.student.subject || "Математика", grade: req.student.grade }];
     const subject = enrolled[0].subject;
-    if (enrolled.every((item) => !item.grade)) return res.json({ subject, questions: [] });
+    if (enrolled.every((item) => !item.grade)) {
+      logEvent("diagnostic_unavailable", req, {
+        studentId: req.student.id,
+        reason: "grade_missing",
+        subjects: enrolled.map((item) => item.subject),
+      });
+      return res.json({ subject, questions: [] });
+    }
 
     const perSubject = await Promise.all(enrolled.map(async (item) => {
       const grade = item.grade ?? req.student.grade;
-      if (!grade) return [];
+      if (!grade) return { subject: item.subject, grade: null, questions: [], questionCount: 0 };
       const { rows } = await db.query(
         `SELECT id, topic, subject, prompt, options, hints,
                 correct AS "correctIndex", explanation
@@ -66,10 +79,31 @@ router.get("/", async (req, res, next) => {
          ORDER BY random() LIMIT 10`,
         [grade, item.subject]
       );
-      return rows.length >= MIN_DIAGNOSTIC_QUESTIONS ? rows : [];
+      return {
+        subject: item.subject,
+        grade,
+        questionCount: rows.length,
+        questions: rows.length >= MIN_DIAGNOSTIC_QUESTIONS ? rows : [],
+      };
     }));
-    const rows = perSubject.flat();
+    for (const item of perSubject) {
+      if (item.questions.length === 0) {
+        logEvent("diagnostic_unavailable", req, {
+          studentId: req.student.id,
+          subject: item.subject,
+          grade: item.grade,
+          questionCount: item.questionCount,
+          minimumQuestions: MIN_DIAGNOSTIC_QUESTIONS,
+        });
+      }
+    }
+    const rows = perSubject.flatMap((item) => item.questions);
     if (!rows.length) {
+      logEvent("diagnostic_unavailable", req, {
+        studentId: req.student.id,
+        reason: "no_ready_subjects",
+        subjects: enrolled.map((item) => item.subject),
+      });
       return res.json({ subject, sessionId: null, questions: [], minimumQuestions: MIN_DIAGNOSTIC_QUESTIONS });
     }
     const subjects = [...new Set(rows.map((question) => question.subject))];
@@ -124,7 +158,10 @@ router.post("/check", async (req, res, next) => {
       "SELECT 1 FROM student_subjects WHERE student_id = $1 AND subject = $2",
       [req.student.id, task.subject]
     );
-    if (!enrolled.length) return res.status(403).json({ error: "not_enrolled_in_subject" });
+    if (!enrolled.length) {
+      logEvent("access_denied", req, { studentId: req.student.id, status: 403, reason: "not_enrolled_in_subject" });
+      return res.status(403).json({ error: "not_enrolled_in_subject" });
+    }
     const optionOrders = sessions[0].option_orders;
     const order = optionOrders?.[String(taskId)];
     res.json({
@@ -189,7 +226,19 @@ router.post("/submit", async (req, res, next) => {
       await client.query("UPDATE diagnostic_sessions SET submitted_at = now() WHERE id = $1", [sessionId]);
       return { subject: session.subject };
     });
-    if (result.error) return res.status(409).json(result);
+    if (result.error) {
+      logEvent("diagnostic_submission_rejected", req, {
+        studentId: req.student.id,
+        reason: result.error,
+      });
+      return res.status(409).json(result);
+    }
+    logEvent("onboarding_step_changed", req, {
+      studentId: req.student.id,
+      from: "diagnostic",
+      to: "pet",
+      answerCount: answers.length,
+    });
     const { rows: students } = await db.query("SELECT * FROM students WHERE id = $1", [req.student.id]);
     const refreshed = await state.getState(students[0], result.subject);
     res.json({ knowledgeMap: refreshed.topics, profile: refreshed.profile });

@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const express = require("express");
 const db = require("../db");
 const integration = require("../integrations/moyklass");
+const { logEvent } = require("../utils/eventLog");
 const { requireAuth, requireRole } = require("../middleware/auth");
 
 const router = express.Router();
@@ -21,7 +22,9 @@ router.post("/webhook/:secret", (req, res) => {
   // The five-minute reconciliation loop covers process exits or dropped hooks.
   void db.query("SELECT id FROM students WHERE moyklass_user_id = $1", [userId])
     .then(({ rows }) => rows[0] && integration.syncStudent(rows[0].id))
-    .catch((error) => console.error("Moyklass webhook processing failed", error.message));
+    .catch((error) => logEvent("crm_webhook_processing_failed", req, {
+      message: String(error.message || error).slice(0, 240),
+    }));
 });
 
 router.post("/students/:id/link", requireAuth, requireRole("admin"), async (req, res, next) => {

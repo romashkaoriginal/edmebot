@@ -1,6 +1,7 @@
 const express = require("express");
 const seed = require("../data/seed");
 const state = require("../studentState");
+const { logEvent } = require("../utils/eventLog");
 const { requireStudent, requireCrmAccess } = require("../middleware/auth");
 
 const router = express.Router();
@@ -58,6 +59,14 @@ router.patch("/", async (req, res, next) => {
     }
     const result = await state.updatePet(req.student, req.body);
     if (result.error) return res.status(400).json(result);
+    if (result.state.profile.onboardingStep !== current.profile.onboardingStep) {
+      logEvent("onboarding_step_changed", req, {
+        studentId: req.student.id,
+        from: current.profile.onboardingStep,
+        to: result.state.profile.onboardingStep,
+        petSelected: result.state.profile.petSelected,
+      });
+    }
     res.json({ ok: true, profile: result.state.profile });
   } catch (e) { next(e); }
 });
