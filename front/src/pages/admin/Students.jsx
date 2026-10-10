@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   Users, Plus, Pencil, Trash2, X, Coins, Search, MessageCircle,
-  BookMarked, ChevronDown,
+  BookMarked, ChevronDown, Link2,
 } from "lucide-react";
 import Button from "../../components/ui/Button";
 import SectionTitle from "../../components/ui/SectionTitle";
@@ -10,8 +10,8 @@ import FormModal from "../../components/admin/FormModal";
 import { adminApi } from "../../api/admin";
 import "./admin.css";
 
-const SUBJECTS = ["Математика", "Русский", "Химия", "Физика"];
-const GRADES = [6, 7, 8, 9, 10, 11];
+const SUBJECTS = ["Математика", "Русский язык", "Химия", "Физика", "Английский язык"];
+const GRADES = [5, 6, 7, 8, 9, 10, 11];
 // A student's access is considered "истекает" once this many days are left,
 // so staff get a heads-up before it lapses rather than finding out after.
 const EXPIRING_SOON_DAYS = 3;
@@ -76,7 +76,7 @@ export default function Students() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
-  const [panel, setPanel] = useState(null); // 'bonus' | 'subjects'
+  const [panel, setPanel] = useState(null); // 'bonus' | 'subjects' | 'crm'
   const isDemoDraft = /^(demo|демо)$/iu.test(form.tgId.trim());
 
   const load = useCallback(async () => {
@@ -486,7 +486,7 @@ export default function Students() {
                                 ? "Ученик проходит первый вход: выбор предмета, диагностика и запуск trial. Это не блокировка."
                                 : "У ученика сейчас нет доступа к практике и домашним заданиям"}
                           >
-                            {s.trial_used ? "trial завершён" : !s.subject ? "регистрируется" : "доступ закрыт"}
+                            {s.moyklass_user_id ? "доступ закрыт" : s.trial_used ? "trial завершён" : !s.subject ? "регистрируется" : "доступ закрыт"}
                           </span>
                         )}
                         {access && access.key !== "unlimited" && (
@@ -504,10 +504,19 @@ export default function Students() {
                       <div className="arow__meta">
                         {s.grade ? `${s.grade} класс` : "класс не задан"} · {s.subject || "без предмета"}
                         {s.tg_id && !isDemo ? ` · TG ${s.tg_id}` : ""}
+                        {s.moyklass_user_id ? ` · CRM ${s.moyklass_user_id}` : ""}
                       </div>
                     </div>
                   </div>
                   <div className="arow__actions">
+                    {!isDemo && !s.moyklass_user_id && <button
+                      className={`aicon-btn${open && panel === "crm" ? " is-active" : ""}`}
+                      onClick={() => togglePanel(s.id, "crm")}
+                      aria-label="Привязать к Мой Класс"
+                      aria-expanded={open && panel === "crm"}
+                    >
+                      <Link2 size={17} strokeWidth={2.4} />
+                    </button>}
                     <button
                       className={`aicon-btn aicon-btn--bonus${open && panel === "bonus" ? " is-active" : ""}`}
                       onClick={() => togglePanel(s.id, "bonus")}
@@ -516,7 +525,7 @@ export default function Students() {
                     >
                       <Coins size={17} strokeWidth={2.4} />
                     </button>
-                    <button
+                    {!s.moyklass_user_id && <button
                       className={`aicon-btn aicon-btn--subjects${open && panel === "subjects" ? " is-active" : ""}`}
                       onClick={() => togglePanel(s.id, "subjects")}
                       aria-label="Предметы"
@@ -524,22 +533,55 @@ export default function Students() {
                     >
                       <BookMarked size={17} strokeWidth={2.4} />
                       <ChevronDown size={13} strokeWidth={2.6} className="aicon-btn__chev" />
-                    </button>
-                    <button className="aicon-btn aicon-btn--edit" onClick={() => edit(s)} aria-label="Редактировать">
+                    </button>}
+                    {!s.moyklass_user_id && <button className="aicon-btn aicon-btn--edit" onClick={() => edit(s)} aria-label="Редактировать">
                       <Pencil size={17} strokeWidth={2.4} />
-                    </button>
-                    <button className="aicon-btn aicon-btn--delete" onClick={() => remove(s.id)} aria-label="Удалить">
+                    </button>}
+                    {!s.moyklass_user_id && <button className="aicon-btn aicon-btn--delete" onClick={() => remove(s.id)} aria-label="Удалить">
                       <Trash2 size={17} strokeWidth={2.4} />
-                    </button>
+                    </button>}
                   </div>
                   {open && panel === "bonus" && <BonusPanel studentId={s.id} />}
                   {open && panel === "subjects" && <SubjectsPanel studentId={s.id} onAssigned={load} />}
+                  {open && panel === "crm" && <MoyklassLinkPanel studentId={s.id} onLinked={load} />}
                 </div>
               );
             })}
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function MoyklassLinkPanel({ studentId, onLinked }) {
+  const [crmUserId, setCrmUserId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function submit(event) {
+    event.preventDefault();
+    setError("");
+    setBusy(true);
+    try {
+      await adminApi.linkMoyklassStudent(studentId, crmUserId);
+      await onLinked();
+    } catch (cause) {
+      setError(cause.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="arow__panel">
+      <div className="arow__panel-title">Привязка к «Мой Класс»</div>
+      <p className="arow__meta">Укажите ID ученика из карточки CRM. Связь установится только после проверки Telegram ID и уникальности.</p>
+      <form className="aform aform--inline" onSubmit={submit}>
+        <input className="ainput" type="number" min="1" step="1" required aria-label="ID ученика в Мой Класс" placeholder="ID ученика в CRM" value={crmUserId} onChange={(event) => setCrmUserId(event.target.value)} />
+        <Button type="submit" icon={Link2} disabled={busy}>{busy ? "Проверяем…" : "Привязать"}</Button>
+      </form>
+      {error && <p className="aerror" role="alert">{error}</p>}
     </div>
   );
 }

@@ -1,4 +1,7 @@
-require('dotenv').config();
+// Local runs can keep the CRM key in the project-root .env. Deployment must
+// inject the same variable into the backend container/process environment.
+require('dotenv').config({ path: require('path').resolve(__dirname, '..', '.env') });
+require('dotenv').config({ path: require('path').resolve(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
@@ -7,6 +10,7 @@ const { rateLimit } = require('express-rate-limit');
 const db = require('./src/db');
 const bot = require('./src/bot');
 const keepAlive = require('./src/keepAlive');
+const moyklass = require('./src/integrations/moyklass');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -50,7 +54,7 @@ app.use('/api', rateLimit({
   limit: 300,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
-  skip: (req) => req.path === '/health' || req.path === '/telegram/webhook',
+  skip: (req) => req.path === '/health' || req.path === '/telegram/webhook' || req.path.startsWith('/moyklass/webhook/'),
 }));
 
 // Registers the webhook route (POST /api/telegram/webhook) if configured.
@@ -69,6 +73,7 @@ app.use('/api/pet', require('./src/routes/pet'));
 app.use('/api/homework', require('./src/routes/homework'));
 app.use('/api/admin', require('./src/routes/admin'));
 app.use('/api/admin', require('./src/routes/admin-import'));
+app.use('/api/moyklass', require('./src/routes/moyklass'));
 
 // 404 for unknown API routes
 app.use('/api', (req, res) => {
@@ -112,6 +117,7 @@ db.init()
       const backendUrl = process.env.RENDER_EXTERNAL_URL || process.env.BACKEND_URL;
       if (backendUrl) bot.setWebhook(backendUrl).catch((e) => console.error('setWebhook failed:', e.message));
       keepAlive.start();
+      moyklass.start();
     });
   })
   .catch((err) => {

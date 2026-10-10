@@ -7,6 +7,7 @@ const db = require("../db");
 const { requireAuth, requireRole } = require("../middleware/auth");
 const { SUBJECT_VARIANTS, normalizeSubject } = require("../subjects");
 const { parseAccessUntilDay } = require("../utils/access");
+const { cleanQuestionAnswer } = require("../questionTypes");
 
 const router = express.Router();
 
@@ -201,7 +202,7 @@ function readSubjects(body) {
   const push = (subject, grade) => {
     const s = cleanSubject(subject);
     const g = Number(grade);
-    if (!s || !Number.isInteger(g) || g < 6 || g > 11 || seen.has(s)) return;
+    if (!s || !Number.isInteger(g) || g < 5 || g > 11 || seen.has(s)) return;
     seen.add(s);
     out.push({ subject: s, grade: g });
   };
@@ -296,7 +297,7 @@ router.put("/students/:id", requireRole("admin"), async (req, res, next) => {
     const cleanGrade = hasPrimaryChange ? Number(grade) : null;
     const cleanPrimarySubject = hasPrimaryChange ? cleanSubject(subject) : null;
     if (hasPrimaryChange && (
-      !Number.isInteger(cleanGrade) || cleanGrade < 6 || cleanGrade > 11 || !cleanPrimarySubject
+      !Number.isInteger(cleanGrade) || cleanGrade < 5 || cleanGrade > 11 || !cleanPrimarySubject
     )) return bad(res, "invalid_subject_or_grade");
     // accessUntil: field omitted -> leave untouched; null/"" -> "бессрочно";
     // "YYYY-MM-DD" -> access runs through the end of that day. Assigning any
@@ -305,6 +306,10 @@ router.put("/students/:id", requireRole("admin"), async (req, res, next) => {
     const hasAccessChange = req.body?.accessUntil !== undefined;
     const accessUntil = parseAccessUntilDay(req.body?.accessUntil);
     if (accessUntil === "invalid") return bad(res, "invalid_access_until");
+    const linked = (await db.query("SELECT moyklass_user_id FROM students WHERE id = $1", [req.params.id])).rows[0];
+    if (linked?.moyklass_user_id && (hasAccessChange || hasPrimaryChange || tgId != null)) {
+      return bad(res, "student_managed_in_crm", 409);
+    }
     const rows = await db.transaction(async (client) => {
       const { rows: currentRows } = await client.query(
         "SELECT * FROM students WHERE id = $1 FOR UPDATE",
@@ -366,7 +371,7 @@ router.put("/students/:id", requireRole("admin"), async (req, res, next) => {
 
 router.delete("/students/:id", requireRole("admin"), async (req, res, next) => {
   try {
-    const { rowCount } = await db.query("DELETE FROM students WHERE id = $1", [req.params.id]);
+    const { rowCount } = await db.query("DELETE FROM students WHERE id = $1 AND moyklass_user_id IS NULL", [req.params.id]);
     if (!rowCount) return bad(res, "not_found", 404);
     res.json({ ok: true });
   } catch (e) {
@@ -394,15 +399,16 @@ router.post("/students/:id/subjects", requireRole("admin", "tutor"), async (req,
     const { subject, grade } = req.body ?? {};
     const cleanEnrollmentSubject = cleanSubject(subject);
     const cleanGrade = Number(grade);
-    if (!cleanEnrollmentSubject || !Number.isInteger(cleanGrade) || cleanGrade < 6 || cleanGrade > 11) {
+    if (!cleanEnrollmentSubject || !Number.isInteger(cleanGrade) || cleanGrade < 5 || cleanGrade > 11) {
       return bad(res, "invalid_subject_or_grade");
     }
     const rows = await db.transaction(async (client) => {
       const { rows: studentRows } = await client.query(
-        "SELECT id FROM students WHERE id = $1 FOR UPDATE",
+        "SELECT id, moyklass_user_id FROM students WHERE id = $1 FOR UPDATE",
         [req.params.id]
       );
       if (!studentRows.length) return [];
+      if (studentRows[0].moyklass_user_id) return { error: "subjects_managed_in_crm" };
       await client.query(
         `INSERT INTO student_subjects (student_id, subject, grade) VALUES ($1,$2,$3)
          ON CONFLICT (student_id, subject) DO UPDATE SET grade = EXCLUDED.grade`,
@@ -420,6 +426,7 @@ router.post("/students/:id/subjects", requireRole("admin", "tutor"), async (req,
       );
       return updated.rows;
     });
+    if (rows.error) return bad(res, rows.error, 409);
     if (!rows.length) return bad(res, "not_found", 404);
     res.json({ student: rows[0] });
   } catch (e) {
@@ -506,10 +513,9 @@ function cleanTask(body) {
   const subject = cleanSubject(body?.subject);
   const topic = cleanText(body?.topic, 120, { required: true });
   const prompt = cleanText(body?.prompt, 4000, { required: true });
-  const options = Array.isArray(body?.options)
-    ? body.options.map((option) => cleanText(option, 1000, { required: true }))
-    : [];
-  const correct = Number(body?.correct);
+  const answerSpec = cleanQuestionAnswer(body);
+  if (answerSpec.error) return answerSpec;
+  const { options, correct, questionType, acceptedAnswers } = answerSpec.value;
   const explanation = cleanText(body?.explanation, 8000);
   const difficulty = body?.difficulty || "medium";
   const hints = Array.isArray(body?.hints)
@@ -518,18 +524,12 @@ function cleanTask(body) {
   if (!Number.isInteger(grade) || grade < 5 || grade > 11) return { error: "invalid_grade" };
   if (!subject) return { error: "invalid_subject" };
   if (!topic || !prompt) return { error: "topic_and_prompt_required" };
-  if (options.length < 2 || options.length > 6 || options.some((option) => !option)) {
-    return { error: "invalid_options" };
-  }
-  if (!Number.isInteger(correct) || correct < 0 || correct >= options.length) {
-    return { error: "correct_index_out_of_range" };
-  }
   if (!DIFFICULTIES.has(difficulty)) return { error: "invalid_difficulty" };
   if (body?.explanation != null && explanation == null) return { error: "invalid_explanation" };
   if (hints.length > 5 || (Array.isArray(body?.hints) && hints.length !== body.hints.filter(Boolean).length)) {
     return { error: "invalid_hints" };
   }
-  return { value: { grade, subject, topic, prompt, options, correct, explanation, difficulty, hints } };
+  return { value: { grade, subject, topic, prompt, options, correct, questionType, acceptedAnswers, explanation, difficulty, hints } };
 }
 
 router.get("/tasks/overview", requireRole("admin", "tutor"), async (req, res, next) => {
@@ -602,10 +602,10 @@ router.post("/tasks", requireRole("admin", "tutor"), async (req, res, next) => {
   try {
     const { value, error } = cleanTask(req.body);
     if (error) return bad(res, error);
-    const { grade, subject, topic, prompt, options, correct, explanation, difficulty, hints } = value;
+    const { grade, subject, topic, prompt, options, correct, questionType, acceptedAnswers, explanation, difficulty, hints } = value;
     const { rows } = await db.query(
-      `INSERT INTO tasks (grade, subject, topic, prompt, options, correct, explanation, difficulty, hints)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      `INSERT INTO tasks (grade, subject, topic, prompt, options, correct, explanation, difficulty, hints, question_type, accepted_answers)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
       [
         Number(grade),
         subject,
@@ -616,6 +616,8 @@ router.post("/tasks", requireRole("admin", "tutor"), async (req, res, next) => {
         explanation || null,
         difficulty,
         JSON.stringify(hints),
+        questionType,
+        JSON.stringify(acceptedAnswers),
       ]
     );
     res.status(201).json({ task: rows[0] });
@@ -628,11 +630,12 @@ router.put("/tasks/:id", requireRole("admin", "tutor"), async (req, res, next) =
   try {
     const { value, error } = cleanTask(req.body);
     if (error) return bad(res, error);
-    const { grade, subject, topic, prompt, options, correct, explanation, difficulty, hints } = value;
+    const { grade, subject, topic, prompt, options, correct, questionType, acceptedAnswers, explanation, difficulty, hints } = value;
     const { rows } = await db.query(
       `UPDATE tasks
           SET grade = $2, subject = $3, topic = $4, prompt = $5, options = $6,
-              correct = $7, explanation = $8, difficulty = $9, hints = $10
+              correct = $7, explanation = $8, difficulty = $9, hints = $10,
+              question_type = $11, accepted_answers = $12
         WHERE id = $1 RETURNING *`,
       [
         req.params.id,
@@ -645,6 +648,8 @@ router.put("/tasks/:id", requireRole("admin", "tutor"), async (req, res, next) =
         explanation || null,
         difficulty,
         JSON.stringify(hints),
+        questionType,
+        JSON.stringify(acceptedAnswers),
       ]
     );
     if (!rows.length) return bad(res, "not_found", 404);
@@ -738,15 +743,11 @@ function cleanQuestions(questions) {
   const clean = [];
   for (const q of questions) {
     const prompt = cleanText(q?.prompt, 4000, { required: true });
-    const options = Array.isArray(q?.options)
-      ? q.options.map((option) => cleanText(option, 1000, { required: true }))
-      : [];
-    const correct = Number(q?.correct);
-    if (!prompt || options.length < 2 || options.length > 6 || options.some((o) => !o)) return { error: "invalid_questions" };
-    if (!Number.isInteger(correct) || correct < 0 || correct >= options.length) return { error: "invalid_questions" };
+    const answerSpec = cleanQuestionAnswer(q);
+    if (!prompt || answerSpec.error) return { error: "invalid_questions" };
     const explanation = cleanText(q?.explanation, 8000);
     if (q?.explanation != null && explanation == null) return { error: "invalid_questions" };
-    clean.push({ prompt, options, correct, explanation: explanation || null });
+    clean.push({ prompt, ...answerSpec.value, explanation: explanation || null });
   }
   return { clean };
 }
@@ -824,9 +825,9 @@ router.post("/homework", requireRole("admin", "tutor"), async (req, res, next) =
       for (let i = 0; i < cleanQuestionList.length; i++) {
         const q = cleanQuestionList[i];
         await client.query(
-          `INSERT INTO homework_questions (homework_id, prompt, options, correct, explanation, position)
-           VALUES ($1,$2,$3,$4,$5,$6)`,
-          [homework.id, q.prompt, JSON.stringify(q.options), q.correct, q.explanation, i]
+          `INSERT INTO homework_questions (homework_id, prompt, options, correct, explanation, position, question_type, accepted_answers)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+          [homework.id, q.prompt, JSON.stringify(q.options), q.correct, q.explanation, i, q.questionType, JSON.stringify(q.acceptedAnswers)]
         );
       }
       await client.query("COMMIT");

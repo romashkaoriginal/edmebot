@@ -4,11 +4,12 @@ import Button from "../../components/ui/Button";
 import SectionTitle from "../../components/ui/SectionTitle";
 import ImportModal from "../../components/admin/ImportModal";
 import FormModal from "../../components/admin/FormModal";
+import FreeAnswerEditor from "../../components/shared/FreeAnswerEditor";
 import { adminApi } from "../../api/admin";
 import "./admin.css";
 
-const SUBJECTS = ["Математика", "Русский", "Химия", "Физика"];
-const GRADES = [6, 7, 8, 9, 10, 11];
+const SUBJECTS = ["Математика", "Русский язык", "Химия", "Физика", "Английский язык"];
+const GRADES = [5, 6, 7, 8, 9, 10, 11];
 const EMPTY = { title: "", description: "", due: "", subject: "", taskIds: [], questions: [], maxAttempts: 1 };
 const MOSCOW_UTC_OFFSET = "+03:00";
 
@@ -17,7 +18,7 @@ function moscowDeadlineToIso(value) {
 }
 
 function emptyOwnQuestion() {
-  return { prompt: "", options: ["", ""], correct: 0, explanation: "" };
+  return { prompt: "", options: ["", ""], correct: 0, questionType: "choice", acceptedAnswers: [[""]], explanation: "" };
 }
 
 function plural(n, one, few, many) {
@@ -33,7 +34,7 @@ const HW_IMPORT_FIELDS = [
   { key: "title", desc: "заголовок домашки (обязательно)" },
   { key: "description", desc: "необязательно: что нужно сделать" },
   { key: "due", desc: "необязательно: срок, ГГГГ-ММ-ДД или ГГГГ-ММ-ДД ЧЧ:ММ" },
-  { key: "subject", desc: "обязательно: Математика, Русский, Химия или Физика" },
+  { key: "subject", desc: "обязательно: Математика, Русский язык, Химия, Физика или Английский язык" },
   { key: "task_ids", desc: "обязательно: минимум один ID задания через запятую" },
   { key: "max_attempts", desc: "от 1 до 20, по умолчанию 1" },
 ];
@@ -74,9 +75,10 @@ export default function HomeworkAdmin() {
 
   const visibleStudents = students.filter((s) => {
     if (s.status !== "active") return false;
-    if (subjectFilter !== "all" && s.subject !== subjectFilter) return false;
-    if (gradeFilter !== "all" && String(s.grade) !== gradeFilter) return false;
-    return `${s.name} ${s.subject ?? ""} ${s.tg_id ?? ""}`.toLowerCase().includes(search.trim().toLowerCase());
+    const enrolled = s.subjects?.length ? s.subjects : [{ subject: s.subject, grade: s.grade }];
+    if (subjectFilter !== "all" && !enrolled.some((item) => item.subject === subjectFilter)) return false;
+    if (gradeFilter !== "all" && !enrolled.some((item) => String(item.grade) === gradeFilter)) return false;
+    return `${s.name} ${enrolled.map((item) => item.subject).join(" ")} ${s.tg_id ?? ""}`.toLowerCase().includes(search.trim().toLowerCase());
   });
 
   const loadTopicsFor = useCallback(async (grade, subject) => {
@@ -123,7 +125,8 @@ export default function HomeworkAdmin() {
     if (tasksByTopic[topicName] || !student) return;
     setLoadingTopic(topicName);
     try {
-      const { tasks } = await adminApi.listTasks({ grade: student.grade, subject: form.subject, topic: topicName });
+    const subjectGrade = student.subjects?.find((item) => item.subject === form.subject)?.grade ?? student.grade;
+    const { tasks } = await adminApi.listTasks({ grade: subjectGrade, subject: form.subject, topic: topicName });
       setTasksByTopic((cur) => ({ ...cur, [topicName]: tasks }));
     } catch (e) {
       setError(e.message);
@@ -182,8 +185,16 @@ export default function HomeworkAdmin() {
       setNewQuestionError("Заполните условие вопроса");
       return;
     }
-    if (options.some((o) => !o)) {
+    if (newQuestionForm.questionType === "choice" && options.some((o) => !o)) {
       setNewQuestionError("Заполните все варианты ответа");
+      return;
+    }
+    if (newQuestionForm.questionType === "blanks" && (newQuestionForm.prompt.match(/_/g) ?? []).length !== newQuestionForm.acceptedAnswers.length) {
+      setNewQuestionError("Количество знаков _ должно совпадать с количеством ответов");
+      return;
+    }
+    if (newQuestionForm.questionType !== "choice" && newQuestionForm.acceptedAnswers.some((variants) => variants.some((value) => !value.trim()))) {
+      setNewQuestionError("Заполните правильные ответы и их варианты");
       return;
     }
     setForm((f) => ({
@@ -384,10 +395,10 @@ export default function HomeworkAdmin() {
                     setForm((current) => ({ ...current, subject, taskIds: [] }));
                     setTasksByTopic({});
                     setExpandedTopics(new Set());
-                    await loadTopicsFor(student.grade, subject);
+                    await loadTopicsFor(student.subjects?.find((item) => item.subject === subject)?.grade ?? student.grade, subject);
                   }}
                 >
-                  {SUBJECTS.map((s) => <option key={s} value={s}>{s}</option>)}
+                  {(student.subjects?.length ? student.subjects.map((item) => item.subject) : [student.subject]).map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
               </label>
 
@@ -405,7 +416,7 @@ export default function HomeworkAdmin() {
                     <span style={{ flex: 1 }}>
                       <span className="arow__title">Задания из практики</span>
                       <span className="arow__meta">
-                        {student.grade} класс · {form.subject}
+                        {student.subjects?.find((item) => item.subject === form.subject)?.grade ?? student.grade} класс · {form.subject}
                         {totalSelected > 0 && ` · выбрано ${totalSelected}`}
                       </span>
                     </span>
@@ -513,7 +524,7 @@ export default function HomeworkAdmin() {
                         <div className="arow" key={i}>
                           <div className="arow__main">
                             <div className="arow__title">{q.prompt}</div>
-                            <div className="arow__meta">{q.options.length} вариантов</div>
+                            <div className="arow__meta">{q.questionType === "choice" ? `${q.options.length} вариантов` : q.questionType === "text" ? "Письменный ответ" : `${q.acceptedAnswers.length} пропусков`}</div>
                           </div>
                           <button type="button" className="aicon-btn aicon-btn--delete" onClick={() => removeOwnQuestion(i)} aria-label="Убрать вопрос">
                             <Trash2 size={16} strokeWidth={2.4} />
@@ -529,6 +540,8 @@ export default function HomeworkAdmin() {
                         onPrompt={(prompt) => setNewQuestionForm((f) => ({ ...f, prompt }))}
                         onExplanation={(explanation) => setNewQuestionForm((f) => ({ ...f, explanation }))}
                         onCorrect={(correct) => setNewQuestionForm((f) => ({ ...f, correct }))}
+                        onType={(questionType) => setNewQuestionForm((f) => ({ ...f, questionType, acceptedAnswers: [[""]] }))}
+                        onAcceptedAnswers={(acceptedAnswers) => setNewQuestionForm((f) => ({ ...f, acceptedAnswers }))}
                         onSubmit={addQuestionToHomework}
                       />
                     </div>
@@ -604,7 +617,7 @@ function initials(name) {
 // <form>, and a nested <form> is invalid HTML: the browser flattens it, so a
 // submit-type button in here would submit the outer homework form instead of
 // just adding the question.
-function NewQuestionForm({ form, error, onOption, onAddOption, onRemoveOption, onPrompt, onExplanation, onCorrect, onSubmit }) {
+function NewQuestionForm({ form, error, onOption, onAddOption, onRemoveOption, onPrompt, onExplanation, onCorrect, onType, onAcceptedAnswers, onSubmit }) {
   return (
     <div className="aform" style={{ padding: "var(--sp-3)", background: "var(--surface-2)", borderRadius: "var(--r-md)" }}>
       <label className="afield">
@@ -616,7 +629,16 @@ function NewQuestionForm({ form, error, onOption, onAddOption, onRemoveOption, o
           placeholder="Сложи дроби: 1/4 + 1/4"
         />
       </label>
-      <div className="afield">
+      <label className="afield">
+        <span>Тип ответа</span>
+        <select className="aselect" value={form.questionType} onChange={(e) => onType(e.target.value)}>
+          <option value="choice">Выбор одного варианта</option>
+          <option value="text">Написать ответ</option>
+          <option value="blanks">Несколько пропусков</option>
+        </select>
+        {form.questionType === "blanks" && <small>Обозначьте каждый пропуск знаком _ в условии вопроса.</small>}
+      </label>
+      {form.questionType === "choice" ? <div className="afield">
         <span>Варианты ответа (отметьте правильный)</span>
         {form.options.map((opt, i) => (
           <div className="aopt" key={i}>
@@ -639,7 +661,7 @@ function NewQuestionForm({ form, error, onOption, onAddOption, onRemoveOption, o
         {form.options.length < 6 && (
           <Button type="button" variant="soft" size="sm" icon={Plus} onClick={onAddOption}>Добавить вариант</Button>
         )}
-      </div>
+      </div> : <FreeAnswerEditor questionType={form.questionType} acceptedAnswers={form.acceptedAnswers} onChange={onAcceptedAnswers} />}
       <label className="afield">
         <span>Объяснение (необязательно)</span>
         <textarea

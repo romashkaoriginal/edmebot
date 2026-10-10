@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const db = require("../db");
 const state = require("../studentState");
 const { requireStudent, requireActiveStudent } = require("../middleware/auth");
+const { gradeAnswer } = require("../questionTypes");
 
 const router = express.Router();
 router.use(requireStudent, requireActiveStudent);
@@ -44,7 +45,8 @@ router.get("/series", async (req, res, next) => {
         ? current.topics.filter((topic) => topic.status !== "green").map((topic) => topic.id)
         : [];
     const { rows } = await db.query(
-      `SELECT id, topic, subject, prompt, options, difficulty, hints,
+      `SELECT id, topic, subject, prompt, options, difficulty, hints, question_type AS "questionType",
+              jsonb_array_length(accepted_answers) AS "blankCount",
               correct AS "correctIndex", explanation
          FROM tasks WHERE grade = $1 AND subject = $2
          ORDER BY id ASC`,
@@ -72,7 +74,7 @@ router.get("/series", async (req, res, next) => {
           id: String(task.id),
           instanceId: crypto.randomUUID(),
           options: optionOrder.map((source) => task.options[source]),
-          correctIndex: optionOrder.indexOf(task.correctIndex),
+          correctIndex: task.questionType === "choice" ? optionOrder.indexOf(task.correctIndex) : null,
           optionOrder,
           hintCount: Array.isArray(task.hints) ? task.hints.length : 0,
           hints: undefined,
@@ -146,8 +148,8 @@ router.post("/hint", async (req, res, next) => {
 
 router.post("/answer", async (req, res, next) => {
   try {
-    const { taskId, selected, instanceId } = req.body ?? {};
-    if (!Number.isInteger(Number(taskId)) || !Number.isInteger(selected)) {
+    const { taskId, selected, answer, instanceId } = req.body ?? {};
+    if (!Number.isInteger(Number(taskId))) {
       return res.status(400).json({ error: "taskId_and_selected_required" });
     }
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(instanceId || ""))) {
@@ -156,22 +158,23 @@ router.post("/answer", async (req, res, next) => {
     const { rows } = await db.query("SELECT * FROM tasks WHERE id = $1", [taskId]);
     if (!rows.length) return res.status(404).json({ error: "task_not_found" });
     const task = rows[0];
-    if (selected < 0 || !Array.isArray(task.options) || selected >= task.options.length) {
-      return res.status(400).json({ error: "selected_out_of_range" });
-    }
+    const submission = task.question_type === "choice" ? { selected } : { selected: -1, answer };
+    if (task.question_type === "choice" && (!Number.isInteger(selected) || selected < 0 || selected >= task.options.length)) return res.status(400).json({ error: "selected_out_of_range" });
+    if (task.question_type !== "choice" && gradeAnswer({ ...task, acceptedAnswers: task.accepted_answers }, submission).error) return res.status(400).json({ error: "invalid_answers" });
     const { rows: enrolled } = await db.query(
       "SELECT 1 FROM student_subjects WHERE student_id = $1 AND subject = $2",
       [req.student.id, task.subject]
     );
     if (!enrolled.length) return res.status(403).json({ error: "not_enrolled_in_subject" });
-    const result = await state.gradePractice(req.student, task, selected, instanceId);
+    const result = await state.gradePractice(req.student, task, submission, instanceId);
     if (result.error) return res.status(409).json(result);
     res.json({
       correct: result.correct,
       // Position in the shuffled list the student was shown, not storage order.
       correctIndex: result.correctIndex ?? task.correct,
       explanation: task.explanation,
-      commonMistake: result.correct ? null : "Проверь решение ещё раз и сравни с правилом в объяснении.",
+      acceptedAnswers: task.question_type === "choice" ? undefined : task.accepted_answers,
+      commonMistake: result.correct || task.question_type !== "choice" ? null : "Проверь решение ещё раз и сравни с правилом в объяснении.",
       award: result.award,
       profile: result.state.profile,
       topics: result.state.topics,

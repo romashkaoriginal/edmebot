@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Check, Home, Info, RefreshCw, X } from "lucide-r
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import OptionList from "../components/shared/OptionList";
+import WrittenAnswer from "../components/shared/WrittenAnswer";
 import { studentApi } from "../api/student";
 import useModalFocus from "../hooks/useModalFocus";
 import useBodyScrollLock from "../hooks/useBodyScrollLock";
@@ -60,8 +61,8 @@ export default function HomeworkRun() {
   function restoreQuestion(target) {
     const saved = answers[target];
     setIdx(target);
-    setSelected(saved?.selected ?? null);
-    setGraded(saved ? (saved.selected === tasks[target].correctIndex ? "correct" : "wrong") : null);
+    setSelected(saved?.answer ?? saved?.selected ?? null);
+    setGraded(saved ? (tasks[target].questionType === "choice" ? (saved.selected === tasks[target].correctIndex ? "correct" : "wrong") : "answered") : null);
     setShowExplanation(false);
   }
 
@@ -91,6 +92,13 @@ export default function HomeworkRun() {
     setAnswers((cur) => ({ ...cur, [idx]: { taskId: task.id, selected: answer } }));
   }
 
+  function submitWrittenAnswer(answer) {
+    if (graded) return;
+    setSelected(answer);
+    setGraded("answered");
+    setAnswers((cur) => ({ ...cur, [idx]: { taskId: task.id, answer } }));
+  }
+
   async function nextOrSubmit() {
     const target = idx + 1;
     if (target < tasks.length) {
@@ -100,7 +108,7 @@ export default function HomeworkRun() {
     setSubmitting(true);
     setSubmitError("");
     try {
-      const payload = tasks.map((t, i) => ({ taskId: t.id, selected: answers[i]?.selected ?? null }));
+      const payload = tasks.map((t, i) => ({ taskId: t.id, ...(t.questionType === "choice" ? { selected: answers[i]?.selected ?? null } : { answer: answers[i]?.answer ?? null }) }));
       const data = await studentApi.submitHomework(homeworkId, attemptId, payload);
       setResult(data);
     } catch (e) {
@@ -120,7 +128,7 @@ export default function HomeworkRun() {
       <div className="run__body">
         <Card className={`run__question ${graded ? `run__question--${graded}` : ""}`} pad="lg">
           <div className="pr__qhead"><span className="run__qlabel">{homework?.title}</span><span className={`pr__diff pr__diff--${task.difficulty}`}>{diffLabel(task.difficulty)}</span></div>
-          <h1 className="run__prompt">{task.prompt}</h1>
+          <h1 className="run__prompt">{task.questionType === "blanks" ? "Вставь пропущенные слова" : task.prompt}</h1>
 
           <div className="run__assist">
             {graded && <Button variant="ghost" size="sm" icon={Info} onClick={() => setShowExplanation((v) => !v)}>{showExplanation ? "Скрыть объяснение" : "Показать объяснение"}</Button>}
@@ -128,7 +136,9 @@ export default function HomeworkRun() {
 
           {submitError && <div className="run__notices"><div className="run__action-error" role="alert"><span>{submitError}</span></div></div>}
 
-          <OptionList options={task.options} selected={selected} onSelect={selectAnswer} state={graded} correctIndex={task.correctIndex} disabled={!!graded} />
+          {task.questionType === "text" || task.questionType === "blanks"
+            ? <WrittenAnswer questionType={task.questionType} prompt={task.prompt} blankCount={task.blankCount} value={selected} onChange={setSelected} onSubmit={submitWrittenAnswer} disabled={submitting} graded={graded} submitLabel="Сохранить ответ" />
+            : <OptionList options={task.options} selected={selected} onSelect={selectAnswer} state={graded} correctIndex={task.correctIndex} disabled={!!graded} />}
           <div className="run__question-actions">
             {idx > 0 && <Button variant="soft" icon={ArrowLeft} onClick={() => restoreQuestion(idx - 1)}>Назад</Button>}
             {graded && (
@@ -185,6 +195,7 @@ function HomeworkSummary({ result, onExit }) {
                     : <><X size={15} strokeWidth={3} /> неверно</>}
                 </span>
               </div>
+              {!r.correct && r.acceptedAnswers?.length > 0 && <p className="hwrun__item-explain">Правильный ответ: {r.acceptedAnswers.map((variants) => variants.join(" / ")).join("; ")}</p>}
               {!r.correct && r.explanation && <p className="hwrun__item-explain">{r.explanation}</p>}
             </div>
           ))}

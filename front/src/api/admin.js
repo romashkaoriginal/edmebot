@@ -115,6 +115,17 @@ export const adminApi = {
   createStudent: (s) => mutate("/students", { method: "POST", body: s }, ["/students", "/stats"]),
   updateStudent: (id, s) => mutate(`/students/${id}`, { method: "PUT", body: s }, ["/students", "/stats"]),
   deleteStudent: (id) => mutate(`/students/${id}`, { method: "DELETE" }, ["/students", "/stats"]),
+  linkMoyklassStudent: async (id, crmUserId) => {
+    const response = await fetchWithTimeout(apiUrl(`/api/moyklass/students/${id}/link`), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-telegram-init-data": initData() },
+      body: JSON.stringify({ crmUserId }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+    invalidate("/students", "/stats");
+    return data;
+  },
 
   // Bonuses
   bonusHistory: (studentId) => req(`/students/${studentId}/bonus`),

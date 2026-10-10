@@ -2,9 +2,10 @@
 // and spreadsheet imports compatible with each other.
 const SUBJECT_VARIANTS = [
   { canonical: "Математика", aliases: ["математика"] },
-  { canonical: "Русский", aliases: ["русский", "русский язык"] },
+  { canonical: "Русский язык", aliases: ["русский", "русский язык"] },
   { canonical: "Химия", aliases: ["химия"] },
   { canonical: "Физика", aliases: ["физика"] },
+  { canonical: "Английский язык", aliases: ["английский", "английский язык", "english"] },
 ];
 
 const SUBJECT_BY_ALIAS = new Map(

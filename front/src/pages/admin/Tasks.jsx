@@ -1,18 +1,19 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   ListChecks, Plus, Trash2, X, Upload, ChevronLeft, ChevronRight,
-  Calculator, PenLine, FlaskConical, Atom, Folder, Eye, EyeOff, Pencil, CheckCircle2,
+  Calculator, PenLine, FlaskConical, Atom, Languages, Folder, Eye, EyeOff, Pencil, CheckCircle2,
 } from "lucide-react";
 import Button from "../../components/ui/Button";
 import SectionTitle from "../../components/ui/SectionTitle";
 import ImportModal from "../../components/admin/ImportModal";
 import FormModal from "../../components/admin/FormModal";
+import FreeAnswerEditor from "../../components/shared/FreeAnswerEditor";
 import { adminApi } from "../../api/admin";
 import "./admin.css";
 
 const TASK_IMPORT_FIELDS = [
   { key: "grade", desc: "класс, число 5–11" },
-  { key: "subject", desc: "Русский, Математика, Химия или Физика" },
+  { key: "subject", desc: "Русский язык, Математика, Химия, Физика или Английский язык" },
   { key: "topic", desc: "название темы, напр. Дроби" },
   { key: "prompt", desc: "текст задания" },
   { key: "option_a … option_f", desc: "варианты ответа (минимум a и b)" },
@@ -24,11 +25,12 @@ const TASK_IMPORT_FIELDS = [
 
 const SUBJECTS = [
   { name: "Математика", icon: Calculator, tone: "primary" },
-  { name: "Русский", icon: PenLine, tone: "accent" },
+  { name: "Русский язык", icon: PenLine, tone: "accent" },
   { name: "Химия", icon: FlaskConical, tone: "primary" },
   { name: "Физика", icon: Atom, tone: "accent" },
+  { name: "Английский язык", icon: Languages, tone: "primary" },
 ];
-const GRADES = [6, 7, 8, 9, 10, 11];
+const GRADES = [5, 6, 7, 8, 9, 10, 11];
 const DIFFICULTIES = [
   { id: "easy", label: "Лёгкое" },
   { id: "medium", label: "Среднее" },
@@ -44,6 +46,8 @@ function emptyForm(grade, subject, topic = "") {
     prompt: "",
     options: ["", ""],
     correct: 0,
+    questionType: "choice",
+    acceptedAnswers: [[""]],
     explanation: "",
     difficulty: "medium",
     hints: [],
@@ -169,6 +173,8 @@ export default function Tasks() {
       prompt: t.prompt,
       options: [...t.options],
       correct: t.correct,
+      questionType: t.question_type ?? "choice",
+      acceptedAnswers: t.accepted_answers?.length ? t.accepted_answers : [[""]],
       explanation: t.explanation || "",
       difficulty: t.difficulty || "medium",
       hints: Array.isArray(t.hints) ? [...t.hints] : [],
@@ -180,8 +186,16 @@ export default function Tasks() {
     e.preventDefault();
     setError("");
     const options = form.options.map((o) => o.trim());
-    if (options.some((o) => !o)) {
+    if (form.questionType === "choice" && options.some((o) => !o)) {
       setError("Заполните все варианты ответа");
+      return;
+    }
+    if (form.questionType === "blanks" && (form.prompt.match(/_/g) ?? []).length !== form.acceptedAnswers.length) {
+      setError("Количество знаков _ должно совпадать с количеством ответов");
+      return;
+    }
+    if (form.questionType !== "choice" && form.acceptedAnswers.some((variants) => variants.some((value) => !value.trim()))) {
+      setError("Заполните правильные ответы и их варианты");
       return;
     }
     try {
@@ -437,11 +451,11 @@ export default function Tasks() {
                   <div className="aq__prompt">{t.prompt}</div>
                   <div className="arow__meta">
                     <span className={`achip achip--${t.difficulty}`}>{DIFFICULTY_LABEL[t.difficulty] || t.difficulty}</span>
-                    {" · "}{t.options.length} {plural(t.options.length, "вариант", "варианта", "вариантов")}
+                    {" · "}{t.question_type === "text" ? "Письменный ответ" : t.question_type === "blanks" ? `${t.accepted_answers.length} пропусков` : `${t.options.length} ${plural(t.options.length, "вариант", "варианта", "вариантов")}`}
                   </div>
                   {open && (
                     <div className="aq__detail">
-                      <ul className="aq__options">
+                      {t.question_type === "choice" ? <ul className="aq__options">
                         {t.options.map((opt, i) => (
                           <li key={i} className={i === t.correct ? "is-correct" : ""}>
                             {i === t.correct
@@ -450,7 +464,7 @@ export default function Tasks() {
                             <span>{opt}</span>
                           </li>
                         ))}
-                      </ul>
+                      </ul> : <p className="aq__explain"><b>Ответ:</b> {t.accepted_answers.map((variants) => variants.join(" / ")).join("; ")}</p>}
                       {t.explanation && <p className="aq__explain"><b>Пояснение:</b> {t.explanation}</p>}
                       {Array.isArray(t.hints) && t.hints.length > 0 && (
                         <p className="aq__explain"><b>Подсказки:</b> {t.hints.join(" • ")}</p>
@@ -518,7 +532,17 @@ export default function Tasks() {
               />
             </label>
 
-            <div className="afield">
+            <label className="afield">
+              <span>Тип ответа</span>
+              <select className="aselect" value={form.questionType} onChange={(e) => setForm({ ...form, questionType: e.target.value, acceptedAnswers: [[""]] })}>
+                <option value="choice">Выбор одного варианта</option>
+                <option value="text">Написать ответ</option>
+                <option value="blanks">Несколько пропусков</option>
+              </select>
+              {form.questionType === "blanks" && <small>Обозначьте каждый пропуск знаком _ в условии вопроса.</small>}
+            </label>
+
+            {form.questionType === "choice" ? <div className="afield">
               <span>Варианты ответа (отметьте правильный)</span>
               {form.options.map((opt, i) => (
                 <div className="aopt" key={i}>
@@ -549,7 +573,7 @@ export default function Tasks() {
                   Добавить вариант
                 </Button>
               )}
-            </div>
+            </div> : <FreeAnswerEditor questionType={form.questionType} acceptedAnswers={form.acceptedAnswers} onChange={(acceptedAnswers) => setForm({ ...form, acceptedAnswers })} />}
 
             <label className="afield">
               <span>Пояснение (необязательно)</span>

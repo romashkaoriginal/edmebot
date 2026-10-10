@@ -18,6 +18,9 @@ const EMPTY_PROFILE = {
   accessUntil: null,
   trialStartedAt: null,
   trialUsed: false,
+  crmManaged: false,
+  crmRequired: false,
+  crmLastSyncedAt: null,
   pet: { species: "fox", name: "Рыжик" },
   petSelected: false,
   petBond: 0,
@@ -50,7 +53,13 @@ export function AppProvider({ children }) {
 
   const hydrate = useCallback((data, { replace = false } = {}) => {
     if (data.profile) {
-      setProfile((current) => ({
+      setProfile((current) => {
+        if (!replace && current.crmManaged && data.profile.crmManaged &&
+            Date.parse(data.profile.crmLastSyncedAt || "1970-01-01T00:00:00Z") <
+              Date.parse(current.crmLastSyncedAt || "1970-01-01T00:00:00Z")) {
+          return current;
+        }
+        return ({
         ...(replace ? EMPTY_PROFILE : current),
         ...data.profile,
         // Several sections return the whole profile, and some of those
@@ -63,7 +72,8 @@ export function AppProvider({ children }) {
           ? data.profile.onboardingStep
           : laterOnboardingStep(current.onboardingStep, data.profile.onboardingStep),
         pet: { ...(replace ? EMPTY_PROFILE.pet : current.pet), ...data.profile.pet },
-      }));
+        });
+      });
     }
     if (data.topics) setTopics(data.topics);
     else if (replace) setTopics([]);

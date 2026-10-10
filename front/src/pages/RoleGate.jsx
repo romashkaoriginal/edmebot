@@ -10,7 +10,7 @@ import { useApp } from "../store/AppStore";
 import { preloadAdminRoutes, preloadStudentRoutes } from "../routeModules";
 import "./RoleGate.css";
 
-const ONBOARD_GRADES = [6, 7, 8, 9, 10, 11];
+const ONBOARD_GRADES = [5, 6, 7, 8, 9, 10, 11];
 
 export default function RoleGate() {
   const navigate = useNavigate();
@@ -120,7 +120,7 @@ export default function RoleGate() {
           <form className="gate__onboard-form" onSubmit={submitOnboarding}>
             <div className="gate__subject-options" role="radiogroup" aria-label="Предмет">
               <button type="button" className={`gate__subject-option ${onboardSubject === "Математика" ? "is-selected" : ""}`} aria-pressed={onboardSubject === "Математика"} onClick={() => setOnboardSubject("Математика")}> <strong>Математика</strong><span>Доступно</span> </button>
-              <button type="button" className={`gate__subject-option ${onboardSubject === "Русский" ? "is-selected" : ""}`} aria-pressed={onboardSubject === "Русский"} onClick={() => setOnboardSubject("Русский")}> <strong>Русский язык</strong><span>Доступно</span> </button>
+              <button type="button" className={`gate__subject-option ${onboardSubject === "Русский язык" ? "is-selected" : ""}`} aria-pressed={onboardSubject === "Русский язык"} onClick={() => setOnboardSubject("Русский язык")}> <strong>Русский язык</strong><span>Доступно</span> </button>
               <button type="button" className={`gate__subject-option ${onboardSubject === "Химия" ? "is-selected" : ""}`} aria-pressed={onboardSubject === "Химия"} onClick={() => setOnboardSubject("Химия")}> <strong>Химия</strong><span>Доступно</span> </button>
               <button type="button" className={`gate__subject-option ${onboardSubject === "Физика" ? "is-selected" : ""}`} aria-pressed={onboardSubject === "Физика"} onClick={() => setOnboardSubject("Физика")}> <strong>Физика</strong><span>Доступно</span> </button>
             </div>

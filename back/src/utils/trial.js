@@ -1,4 +1,6 @@
 function trialStartError(student, profile) {
+  if (process.env.MOYKLASS_ENFORCE_LINKS === "true") return "trial_managed_in_crm";
+  if (student?.moyklass_user_id) return "trial_managed_in_crm";
   if (!profile?.diagnostic_done || !profile?.pet_selected) {
     return "trial_prerequisites_incomplete";
   }

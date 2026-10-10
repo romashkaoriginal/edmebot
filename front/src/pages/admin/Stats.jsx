@@ -10,7 +10,7 @@ import { adminApi } from "../../api/admin";
 import { SUBJECTS } from "../../utils/subjects";
 import "./admin.css";
 
-const GRADES = [6, 7, 8, 9, 10, 11];
+const GRADES = [5, 6, 7, 8, 9, 10, 11];
 const PET_NAMES = { fox: "Лиса", cat: "Кот", owl: "Сова", dragon: "Дракон" };
 
 export default function Stats() {

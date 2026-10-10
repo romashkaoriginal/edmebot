@@ -21,6 +21,10 @@ services:
       - ./back/.env.production
     environment:
       NODE_ENV: production
+      MOYKLASS_API_KEY: ${MOYKLASS_API_KEY:-}
+      MOYKLASS_WEBHOOK_SECRET: ${MOYKLASS_WEBHOOK_SECRET:-}
+      MOYKLASS_SUBJECT_MAP: ${MOYKLASS_SUBJECT_MAP:-}
+      MOYKLASS_ENFORCE_LINKS: ${MOYKLASS_ENFORCE_LINKS:-false}
     depends_on:
       db:
         condition: service_healthy

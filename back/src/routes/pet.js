@@ -1,10 +1,11 @@
 const express = require("express");
 const seed = require("../data/seed");
 const state = require("../studentState");
-const { requireStudent } = require("../middleware/auth");
+const { requireStudent, requireCrmAccess } = require("../middleware/auth");
 
 const router = express.Router();
 router.use(requireStudent);
+router.use(requireCrmAccess);
 
 router.get("/", async (req, res, next) => {
   try {

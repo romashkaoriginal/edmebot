@@ -2,12 +2,12 @@ const express = require("express");
 const crypto = require("crypto");
 const db = require("../db");
 const state = require("../studentState");
-const { requireStudent } = require("../middleware/auth");
+const { requireStudent, requireCrmAccess } = require("../middleware/auth");
 
 const router = express.Router();
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MIN_DIAGNOSTIC_QUESTIONS = 5;
-router.use(requireStudent);
+router.use(requireStudent, requireCrmAccess);
 
 function shuffle(items) {
   const result = [...items];
@@ -47,6 +47,9 @@ router.get("/", async (req, res, next) => {
         ORDER BY created_at ASC`,
       req.query.subject ? [req.student.id, req.query.subject] : [req.student.id]
     );
+    if (req.student.moyklass_user_id && req.query.subject && !enrollments.length) {
+      return res.status(403).json({ error: "not_enrolled_in_subject" });
+    }
     const enrolled = enrollments.length
       ? enrollments
       : [{ subject: req.query.subject || req.student.subject || "Математика", grade: req.student.grade }];
@@ -59,7 +62,7 @@ router.get("/", async (req, res, next) => {
       const { rows } = await db.query(
         `SELECT id, topic, subject, prompt, options, hints,
                 correct AS "correctIndex", explanation
-         FROM tasks WHERE grade = $1 AND subject = $2
+         FROM tasks WHERE grade = $1 AND subject = $2 AND question_type = 'choice'
          ORDER BY random() LIMIT 10`,
         [grade, item.subject]
       );

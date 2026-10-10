@@ -3,6 +3,7 @@ const db = require("../db");
 const state = require("../studentState");
 const { requireStudent } = require("../middleware/auth");
 const { trialStartError } = require("../utils/trial");
+const { normalizeSubject } = require("../subjects");
 
 const router = express.Router();
 router.use(requireStudent);
@@ -24,7 +25,7 @@ const ACHIEVEMENTS = [
 
 router.get("/", async (req, res, next) => {
   try {
-    const subject = typeof req.query.subject === "string" ? req.query.subject : null;
+    const subject = typeof req.query.subject === "string" ? normalizeSubject(req.query.subject) : null;
     if (subject) {
       const { rows } = await db.query(
         "SELECT 1 FROM student_subjects WHERE student_id = $1 AND subject = $2",
@@ -36,7 +37,18 @@ router.get("/", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-const ONBOARD_SUBJECTS = ["Математика", "Русский", "Химия", "Физика"];
+// Called once by the Mini App after its first authenticated profile load.
+// Requests from staff demo mode are intentionally excluded from activity data.
+router.post("/open", async (req, res, next) => {
+  try {
+    if (!req.user) {
+      await db.query("UPDATE students SET last_opened_at = now() WHERE id = $1", [req.student.id]);
+    }
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
+const ONBOARD_SUBJECTS = ["Математика", "Русский язык", "Химия", "Физика", "Английский язык"];
 
 // Self-serve onboarding: a brand-new (auto-provisioned "pending") student
 // picks a subject + grade so they can take that subject's diagnostic. This
@@ -44,6 +56,9 @@ const ONBOARD_SUBJECTS = ["Математика", "Русский", "Химия"
 // after the diagnostic and pet choice, or staff assigns permanent access.
 router.post("/onboard", async (req, res, next) => {
   try {
+    if (req.student.moyklass_user_id || process.env.MOYKLASS_ENFORCE_LINKS === "true") {
+      return res.status(409).json({ error: "subjects_managed_in_crm" });
+    }
     const current = await state.getState(req.student);
     if (!["subject", "diagnostic"].includes(current.profile.onboardingStep)) {
       return res.status(409).json({ error: "onboarding_step_invalid" });
@@ -57,7 +72,7 @@ router.post("/onboard", async (req, res, next) => {
       return res.status(400).json({ error: "invalid_subject" });
     }
     const g = Number(grade);
-    if (!Number.isInteger(g) || g < 6 || g > 11) return res.status(400).json({ error: "invalid_grade" });
+    if (!Number.isInteger(g) || g < 5 || g > 11) return res.status(400).json({ error: "invalid_grade" });
     const primary = chosen[0];
 
     await db.transaction(async (client) => {

@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Coins, Home, Info, Lightbulb, RefreshCw, X, Zap 
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import OptionList from "../components/shared/OptionList";
+import WrittenAnswer from "../components/shared/WrittenAnswer";
 import { useApp } from "../store/AppStore";
 import { studentApi } from "../api/student";
 import { answerHaptic } from "../utils/haptics";
@@ -69,7 +70,7 @@ export default function PracticeRun() {
     if (loadVersion === 0) {
       try {
         const cached = JSON.parse(localStorage.getItem(sessionKey) || "null");
-        if (cached && Date.now() - cached.savedAt < SESSION_TTL && Array.isArray(cached.tasks) && cached.tasks.length && cached.tasks.every((item) => Number.isInteger(item.correctIndex))) {
+        if (cached && Date.now() - cached.savedAt < SESSION_TTL && Array.isArray(cached.tasks) && cached.tasks.length && cached.tasks.every((item) => item.questionType === "text" || item.questionType === "blanks" || Number.isInteger(item.correctIndex))) {
           setTasks(cached.tasks);
           setIdx(Math.min(cached.idx ?? 0, cached.tasks.length - 1));
           setSelected(cached.selected ?? null);
@@ -181,23 +182,32 @@ export default function PracticeRun() {
     saveAnswer({ answer, nextGraded, nextFeedback, response, correct });
   }
 
+  function submitWrittenAnswer(answer) {
+    if (checking || graded) return;
+    const nextFeedback = { explanation: task.explanation, commonMistake: null, correctIndex: null, award: null };
+    const response = { selected: answer, graded: null, feedback: nextFeedback, hintsUsed, hintText };
+    saveAnswer({ answer, nextFeedback, response, correct: false });
+  }
+
   async function saveAnswer(payload) {
     if (checking) return;
-    const { answer, nextFeedback, response, correct } = payload;
+    const { answer, nextFeedback, response } = payload;
     setChecking(true);
     setPendingSave(payload);
     setActionError("");
     try {
-      const data = await studentApi.answer({ taskId: task.id, instanceId: task.instanceId, selected: answer });
+      const data = await studentApi.answer({ taskId: task.id, instanceId: task.instanceId, ...(task.questionType === "choice" || !task.questionType ? { selected: answer } : { answer }) });
+      if (task.questionType === "text" || task.questionType === "blanks") answerHaptic(data.correct);
       const serverGraded = data.correct ? "correct" : "wrong";
-      const savedFeedback = { ...nextFeedback, explanation: data.explanation, commonMistake: data.commonMistake, correctIndex: data.correctIndex, award: data.award };
+      const savedFeedback = { ...nextFeedback, explanation: data.explanation, commonMistake: data.commonMistake, correctIndex: data.correctIndex, acceptedAnswers: data.acceptedAnswers, award: data.award };
+      setSelected(answer);
       hydrate({ profile: data.profile, topics: data.topics });
       setGraded(serverGraded);
       setFeedback(savedFeedback);
       setResponses((items) => ({ ...items, [idx]: { ...response, graded: serverGraded, feedback: savedFeedback } }));
       setResults((items) => [...items, { taskId: task.id, correct: data.correct, topic: task.topic, topicLabel, award: data.award }]);
       setPendingSave(null);
-      if (correct && (data.award?.gained || data.award?.coins)) {
+      if (data.correct && (data.award?.gained || data.award?.coins)) {
         setLiveAward({ ...data.award, id: Date.now() });
         window.setTimeout(() => setLiveAward(null), 950);
       }
@@ -264,7 +274,7 @@ export default function PracticeRun() {
       <div className="run__body">
         <Card ref={fitRef} className={`run__question ${graded ? `run__question--${graded}` : ""}`} pad="lg">
           <div className="pr__qhead"><span className="run__qlabel">{topicLabel}</span><span className={`pr__diff pr__diff--${task.difficulty}`}>{diffLabel(task.difficulty)}</span></div>
-          <h1 className="run__prompt">{task.prompt}</h1>
+          <h1 className="run__prompt">{task.questionType === "blanks" ? "Вставь пропущенные слова" : task.prompt}</h1>
 
           <div className="run__assist">
             {!graded && (task.hintCount ?? 0) > 0 && <Button variant="ghost" size="sm" icon={Lightbulb} loading={hintLoading} disabled={hintsUsed >= task.hintCount} onClick={revealHint}>Подсказка{task.hintCount - hintsUsed > 0 ? ` (${task.hintCount - hintsUsed})` : ""}</Button>}
@@ -276,7 +286,9 @@ export default function PracticeRun() {
             {hintText && !graded && <div className="pr__hint"><Lightbulb size={16} /><span>{hintText}</span></div>}
           </div>
 
-          <OptionList options={task.options} selected={selected} onSelect={selectAnswer} state={graded} correctIndex={feedback?.correctIndex} disabled={!!graded} />
+          {task.questionType === "text" || task.questionType === "blanks"
+            ? <WrittenAnswer questionType={task.questionType} prompt={task.prompt} blankCount={task.blankCount} value={selected} onChange={setSelected} onSubmit={submitWrittenAnswer} disabled={checking} graded={graded} acceptedAnswers={feedback?.acceptedAnswers} submitLabel={checking ? "Проверяем…" : "Проверить"} />
+            : <OptionList options={task.options} selected={selected} onSelect={selectAnswer} state={graded} correctIndex={feedback?.correctIndex} disabled={!!graded} />}
           <div className="run__question-actions">
             {idx > 0 && <Button variant="soft" icon={ArrowLeft} onClick={() => restoreQuestion(idx - 1)}>Назад</Button>}
             {graded && <Button icon={ArrowRight} loading={extending} disabled={checking || !!pendingSave} onClick={nextTask}>{isEndless ? "Следующее" : idx + 1 >= tasks.length ? "Завершить" : "Следующее"}</Button>}

@@ -33,7 +33,10 @@ function loadRouter({ optionOrders, capture }) {
       return { getState: async () => ({ profile: { onboardingStep: "diagnostic" }, topics: [] }), submitDiagnostic: async () => {} };
     }
     if (request === "../middleware/auth") {
-      return { requireStudent: (req, _res, next) => { req.student = { id: 1, subject: "Математика", grade: 7, status: "pending" }; next(); } };
+      return {
+        requireStudent: (req, _res, next) => { req.student = { id: 1, subject: "Математика", grade: 7, status: "pending" }; next(); },
+        requireCrmAccess: (_req, _res, next) => next(),
+      };
     }
     return originalLoad.apply(this, arguments);
   };

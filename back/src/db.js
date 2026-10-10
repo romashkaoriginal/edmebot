@@ -9,7 +9,7 @@ const connectionString = process.env.DATABASE_URL;
 // Bump whenever SCHEMA changes. init() skips the whole schema block when the
 // recorded version is already current, so a new CREATE/ALTER never reaches an
 // existing database unless this number moves.
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 8;
 const databaseConfig = buildDatabaseConfig(connectionString);
 const pool = new Pool(databaseConfig);
 
@@ -91,6 +91,16 @@ ALTER TABLE students ADD COLUMN IF NOT EXISTS access_until TIMESTAMPTZ;
 ALTER TABLE students ADD COLUMN IF NOT EXISTS access_kind TEXT;
 ALTER TABLE students ADD COLUMN IF NOT EXISTS trial_started_at TIMESTAMPTZ;
 ALTER TABLE students ADD COLUMN IF NOT EXISTS trial_used BOOLEAN NOT NULL DEFAULT FALSE;
+-- CRM links are explicit and unique. Existing, unlinked students keep their
+-- current access rules until a verified link is established.
+ALTER TABLE students ADD COLUMN IF NOT EXISTS moyklass_user_id BIGINT UNIQUE;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS crm_access_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS last_opened_at TIMESTAMPTZ;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS crm_last_synced_at TIMESTAMPTZ;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS crm_last_error TEXT;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS crm_last_opened_synced_at TIMESTAMPTZ;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS crm_access_fingerprint TEXT;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS crm_source_updated_at TIMESTAMPTZ;
 ALTER TABLE students DROP CONSTRAINT IF EXISTS students_status_check;
 ALTER TABLE students ADD CONSTRAINT students_status_check CHECK (status IN ('pending', 'active'));
 ALTER TABLE students DROP CONSTRAINT IF EXISTS students_access_kind_check;
@@ -105,7 +115,7 @@ UPDATE students SET access_kind = 'assigned'
  WHERE status = 'active' AND access_until IS NULL AND access_kind IS NULL;
 ALTER TABLE students DROP CONSTRAINT IF EXISTS students_grade_check;
 ALTER TABLE students ADD CONSTRAINT students_grade_check
-  CHECK (grade IS NULL OR grade BETWEEN 6 AND 11) NOT VALID;
+  CHECK (grade IS NULL OR grade BETWEEN 5 AND 11) NOT VALID;
 
 -- Multi-subject enrollment. students.grade/subject stay as the "primary"
 -- (first-chosen) subject for display/back-compat; this table is the source
@@ -119,7 +129,7 @@ CREATE TABLE IF NOT EXISTS student_subjects (
 );
 ALTER TABLE student_subjects DROP CONSTRAINT IF EXISTS student_subjects_grade_check;
 ALTER TABLE student_subjects ADD CONSTRAINT student_subjects_grade_check
-  CHECK (grade BETWEEN 6 AND 11) NOT VALID;
+  CHECK (grade BETWEEN 5 AND 11) NOT VALID;
 
 CREATE TABLE IF NOT EXISTS tasks (
   id           BIGSERIAL PRIMARY KEY,
@@ -140,6 +150,14 @@ CREATE TABLE IF NOT EXISTS tasks (
 -- missing columns, so keep these migrations explicit and idempotent.
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS difficulty TEXT NOT NULL DEFAULT 'medium';
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS hints JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS question_type TEXT NOT NULL DEFAULT 'choice';
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS accepted_answers JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS source_key TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_source_key ON tasks (source_key);
+CREATE TABLE IF NOT EXISTS content_seeds (
+  key TEXT PRIMARY KEY,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 ALTER TABLE tasks DROP CONSTRAINT IF EXISTS tasks_difficulty_check;
 ALTER TABLE tasks ADD CONSTRAINT tasks_difficulty_check
   CHECK (difficulty IN ('easy', 'medium', 'hard')) NOT VALID;
@@ -147,7 +165,9 @@ ALTER TABLE tasks DROP CONSTRAINT IF EXISTS tasks_grade_check;
 ALTER TABLE tasks ADD CONSTRAINT tasks_grade_check CHECK (grade BETWEEN 5 AND 11) NOT VALID;
 ALTER TABLE tasks DROP CONSTRAINT IF EXISTS tasks_correct_check;
 ALTER TABLE tasks ADD CONSTRAINT tasks_correct_check
-  CHECK (correct >= 0 AND correct < jsonb_array_length(options)) NOT VALID;
+  CHECK (question_type <> 'choice' OR (correct >= 0 AND correct < jsonb_array_length(options))) NOT VALID;
+ALTER TABLE tasks DROP CONSTRAINT IF EXISTS tasks_question_type_check;
+ALTER TABLE tasks ADD CONSTRAINT tasks_question_type_check CHECK (question_type IN ('choice', 'text', 'blanks')) NOT VALID;
 
 CREATE TABLE IF NOT EXISTS homework (
   id           BIGSERIAL PRIMARY KEY,
@@ -229,6 +249,10 @@ CREATE TABLE IF NOT EXISTS homework_questions (
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_homework_questions_homework ON homework_questions (homework_id, position);
+ALTER TABLE homework_questions ADD COLUMN IF NOT EXISTS question_type TEXT NOT NULL DEFAULT 'choice';
+ALTER TABLE homework_questions ADD COLUMN IF NOT EXISTS accepted_answers JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE homework_questions DROP CONSTRAINT IF EXISTS homework_questions_question_type_check;
+ALTER TABLE homework_questions ADD CONSTRAINT homework_questions_question_type_check CHECK (question_type IN ('choice', 'text', 'blanks')) NOT VALID;
 
 CREATE TABLE IF NOT EXISTS attempts (
   id           BIGSERIAL PRIMARY KEY,
@@ -250,6 +274,7 @@ CREATE TABLE IF NOT EXISTS practice_question_instances (
   expires_at     TIMESTAMPTZ NOT NULL DEFAULT now() + interval '6 hours'
 );
 ALTER TABLE practice_question_instances ADD COLUMN IF NOT EXISTS selected INTEGER;
+ALTER TABLE practice_question_instances ADD COLUMN IF NOT EXISTS written_answer JSONB;
 ALTER TABLE practice_question_instances ADD COLUMN IF NOT EXISTS correct BOOLEAN;
 ALTER TABLE practice_question_instances ADD COLUMN IF NOT EXISTS award_xp INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE practice_question_instances ADD COLUMN IF NOT EXISTS award_coins INTEGER NOT NULL DEFAULT 0;
@@ -489,6 +514,32 @@ async function normalizeTaskSubjects() {
   }
 }
 
+async function seedEnglishGrade5() {
+  const questions = require("./data/english-grade5.json").map((question) => ({
+    ...question,
+    sourceKey: `english-grade5:${question.sourceKey}`,
+  }));
+  await transaction(async (client) => {
+    const marker = await client.query(
+      "INSERT INTO content_seeds (key) VALUES ('english-grade5-pdf-v1') ON CONFLICT DO NOTHING RETURNING key"
+    );
+    if (!marker.rowCount) return;
+    await client.query(
+      `INSERT INTO tasks (grade, subject, topic, prompt, options, correct, explanation,
+                        difficulty, hints, question_type, accepted_answers, source_key)
+     SELECT 5, 'Английский язык', topic, prompt, options, correct, explanation,
+            difficulty, hints, "questionType", "acceptedAnswers", "sourceKey"
+       FROM jsonb_to_recordset($1::jsonb) AS source(
+         topic text, prompt text, options jsonb, correct integer, explanation text,
+         difficulty text, hints jsonb, "questionType" text, "acceptedAnswers" jsonb,
+         "sourceKey" text
+       )
+     ON CONFLICT (source_key) DO NOTHING`,
+      [JSON.stringify(questions)]
+    );
+  });
+}
+
 // The demo student is the fallback identity when no real Telegram id is bound.
 async function getDemoStudent() {
   const { rows } = await query("SELECT * FROM students ORDER BY id ASC LIMIT 1");
@@ -550,6 +601,7 @@ async function init() {
   });
   await normalizeTaskSubjects();
   await seedIfEmpty();
+  await seedEnglishGrade5();
   console.log("Database ready.");
 }
 

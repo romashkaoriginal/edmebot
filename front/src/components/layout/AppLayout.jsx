@@ -30,11 +30,13 @@ export default function AppLayout({ children }) {
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [statInfo, setStatInfo] = useState(null);
   const prefetchedRef = useRef(false);
+  const openedRef = useRef(false);
   // Practice/diagnostic run in a focused mode — hide chrome distractions there.
   const focus = pathname.startsWith("/app/practice/run") || pathname.startsWith("/app/diagnostic/run") || pathname.startsWith("/app/homework/run");
   const todayISO = dateKey();
   const doneToday = profile.streakLastDoneOn === todayISO;
   const isActive = profile.status === "active";
+  const crmLocked = (profile.crmManaged || profile.crmRequired) && !isActive;
   const onboardingStep = profile.onboardingStep ?? "complete";
   const onboardingIncomplete = onboardingStep !== "complete";
   const showChrome = isActive && !onboardingIncomplete;
@@ -51,6 +53,28 @@ export default function AppLayout({ children }) {
     // "Загружаем раздел…" pause on the first tab switch.
     void preloadStudentRoutes();
   }, []);
+
+  useEffect(() => {
+    if (!hydrated || openedRef.current) return;
+    openedRef.current = true;
+    void studentApi.recordOpen().catch(() => { openedRef.current = false; });
+  }, [hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return undefined;
+    let cancelled = false;
+    const refresh = () => {
+      if (document.visibilityState !== "visible") return;
+      void studentApi.profile().then((data) => { if (!cancelled) hydrate(data); }).catch(() => {});
+    };
+    const interval = window.setInterval(refresh, 60_000);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [hydrated, hydrate]);
 
   // A hint belongs to the screen where it was opened. Closing it on route
   // changes prevents an old popover from covering controls on the next tab.
@@ -153,18 +177,25 @@ export default function AppLayout({ children }) {
     );
   }
 
+  if (isActive && profile.crmManaged && pathname.startsWith("/app/trial")) {
+    return <Navigate to="/app/profile" replace />;
+  }
+
   // A pending student who lands anywhere but the diagnostic (typed URL,
   // stale link) gets bounced to the one thing they can actually do.
-  if (onboardingStep === "subject" && !pathname.startsWith("/app/onboarding")) {
+  if (crmLocked && !pathname.startsWith("/app/trial")) {
+    return <Navigate to="/app/trial" replace />;
+  }
+  if (!crmLocked && onboardingStep === "subject" && !pathname.startsWith("/app/onboarding")) {
     return <Navigate to="/app/onboarding" replace />;
   }
-  if (onboardingStep === "diagnostic" && !pathname.startsWith("/app/diagnostic")) {
+  if (!crmLocked && onboardingStep === "diagnostic" && !pathname.startsWith("/app/diagnostic")) {
     return <Navigate to="/app/diagnostic" replace />;
   }
-  if (onboardingStep === "pet" && !pathname.startsWith("/app/pet")) {
+  if (!crmLocked && onboardingStep === "pet" && !pathname.startsWith("/app/pet")) {
     return <Navigate to="/app/pet" replace />;
   }
-  if (onboardingStep === "trial" && !pathname.startsWith("/app/trial")) {
+  if (!crmLocked && onboardingStep === "trial" && !pathname.startsWith("/app/trial")) {
     return <Navigate to="/app/trial" replace />;
   }
   // Only once onboarding is done. A self-serve student is "pending" for the

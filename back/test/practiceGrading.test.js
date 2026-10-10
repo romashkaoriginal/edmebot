@@ -14,7 +14,7 @@ const PROFILE = (overrides = {}) => ({
 
 // Runs gradePractice against a stubbed db, returning the graded outcome plus
 // every statement/param pair the code issued.
-async function runGrading({ optionOrder, selected, taskCorrect, streakLastDoneOn }) {
+async function runGrading({ optionOrder, selected, taskCorrect, streakLastDoneOn, taskOverride = {} }) {
   const statements = [];
   const originalQuery = db.query;
   const originalTransaction = db.transaction;
@@ -45,7 +45,7 @@ async function runGrading({ optionOrder, selected, taskCorrect, streakLastDoneOn
   db.transaction = async (fn) => fn({ query: handle });
   try {
     const student = { id: 1, status: "active", name: "Тест", subject: "Математика", grade: 7 };
-    const task = { id: 10, subject: "Математика", topic: "functions", correct: taskCorrect, difficulty: "medium" };
+    const task = { id: 10, subject: "Математика", topic: "functions", correct: taskCorrect, difficulty: "medium", ...taskOverride };
     const result = await state.gradePractice(student, task, selected, "3b1f2c9a-1111-4222-8333-444455556666");
     return { result, statements };
   } finally {
@@ -65,6 +65,16 @@ test("grades against the shuffled position the student actually saw", async () =
   const wrong = await runGrading({ optionOrder, selected: 1, taskCorrect: 2 });
   assert.equal(wrong.result.correct, false);
   assert.equal(wrong.result.correctIndex, 0);
+});
+
+test("grades a written practice answer and stores its submission", async () => {
+  const { result, statements } = await runGrading({
+    optionOrder: [], selected: { selected: -1, answer: "  In the Mountains  " }, taskCorrect: 0,
+    taskOverride: { question_type: "text", accepted_answers: [["in the mountains"]], options: [] },
+  });
+  assert.equal(result.correct, true);
+  const saved = statements.find((statement) => /^UPDATE practice_question_instances/.test(statement.text));
+  assert.equal(saved.params[6], JSON.stringify("  In the Mountains  "));
 });
 
 test("records the mistake against the stored option, not the shown position", async () => {

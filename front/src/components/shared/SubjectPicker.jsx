@@ -4,7 +4,7 @@ import "./SubjectPicker.css";
 
 const SUBJECT_META = {
   "Математика": { icon: Calculator, label: "Математика" },
-  "Русский": { icon: PenLine, label: "Русский язык" },
+  "Русский язык": { icon: PenLine, label: "Русский язык" },
   "Химия": { icon: FlaskConical, label: "Химия" },
   "Физика": { icon: Atom, label: "Физика" },
 };

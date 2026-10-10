@@ -124,7 +124,11 @@ async function requireStudent(req, res, next) {
 // Chain after requireStudent on routes that a "pending" (self-serve,
 // not-yet-assigned) student must not reach — practice and homework.
 async function requireActiveStudent(req, res, next) {
-  if (req.student.status !== "active" || (req.student.access_until && new Date(req.student.access_until) <= new Date())) {
+  if (req.student.status !== "active" ||
+      (process.env.MOYKLASS_ENFORCE_LINKS === "true" && !req.student.moyklass_user_id) ||
+      (req.student.moyklass_user_id && !req.student.crm_access_enabled) ||
+      (req.student.moyklass_user_id && !req.student.access_until) ||
+      (req.student.access_until && new Date(req.student.access_until) <= new Date())) {
     return res.status(403).json({ error: "onboarding_incomplete" });
   }
   try {
@@ -132,6 +136,18 @@ async function requireActiveStudent(req, res, next) {
     if (rows[0]?.onboarding_step !== "complete") return res.status(403).json({ error: "onboarding_incomplete" });
     next();
   } catch (e) { next(e); }
+}
+
+function requireCrmAccess(req, res, next) {
+  if (process.env.MOYKLASS_ENFORCE_LINKS === "true" && !req.student.moyklass_user_id) {
+    return res.status(403).json({ error: "crm_link_required" });
+  }
+  if (req.student.moyklass_user_id &&
+      (req.student.status !== "active" || !req.student.crm_access_enabled || !req.student.access_until ||
+        new Date(req.student.access_until) <= new Date())) {
+    return res.status(403).json({ error: "crm_access_denied" });
+  }
+  next();
 }
 
 function requireRole(...roles) {
@@ -143,4 +159,4 @@ function requireRole(...roles) {
   };
 }
 
-module.exports = { verifyTelegramInitData, requireAuth, requireRole, requireStudent, requireActiveStudent };
+module.exports = { verifyTelegramInitData, requireAuth, requireRole, requireStudent, requireActiveStudent, requireCrmAccess };

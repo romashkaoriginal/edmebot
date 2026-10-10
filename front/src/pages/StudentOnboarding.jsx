@@ -1,18 +1,19 @@
 import { useState } from "react";
 import { useNavigate } from "../router";
-import { ArrowLeft, ArrowRight, Calculator, Check, PenLine, FlaskConical, Atom } from "lucide-react";
+import { ArrowLeft, ArrowRight, Calculator, Check, PenLine, FlaskConical, Atom, Languages } from "lucide-react";
 import Button from "../components/ui/Button";
 import Logo from "../components/brand/Logo";
 import { isAuthError, studentApi } from "../api/student";
 import { useApp } from "../store/AppStore";
 import "./StudentOnboarding.css";
 
-const GRADES = [6, 7, 8, 9, 10, 11];
+const GRADES = [5, 6, 7, 8, 9, 10, 11];
 const SUBJECTS = [
   { name: "Математика", icon: Calculator, hint: "Алгебра и геометрия" },
-  { name: "Русский", icon: PenLine, label: "Русский язык", hint: "Правила и разборы" },
+  { name: "Русский язык", icon: PenLine, label: "Русский язык", hint: "Правила и разборы" },
   { name: "Химия", icon: FlaskConical, hint: "Реакции и вещества" },
   { name: "Физика", icon: Atom, hint: "Законы и явления" },
+  { name: "Английский язык", icon: Languages, hint: "Слова и грамматика" },
 ];
 
 export default function StudentOnboarding() {

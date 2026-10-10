@@ -3,6 +3,7 @@ const db = require("../db");
 const { requireStudent, requireActiveStudent } = require("../middleware/auth");
 const { assembleHomeworkTasks, gradeHomeworkAnswers } = require("../homeworkQuestions");
 const { deadlineNotice } = require("../utils/deadline");
+const { normalizeSubject } = require("../subjects");
 
 const router = express.Router();
 router.use(requireStudent, requireActiveStudent);
@@ -10,7 +11,7 @@ router.use(requireStudent, requireActiveStudent);
 router.get("/", async (req, res, next) => {
   try {
     const { status } = req.query;
-    const subject = typeof req.query.subject === "string" ? req.query.subject : null;
+    const subject = typeof req.query.subject === "string" ? normalizeSubject(req.query.subject) : null;
 
     if (subject) {
       const { rows: enrolled } = await db.query(
@@ -32,7 +33,9 @@ router.get("/", async (req, res, next) => {
                 (SELECT COUNT(*)::int FROM homework_questions hq WHERE hq.homework_id = hw.id)
               )::int AS question_count
          FROM homework hw
-        WHERE student_id = $1 ${subject ? "AND subject = $2" : ""}
+        WHERE student_id = $1 ${subject ? "AND hw.subject = $2" : ""}
+          AND EXISTS (SELECT 1 FROM student_subjects ss
+                       WHERE ss.student_id = hw.student_id AND ss.subject = hw.subject)
         ORDER BY hw.id DESC`,
       subject ? [req.student.id, subject] : [req.student.id]
     );
@@ -64,6 +67,11 @@ router.get("/:id/tasks", async (req, res, next) => {
     );
     if (!hwRows.length) return res.status(404).json({ error: "not_found" });
     const hw = hwRows[0];
+    const { rows: enrolled } = await db.query(
+      "SELECT 1 FROM student_subjects WHERE student_id = $1 AND subject = $2",
+      [req.student.id, hw.subject]
+    );
+    if (!enrolled.length) return res.status(403).json({ error: "not_enrolled_in_subject" });
     const { rows: membership } = await db.query(
       "SELECT task_id FROM homework_tasks WHERE homework_id = $1 ORDER BY position, task_id",
       [hw.id]
@@ -74,7 +82,7 @@ router.get("/:id/tasks", async (req, res, next) => {
     let bankRows = [];
     if (taskIds.length) {
       const { rows } = await db.query(
-        `SELECT id, topic, subject, prompt, options, difficulty, hints,
+        `SELECT id, topic, subject, prompt, options, difficulty, hints, question_type AS "questionType", accepted_answers AS "acceptedAnswers",
                 correct AS "correctIndex", explanation
            FROM tasks WHERE id = ANY($1::bigint[])`,
         [taskIds]
@@ -83,11 +91,11 @@ router.get("/:id/tasks", async (req, res, next) => {
     }
 
     const { rows: ownRows } = await db.query(
-      `SELECT id, prompt, options, correct AS "correctIndex", explanation
+      `SELECT id, prompt, options, correct AS "correctIndex", explanation, question_type AS "questionType", accepted_answers AS "acceptedAnswers"
          FROM homework_questions WHERE homework_id = $1 ORDER BY position ASC, id ASC`,
       [hw.id]
     );
-    res.json({ homework: hw, tasks: assembleHomeworkTasks(hw, bankRows, ownRows) });
+    res.json({ homework: hw, tasks: assembleHomeworkTasks(hw, bankRows, ownRows).map(({ acceptedAnswers, ...task }) => ({ ...task, blankCount: acceptedAnswers.length })) });
   } catch (e) {
     next(e);
   }
@@ -112,6 +120,11 @@ router.post("/:id/submit", async (req, res, next) => {
       );
       if (!hwRows.length) return { error: "not_found", status: 404 };
       const hw = hwRows[0];
+      const { rows: enrolled } = await client.query(
+        "SELECT 1 FROM student_subjects WHERE student_id = $1 AND subject = $2",
+        [req.student.id, hw.subject]
+      );
+      if (!enrolled.length) return { error: "not_enrolled_in_subject", status: 403 };
       const { rows: existing } = await client.query(
         `SELECT answers, correct, total FROM homework_attempts
           WHERE homework_id = $1 AND student_id = $2 AND idempotency_key = $3`,
@@ -142,14 +155,14 @@ router.post("/:id/submit", async (req, res, next) => {
       hw.task_ids = taskIds;
       const { rows: taskRows } = taskIds.length
         ? await client.query(
-          `SELECT id, prompt, options, correct AS "correctIndex", explanation, topic,
+          `SELECT id, prompt, options, correct AS "correctIndex", explanation, topic, question_type AS "questionType", accepted_answers AS "acceptedAnswers",
                   subject, difficulty, hints
              FROM tasks WHERE id = ANY($1::bigint[])`,
           [taskIds]
         )
         : { rows: [] };
       const { rows: ownRows } = await client.query(
-        `SELECT id, prompt, options, correct AS "correctIndex", explanation
+        `SELECT id, prompt, options, correct AS "correctIndex", explanation, question_type AS "questionType", accepted_answers AS "acceptedAnswers"
            FROM homework_questions WHERE homework_id = $1 ORDER BY position ASC, id ASC`,
         [hw.id]
       );

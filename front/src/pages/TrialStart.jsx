@@ -33,6 +33,7 @@ export default function TrialStart() {
   }
 
   const trialExpired = profile.trialUsed && profile.status !== "active";
+  const crmManaged = profile.crmManaged || profile.crmRequired;
   const activeTrial = profile.status === "active" && profile.accessKind === "trial";
   const plannedAccessUntil = new Date();
   plannedAccessUntil.setDate(plannedAccessUntil.getDate() + 30);
@@ -50,17 +51,19 @@ export default function TrialStart() {
           {trialExpired ? <ShieldCheck size={30} /> : <CalendarDays size={30} />}
         </span>
         <h1 id="trial-title">
-          {trialExpired ? "Пробный период завершён" : activeTrial ? "Пробный доступ активен" : "30 дней бесплатно"}
+          {crmManaged ? "Доступ пока закрыт" : trialExpired ? "Пробный период завершён" : activeTrial ? "Пробный доступ активен" : "30 дней бесплатно"}
         </h1>
         <p className="trial__lead">
-          {trialExpired
+          {crmManaged
+            ? "Доступ к предметам назначается в «Мой Класс». Попроси сотрудника проверить твою карточку в CRM."
+            : trialExpired
             ? "Чтобы продолжить занятия, попроси репетитора открыть доступ."
             : activeTrial
               ? "Продолжай заниматься: практика, домашние задания, питомец и статистика уже доступны."
               : "Вам предоставляется бесплатный пробный доступ на 30 дней. Практика, домашние задания, питомец и статистика откроются сразу после запуска."}
         </p>
 
-        {!trialExpired && (
+        {!trialExpired && !crmManaged && (
           <div className="trial__until">
             <span>{activeTrial ? "Доступ открыт до" : "Если начать сегодня, доступ будет открыт до"}</span>
             <strong>{accessUntilLabel}</strong>
@@ -69,7 +72,9 @@ export default function TrialStart() {
 
         {error && <p className="trial__error" role="alert">{error}</p>}
 
-        {trialExpired ? (
+        {crmManaged ? (
+          <p className="trial__contact">После выдачи доступа открой приложение заново.</p>
+        ) : trialExpired ? (
           <p className="trial__contact">Напиши репетитору, чтобы продолжить обучение.</p>
         ) : activeTrial ? (
           <Button full iconRight={ArrowRight} onClick={() => navigate("/app", { replace: true })}>

@@ -67,6 +67,7 @@ export const studentApi = {
   // Switching from one demo student to another must never reuse their cached
   // homework, analytics or pet snapshot.
   clearSessionCache,
+  recordOpen: () => studentFetch("/api/profile/open", { method: "POST" }),
   profile: ({ subject, signal, timeoutMs } = {}) => studentFetch(
     `/api/profile${subject ? `?${new URLSearchParams({ subject })}` : ""}`,
     { signal, timeoutMs }

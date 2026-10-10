@@ -1,0 +1,3187 @@
+[
+  {
+    "sourceKey": "1.1-1",
+    "topic": "1.1. Проверочный тест",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "In summer, my family is _.",
+    "options": [
+      "a summer camp",
+      "at summer camp",
+      "summer camp"
+    ],
+    "correct": 1,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.1-2",
+    "topic": "1.1. Проверочный тест",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "The weather was rainy, so we stayed _ and read books.",
+    "options": [
+      "on home",
+      "in home",
+      "at home"
+    ],
+    "correct": 2,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.1-3",
+    "topic": "1.1. Проверочный тест",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "My aunt lives in another country. She lives _.",
+    "options": [
+      "abroad",
+      "in town",
+      "in the country"
+    ],
+    "correct": 0,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.1-4",
+    "topic": "1.1. Проверочный тест",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "We swam in the sea every day. We were _.",
+    "options": [
+      "in the mountains",
+      "at the seaside",
+      "at school"
+    ],
+    "correct": 1,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.1-5",
+    "topic": "1.1. Проверочный тест",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "My father’s sister is my _.",
+    "options": [
+      "cousin",
+      "granny",
+      "aunt"
+    ],
+    "correct": 2,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.1-6",
+    "topic": "1.1. Проверочный тест",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "There are lots of sweet red _ in the woods.",
+    "options": [
+      "clouds",
+      "berries",
+      "swings"
+    ],
+    "correct": 1,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.1-7",
+    "topic": "1.1. Проверочный тест",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "It is not hot today, but it is not cold. It is _.",
+    "options": [
+      "cool",
+      "hungry",
+      "strange"
+    ],
+    "correct": 0,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.1-8",
+    "topic": "1.1. Проверочный тест",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "The children played _ the swing.",
+    "options": [
+      "at",
+      "on",
+      "in"
+    ],
+    "correct": 1,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.1-9",
+    "topic": "1.1. Проверочный тест",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "In July we went to the forest to _ mushrooms.",
+    "options": [
+      "pick",
+      "climb",
+      "ride"
+    ],
+    "correct": 0,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.1-10",
+    "topic": "1.1. Проверочный тест",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "The trip was fantastic! We had a lot of _.",
+    "options": [
+      "a crown",
+      "a king",
+      "fun"
+    ],
+    "correct": 2,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.1-11",
+    "topic": "1.1. Проверочный тест",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "Elfin is a little elf from the _.",
+    "options": [
+      "Elf Kingdom",
+      "summer house",
+      "seaside"
+    ],
+    "correct": 0,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.1-12",
+    "topic": "1.1. Проверочный тест",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "We walked for five hours and wanted to eat. We were _.",
+    "options": [
+      "famous",
+      "cool",
+      "hungry"
+    ],
+    "correct": 2,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.2-1",
+    "topic": "1.2. Места и каникулы",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "За границей: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "abroad"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.2-2",
+    "topic": "1.2. Места и каникулы",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "В горах: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "in the mountains"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.2-3",
+    "topic": "1.2. Места и каникулы",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Дома: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "at home"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.2-4",
+    "topic": "1.2. Места и каникулы",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "В летнем лагере: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "at summer camp"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.2-5",
+    "topic": "1.2. Места и каникулы",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "У бабушки: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "at my granny’s"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.2-6",
+    "topic": "1.2. Места и каникулы",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "В деревне (за городом): _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "in the country"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.2-7",
+    "topic": "1.2. Места и каникулы",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "На побережье: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "at the seaside"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.2-8",
+    "topic": "1.2. Места и каникулы",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "В саду: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "in the garden"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.2-9",
+    "topic": "1.2. Места и каникулы",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "В лесу: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "in the woods",
+        "in a wood"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.2-10",
+    "topic": "1.2. Места и каникулы",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "В городе: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "in town"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.2-11",
+    "topic": "1.2. Места и каникулы",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "На каникулах: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "on holiday"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.2-12",
+    "topic": "1.2. Места и каникулы",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "В парке: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "in the park"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.3-1",
+    "topic": "1.3. Конструкции There is / There are в настоящем времени",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "a swimming pool? (Yes) — _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "There is a swimming pool."
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.3-2",
+    "topic": "1.3. Конструкции There is / There are в настоящем времени",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "any cinemas? (No) — _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "There aren't any cinemas."
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.3-3",
+    "topic": "1.3. Конструкции There is / There are в настоящем времени",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "a lake near the camp? (Yes) — _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "There is a lake near the camp."
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.3-4",
+    "topic": "1.3. Конструкции There is / There are в настоящем времени",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "any shops? (No) — _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "There aren't any shops."
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.3-5",
+    "topic": "1.3. Конструкции There is / There are в настоящем времени",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "a big dining hall? (Yes) — _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "There is a big dining hall."
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.3-6",
+    "topic": "1.3. Конструкции There is / There are в настоящем времени",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "a lot of games? (Yes) — _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "There are a lot of games."
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.4-1",
+    "topic": "1.4. Конструкции There is / are vs It is",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Look! _ a beautiful butterfly on the flower.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "There's"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.4-2",
+    "topic": "1.4. Конструкции There is / are vs It is",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "I like this summer house. _ very comfortable.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "It's"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.4-3",
+    "topic": "1.4. Конструкции There is / are vs It is",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "\"What's that noise in the bushes?\" — \"_ a little hedgehog.\"",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "It's"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.4-4",
+    "topic": "1.4. Конструкции There is / are vs It is",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "_ a train to the seaside at 9:00?",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "Is there"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.4-5",
+    "topic": "1.4. Конструкции There is / are vs It is",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "We cannot swim in the lake today. _ too cold.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "It's"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.4-6",
+    "topic": "1.4. Конструкции There is / are vs It is",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "_ a big green park near your school?",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "Is there"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.5-1",
+    "topic": "1.5. Люди и семья",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Родители: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "parents"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.5-2",
+    "topic": "1.5. Люди и семья",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Двоюродный брат / двоюродная сестра: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "cousin"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.5-3",
+    "topic": "1.5. Люди и семья",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Бабушка и дедушка: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "granny and grandad",
+        "grandparents"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.5-4",
+    "topic": "1.5. Люди и семья",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Тётя и дядя: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "aunt and uncle"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.5-5",
+    "topic": "1.5. Люди и семья",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Ученик: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "pupil"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.5-6",
+    "topic": "1.5. Люди и семья",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Друг: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "friend"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.5-7",
+    "topic": "1.5. Люди и семья",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Семья: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "family"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.5-8",
+    "topic": "1.5. Люди и семья",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Брат и сестра: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "brother and sister"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.6-1",
+    "topic": "1.6. Где были эти люди вчера? (was / were)",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Dan (in bed at 3:00 yesterday): _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "Dan was in bed."
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.6-2",
+    "topic": "1.6. Где были эти люди вчера? (was / were)",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Jack and Kate (at the cinema): _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "Jack and Kate were at the cinema."
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.6-3",
+    "topic": "1.6. Где были эти люди вчера? (was / were)",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Sue (at the railway station): _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "Sue was at the station.",
+        "Sue was at the railway station."
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.6-4",
+    "topic": "1.6. Где были эти люди вчера? (was / were)",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Mr and Mrs Hall (in a restaurant): _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "Mr and Mrs Hall were in a restaurant."
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.6-5",
+    "topic": "1.6. Где были эти люди вчера? (was / were)",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Ben (at the seaside): _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "Ben was at the seaside.",
+        "Ben was on the beach."
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.6-6",
+    "topic": "1.6. Где были эти люди вчера? (was / were)",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Mike and Liz (in the park): _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "Mike and Liz were in the park."
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.7-1",
+    "topic": "1.7. Настоящее или прошедшее время глагола to be",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "blanks",
+    "prompt": "Last year Liz _ 10, so she _ 11 now.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "was"
+      ],
+      [
+        "is"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.7-2",
+    "topic": "1.7. Настоящее или прошедшее время глагола to be",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "blanks",
+    "prompt": "Today the weather _ warm and sunny, but yesterday it _ very cold.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "is"
+      ],
+      [
+        "was"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.7-3",
+    "topic": "1.7. Настоящее или прошедшее время глагола to be",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "I _ hungry now. Can I have an apple, please?",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "am"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.7-4",
+    "topic": "1.7. Настоящее или прошедшее время глагола to be",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "I feel fine this morning, but I _ very tired last night.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "was"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.7-5",
+    "topic": "1.7. Настоящее или прошедшее время глагола to be",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Where _ you at 11:00 last Friday morning?",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "were"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.7-6",
+    "topic": "1.7. Настоящее или прошедшее время глагола to be",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Don’t buy those shoes. They _ too small for you now.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "are"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.7-7",
+    "topic": "1.7. Настоящее или прошедшее время глагола to be",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "This time last summer we _ in the mountains.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "were"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.7-8",
+    "topic": "1.7. Настоящее или прошедшее время глагола to be",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "blanks",
+    "prompt": "\"Where _ Sam and Joe?\" — \"I don’t know. They _ here five minutes ago.\"",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "are"
+      ],
+      [
+        "were"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.8-1",
+    "topic": "1.8. Погода и природа",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "Look at the sky! There are big dark _.",
+    "options": [
+      "mushrooms",
+      "clouds",
+      "berries"
+    ],
+    "correct": 1,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.8-2",
+    "topic": "1.8. Погода и природа",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "You can swim and catch fish in this _.",
+    "options": [
+      "river",
+      "family",
+      "flower"
+    ],
+    "correct": 0,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.8-3",
+    "topic": "1.8. Погода и природа",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "The sun is shining brightly. It is _.",
+    "options": [
+      "foggy",
+      "rainy",
+      "sunny"
+    ],
+    "correct": 2,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.8-4",
+    "topic": "1.8. Погода и природа",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "In summer the weather in Belarus is usually sunny and _.",
+    "options": [
+      "warm",
+      "hungry",
+      "strange"
+    ],
+    "correct": 0,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.8-5",
+    "topic": "1.8. Погода и природа",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "There are tall green _ in the wood.",
+    "options": [
+      "pearls",
+      "trees",
+      "pupils"
+    ],
+    "correct": 1,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.8-6",
+    "topic": "1.8. Погода и природа",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "We picked fresh sweet _ for breakfast.",
+    "options": [
+      "mountains",
+      "clouds",
+      "berries"
+    ],
+    "correct": 2,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.8-7",
+    "topic": "1.8. Погода и природа",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "Take your umbrella! It is _ today.",
+    "options": [
+      "rainy",
+      "cloudy",
+      "cool"
+    ],
+    "correct": 0,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.8-8",
+    "topic": "1.8. Погода и природа",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "We found big white _ under the trees.",
+    "options": [
+      "crowns",
+      "mushrooms",
+      "cousins"
+    ],
+    "correct": 1,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.8-9",
+    "topic": "1.8. Погода и природа",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "Put on your jacket. The wind is strong and it is _.",
+    "options": [
+      "sunny",
+      "warm",
+      "windy"
+    ],
+    "correct": 2,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.8-10",
+    "topic": "1.8. Погода и природа",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "In autumn the mornings are often _, and you cannot see the road well.",
+    "options": [
+      "foggy",
+      "famous",
+      "hot"
+    ],
+    "correct": 0,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.8-11",
+    "topic": "1.8. Погода и природа",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "It is pleasant to walk in the _ when the weather is hot.",
+    "options": [
+      "town",
+      "woods",
+      "home"
+    ],
+    "correct": 1,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.8-12",
+    "topic": "1.8. Погода и природа",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "High up in the _ the air is clean and cool.",
+    "options": [
+      "lake",
+      "cloud",
+      "mountains"
+    ],
+    "correct": 2,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.9-1",
+    "topic": "1.9. Утверждения и отрицания: was / were или wasn't / weren't",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "blanks",
+    "prompt": "We weren't happy with the hotel. Our room _ very small and it _ clean.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "was"
+      ],
+      [
+        "wasn't"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.9-2",
+    "topic": "1.9. Утверждения и отрицания: was / were или wasn't / weren't",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "blanks",
+    "prompt": "Nick _ at school last week because he _ ill. He is well now.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "wasn't"
+      ],
+      [
+        "was"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.9-3",
+    "topic": "1.9. Утверждения и отрицания: was / were или wasn't / weren't",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "blanks",
+    "prompt": "Yesterday _ Sunday, so the shops _ closed. They are open today.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "was"
+      ],
+      [
+        "were"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.9-4",
+    "topic": "1.9. Утверждения и отрицания: was / were или wasn't / weren't",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "blanks",
+    "prompt": "\"_ Kate and Bill at the party?\" — \"Kate _ there, but Bill _.\"",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "Were"
+      ],
+      [
+        "was"
+      ],
+      [
+        "wasn't"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.9-5",
+    "topic": "1.9. Утверждения и отрицания: was / were или wasn't / weren't",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Where are my keys? They _ on the table in the morning, but they aren't there now.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "were"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.9-6",
+    "topic": "1.9. Утверждения и отрицания: was / were или wasn't / weren't",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "blanks",
+    "prompt": "You _ at home last night. Where _ you?",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "weren't"
+      ],
+      [
+        "were"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.10-1",
+    "topic": "1.10. Составь вопросы с was / were",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "(late / you / this morning / why / were / ?) — _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "Why were you late this morning?"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.10-2",
+    "topic": "1.10. Составь вопросы с was / were",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "(difficult / your exam / was / ?) — _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "Was your exam difficult?"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.10-3",
+    "topic": "1.10. Составь вопросы с was / were",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "(last week / where / Sue and Chris / were / ?) — _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "Where were Sue and Chris last week?"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.10-4",
+    "topic": "1.10. Составь вопросы с was / were",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "(your new camera / how much / was / ?) — _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "How much was your new camera?"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.10-5",
+    "topic": "1.10. Составь вопросы с was / were",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "(angry / you / yesterday / why / were / ?) — _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "Why were you angry yesterday?"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.10-6",
+    "topic": "1.10. Составь вопросы с was / were",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "(nice / the weather / was / last week / ?) — _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "Was the weather nice last week?"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.11-1",
+    "topic": "1.11. Вставь подходящее место отдыха",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "We swam in the warm sea. We were _.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "at the seaside"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.11-2",
+    "topic": "1.11. Вставь подходящее место отдыха",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "My uncle lives in Italy. He lives _.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "abroad"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.11-3",
+    "topic": "1.11. Вставь подходящее место отдыха",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "September came, and all pupils are _.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "at school"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.11-4",
+    "topic": "1.11. Вставь подходящее место отдыха",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Dad is not at home now; he is busy _.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "at work"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.11-5",
+    "topic": "1.11. Вставь подходящее место отдыха",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "We climbed high peaks and took photos. We were _.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "in the mountains"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.11-6",
+    "topic": "1.11. Вставь подходящее место отдыха",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Mike didn't go to the village; he stayed _.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "in town"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.11-7",
+    "topic": "1.11. Вставь подходящее место отдыха",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Granny lives on a small farm. She lives _.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "in the country"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.11-8",
+    "topic": "1.11. Вставь подходящее место отдыха",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "The children rode their bikes along green alleys _.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "in the park"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.11-9",
+    "topic": "1.11. Вставь подходящее место отдыха",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Mum is watering beautiful roses _.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "in the garden"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.11-10",
+    "topic": "1.11. Вставь подходящее место отдыха",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "It was cold outside, so we drank hot tea _.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "at home"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.11-11",
+    "topic": "1.11. Вставь подходящее место отдыха",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Nikita made lots of new friends and lived in a tent _.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "at summer camp"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.11-12",
+    "topic": "1.11. Вставь подходящее место отдыха",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Nastya picked delicious berries among tall fir trees _.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "in the woods"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.12-1",
+    "topic": "1.12. Вторая форма глагола (Past Simple V2)",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Yesterday Nikita _ (go) to the country to visit his granny.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "went"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.12-2",
+    "topic": "1.12. Вторая форма глагола (Past Simple V2)",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "We _ (play) badminton in the garden two hours ago.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "played"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.12-3",
+    "topic": "1.12. Вторая форма глагола (Past Simple V2)",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "My sister _ (see) a funny little squirrel in the woods.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "saw"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.12-4",
+    "topic": "1.12. Вторая форма глагола (Past Simple V2)",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "They _ (help) their parents to clean the summer house.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "helped"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.12-5",
+    "topic": "1.12. Вторая форма глагола (Past Simple V2)",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Mike _ (take) his dog Lucky for a walk yesterday morning.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "took"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.12-6",
+    "topic": "1.12. Вторая форма глагола (Past Simple V2)",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Nastya _ (pick) sweet berries and made delicious jam.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "picked"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.12-7",
+    "topic": "1.12. Вторая форма глагола (Past Simple V2)",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "blanks",
+    "prompt": "We _ (eat) pizza and _ (drink) orange juice in the cafe.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "ate"
+      ],
+      [
+        "drank"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.12-8",
+    "topic": "1.12. Вторая форма глагола (Past Simple V2)",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "The children _ (dance) at the disco till late evening.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "danced"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.12-9",
+    "topic": "1.12. Вторая форма глагола (Past Simple V2)",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Dad _ (drive) our minibus to the seaside last Saturday.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "drove"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.12-10",
+    "topic": "1.12. Вторая форма глагола (Past Simple V2)",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "I _ (watch) an interesting film about wild animals yesterday.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "watched"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.12-11",
+    "topic": "1.12. Вторая форма глагола (Past Simple V2)",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Elfin _ (find) a beautiful white pearl under the tree.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "found"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.12-12",
+    "topic": "1.12. Вторая форма глагола (Past Simple V2)",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "We _ (have) a lot of fun during our summer holidays.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "had"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.13-1",
+    "topic": "1.13. Игры и занятия",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "In the afternoon we like to _ badminton on the grass.",
+    "options": [
+      "pick",
+      "play",
+      "climb"
+    ],
+    "correct": 1,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.13-2",
+    "topic": "1.13. Игры и занятия",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "The girls want to _ colourful flowers in the meadow.",
+    "options": [
+      "help",
+      "watch",
+      "pick"
+    ],
+    "correct": 2,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.13-3",
+    "topic": "1.13. Игры и занятия",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "I always _ my granny during my summer holidays.",
+    "options": [
+      "visit",
+      "ride",
+      "climb"
+    ],
+    "correct": 0,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.13-4",
+    "topic": "1.13. Игры и занятия",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "In the evening children _ at the disco.",
+    "options": [
+      "help",
+      "dance",
+      "pick"
+    ],
+    "correct": 1,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.13-5",
+    "topic": "1.13. Игры и занятия",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "On rainy days we stay at home and _ cartoons.",
+    "options": [
+      "watch",
+      "make",
+      "ride"
+    ],
+    "correct": 0,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.13-6",
+    "topic": "1.13. Игры и занятия",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "It is dangerous to _ a high mountain alone.",
+    "options": [
+      "visit",
+      "dance",
+      "climb"
+    ],
+    "correct": 2,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.13-7",
+    "topic": "1.13. Игры и занятия",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "Good children always _ their parents about the house.",
+    "options": [
+      "help",
+      "watch",
+      "ride"
+    ],
+    "correct": 0,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.13-8",
+    "topic": "1.13. Игры и занятия",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "We like to _ bikes along the river.",
+    "options": [
+      "pick",
+      "ride",
+      "play on"
+    ],
+    "correct": 1,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.13-9",
+    "topic": "1.13. Игры и занятия",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "During the trip Mike _ friends with Elfin.",
+    "options": [
+      "watched",
+      "picked",
+      "made"
+    ],
+    "correct": 2,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.13-10",
+    "topic": "1.13. Игры и занятия",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "At camp boys like to _ volleyball after lunch.",
+    "options": [
+      "play",
+      "ride",
+      "visit"
+    ],
+    "correct": 0,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.13-11",
+    "topic": "1.13. Игры и занятия",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "Little children like to _ on the slide in the playground.",
+    "options": [
+      "watch",
+      "play",
+      "help"
+    ],
+    "correct": 1,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.13-12",
+    "topic": "1.13. Игры и занятия",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "The fox saw the boy, got scared and _ away into the forest.",
+    "options": [
+      "went",
+      "played",
+      "climbed"
+    ],
+    "correct": 0,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.14-1",
+    "topic": "1.14. Вопросительные слова: What, Which, Who",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "_ is your best friend at school? — Maxim.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "Who"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.14-2",
+    "topic": "1.14. Вопросительные слова: What, Which, Who",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "_ way should we go? Left or right?",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "Which"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.14-3",
+    "topic": "1.14. Вопросительные слова: What, Which, Who",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "_ do you usually do in the evening? — I watch films.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "What"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.14-4",
+    "topic": "1.14. Вопросительные слова: What, Which, Who",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "_ sport do you prefer: football or volleyball?",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "Which"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.14-5",
+    "topic": "1.14. Вопросительные слова: What, Which, Who",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "_ helped you to tidy your room yesterday? — My brother.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "Who"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.14-6",
+    "topic": "1.14. Вопросительные слова: What, Which, Who",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "_ is your favourite summer month? — July.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "What",
+        "Which"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.15-1",
+    "topic": "1.15. Вопросы с How",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "\"_ are you?\" — \"I am 11 years old.\"",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "How old"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.15-2",
+    "topic": "1.15. Вопросы с How",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "\"_ did you stay at the seaside?\" — \"For two weeks.\"",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "How long"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.15-3",
+    "topic": "1.15. Вопросы с How",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "\"_ books did you read in summer?\" — \"Five books.\"",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "How many"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.15-4",
+    "topic": "1.15. Вопросы с How",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "\"_ do you go to the swimming pool?\" — \"Twice a week.\"",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "How often"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.15-5",
+    "topic": "1.15. Вопросы с How",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "\"_ was your ticket to Minsk?\" — \"It was 10 rubles.\"",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "How much"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.15-6",
+    "topic": "1.15. Вопросы с How",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "\"_ is this tall tree?\" — \"It is about 15 metres high.\"",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "How high",
+        "How tall"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.16-1",
+    "topic": "1.16. Составь устойчивые словосочетания",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Подбери дополнение к слову play.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "football and volleyball"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.16-2",
+    "topic": "1.16. Составь устойчивые словосочетания",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Подбери дополнение к слову pick.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "mushrooms and berries"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.16-3",
+    "topic": "1.16. Составь устойчивые словосочетания",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Подбери дополнение к слову visit.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "my grandparents"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.16-4",
+    "topic": "1.16. Составь устойчивые словосочетания",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Подбери дополнение к слову help.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "parents in the garden"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.16-5",
+    "topic": "1.16. Составь устойчивые словосочетания",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Подбери дополнение к слову dance.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "at the camp disco"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.16-6",
+    "topic": "1.16. Составь устойчивые словосочетания",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Подбери дополнение к слову watch.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "exciting films"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.16-7",
+    "topic": "1.16. Составь устойчивые словосочетания",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Подбери дополнение к слову climb.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "a high mountain"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.16-8",
+    "topic": "1.16. Составь устойчивые словосочетания",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Подбери дополнение к слову ride.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "bikes in the park"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.17-1",
+    "topic": "1.17. Найди лишнее слово",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "in the country — in town — at home — cousin: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "cousin"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.17-2",
+    "topic": "1.17. Найди лишнее слово",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "mum — dad — aunt — lake: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "lake"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.17-3",
+    "topic": "1.17. Найди лишнее слово",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "river — lake — mountain — pupil: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "pupil"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.17-4",
+    "topic": "1.17. Найди лишнее слово",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "sunny — rainy — cloudy — family: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "family"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.17-5",
+    "topic": "1.17. Найди лишнее слово",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "pick berries — pick flowers — pick mushrooms — watch films: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "watch films"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.17-6",
+    "topic": "1.17. Найди лишнее слово",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "play football — play volleyball — play badminton — climb a mountain: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "climb a mountain"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.17-7",
+    "topic": "1.17. Найди лишнее слово",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "king — crown — pearl — cousin: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "cousin"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.17-8",
+    "topic": "1.17. Найди лишнее слово",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "tired — hungry — strange — river: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "river"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.18-1",
+    "topic": "1.18. Порядковые числительные и даты",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "2nd July: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "the second of July"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.18-2",
+    "topic": "1.18. Порядковые числительные и даты",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "3rd August: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "the third of August"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.18-3",
+    "topic": "1.18. Порядковые числительные и даты",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "25th August: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "the twenty-fifth of August"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.18-4",
+    "topic": "1.18. Порядковые числительные и даты",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "31st August: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "the thirty-first of August"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.18-5",
+    "topic": "1.18. Порядковые числительные и даты",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "1st September: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "the first of September"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.18-6",
+    "topic": "1.18. Порядковые числительные и даты",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "12th June: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "the twelfth of June"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.19-1",
+    "topic": "1.19. Определи слово по описанию",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "The mother of your father or mother is your _.",
+    "options": [
+      "aunt",
+      "granny",
+      "sister"
+    ],
+    "correct": 1,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.19-2",
+    "topic": "1.19. Определи слово по описанию",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "A large area covered with trees and bushes is a _.",
+    "options": [
+      "wood",
+      "town",
+      "summer house"
+    ],
+    "correct": 0,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.19-3",
+    "topic": "1.19. Определи слово по описанию",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "A special place where children rest, sleep in tents or houses and do sports in summer is a _.",
+    "options": [
+      "mountain",
+      "garden",
+      "summer camp"
+    ],
+    "correct": 2,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.19-4",
+    "topic": "1.19. Определи слово по описанию",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "A small soft fruit that grows on bushes or small plants is a _.",
+    "options": [
+      "berry",
+      "cloud",
+      "flower"
+    ],
+    "correct": 0,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.19-5",
+    "topic": "1.19. Определи слово по описанию",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "A boy or a girl who goes to school and learns things is a _.",
+    "options": [
+      "king",
+      "pupil",
+      "monster"
+    ],
+    "correct": 1,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.19-6",
+    "topic": "1.19. Определи слово по описанию",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "The son or daughter of your uncle or aunt is your _.",
+    "options": [
+      "brother",
+      "grandad",
+      "cousin"
+    ],
+    "correct": 2,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.19-7",
+    "topic": "1.19. Определи слово по описанию",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "A precious shiny round object found in the sea that decorates a crown is a _.",
+    "options": [
+      "pearl",
+      "mushroom",
+      "butterfly"
+    ],
+    "correct": 0,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.19-8",
+    "topic": "1.19. Определи слово по описанию",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "choice",
+    "prompt": "A man who rules a country or kingdom and wears a crown is a _.",
+    "options": [
+      "king",
+      "pupil",
+      "tourist"
+    ],
+    "correct": 0,
+    "acceptedAnswers": []
+  },
+  {
+    "sourceKey": "1.20-1",
+    "topic": "1.20. Переведи словосочетания на русский язык",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Play on the swing: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "качаться на качелях"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.20-2",
+    "topic": "1.20. Переведи словосочетания на русский язык",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Pick mushrooms: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "собирать грибы"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.20-3",
+    "topic": "1.20. Переведи словосочетания на русский язык",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Dance at the disco: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "танцевать на дискотеке"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.20-4",
+    "topic": "1.20. Переведи словосочетания на русский язык",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Watch films: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "смотреть фильмы"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.20-5",
+    "topic": "1.20. Переведи словосочетания на русский язык",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Ride bikes: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "кататься на велосипедах"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.20-6",
+    "topic": "1.20. Переведи словосочетания на русский язык",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Climb a mountain: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "взбираться на гору"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.20-7",
+    "topic": "1.20. Переведи словосочетания на русский язык",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Help my parents: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "помогать родителям"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.20-8",
+    "topic": "1.20. Переведи словосочетания на русский язык",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Visit my granny: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "навещать бабушку"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.20-9",
+    "topic": "1.20. Переведи словосочетания на русский язык",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Make friends with: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "подружиться с"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.20-10",
+    "topic": "1.20. Переведи словосочетания на русский язык",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Have fun: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "веселиться"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.20-11",
+    "topic": "1.20. Переведи словосочетания на русский язык",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "In the mountains: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "в горах"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.20-12",
+    "topic": "1.20. Переведи словосочетания на русский язык",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "At the seaside: _",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "на побережье",
+        "у моря"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.21-1",
+    "topic": "1.21. Вставь пропущенное слово",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "We sang songs and played games; we had a lot of _.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "fun"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.21-2",
+    "topic": "1.21. Вставь пропущенное слово",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "After running twenty kilometers, the athletes were very _.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "tired"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.21-3",
+    "topic": "1.21. Вставь пропущенное слово",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "I haven't eaten since morning, so I am really _.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "hungry"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.21-4",
+    "topic": "1.21. Вставь пропущенное слово",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "It is not cold, but it is pleasantly _ under the big trees.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "cool"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.21-5",
+    "topic": "1.21. Вставь пропущенное слово",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "The animal had purple fur and six legs; it looked very _.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "strange"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.21-6",
+    "topic": "1.21. Вставь пропущенное слово",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Every evening Nastya wrote about her holiday adventures in her _.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "diary"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.21-7",
+    "topic": "1.21. Вставь пропущенное слово",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Dragons and unicorns are _ creatures; they are not real.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "imaginary"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.21-8",
+    "topic": "1.21. Вставь пропущенное слово",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "I saw an _ in the magazine about an English language school.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "ad"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.21-9",
+    "topic": "1.21. Вставь пропущенное слово",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Zubrionok is a popular Belarusian _ for schoolchildren.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "camp"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.21-10",
+    "topic": "1.21. Вставь пропущенное слово",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "This singer is very _; people all over the world know her.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "famous"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.21-11",
+    "topic": "1.21. Вставь пропущенное слово",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "This amusement ride is suitable for children in the 8–12 _.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "age group"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.21-12",
+    "topic": "1.21. Вставь пропущенное слово",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "I spent the whole summer with my loving _.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "family"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.22-1",
+    "topic": "1.22. Закончи предложения",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "In July, I like to go to the _ to swim in the sea.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "seaside",
+        "beach",
+        "lake"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.22-2",
+    "topic": "1.22. Закончи предложения",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "I usually travel abroad with my _.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "parents",
+        "family",
+        "friends"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.22-3",
+    "topic": "1.22. Закончи предложения",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "When I am at my granny's in the country, I can _ on the swing.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "play",
+        "sit"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.22-4",
+    "topic": "1.22. Закончи предложения",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "When we walk in the woods, we always pick sweet _.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "berries",
+        "mushrooms"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.22-5",
+    "topic": "1.22. Закончи предложения",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "At summer camp, children can easily make _ with other boys and girls.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "friends"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.22-6",
+    "topic": "1.22. Закончи предложения",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "When the weather is hot and sunny, I like to swim in the _.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "river",
+        "lake",
+        "sea"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.22-7",
+    "topic": "1.22. Закончи предложения",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Our summer holidays were fantastic because we had a lot of _.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "fun"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.22-8",
+    "topic": "1.22. Закончи предложения",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "We climbed high up the _ and saw the whole valley.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "mountain"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.22-9",
+    "topic": "1.22. Закончи предложения",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "In the evening we sat at home and watched _.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "films",
+        "cartoons",
+        "TV"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.22-10",
+    "topic": "1.22. Закончи предложения",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "Mum made a delicious jam from forest _.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "berries"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.22-11",
+    "topic": "1.22. Закончи предложения",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "There is a wooden summer _ in our green garden.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "house"
+      ]
+    ]
+  },
+  {
+    "sourceKey": "1.22-12",
+    "topic": "1.22. Закончи предложения",
+    "difficulty": "medium",
+    "explanation": null,
+    "hints": [],
+    "questionType": "text",
+    "prompt": "The baby smiled because the kitten was warm and _.",
+    "options": [],
+    "correct": 0,
+    "acceptedAnswers": [
+      [
+        "cool",
+        "fluffy",
+        "nice"
+      ]
+    ]
+  }
+]

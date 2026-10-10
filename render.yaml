@@ -21,3 +21,11 @@ services:
         generateValue: true
       - key: APP_URL
         sync: false
+      - key: MOYKLASS_API_KEY
+        sync: false
+      - key: MOYKLASS_WEBHOOK_SECRET
+        sync: false
+      - key: MOYKLASS_SUBJECT_MAP
+        sync: false
+      - key: MOYKLASS_ENFORCE_LINKS
+        sync: false

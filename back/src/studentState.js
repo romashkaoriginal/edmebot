@@ -1,5 +1,6 @@
 const db = require("./db");
 const seed = require("./data/seed");
+const { gradeAnswer } = require("./questionTypes");
 
 const XP_BY_DIFFICULTY = { easy: 10, medium: 15, hard: 25 };
 // Decay is recomputed in 30-minute steps so it reads as smooth wear rather than
@@ -94,6 +95,9 @@ function toProfile(row, student) {
     accessKind: student.access_kind ?? null,
     trialStartedAt: student.trial_started_at ? student.trial_started_at.toISOString?.() ?? String(student.trial_started_at) : null,
     trialUsed: Boolean(student.trial_used),
+    crmManaged: Boolean(student.moyklass_user_id),
+    crmRequired: process.env.MOYKLASS_ENFORCE_LINKS === "true",
+    crmLastSyncedAt: student.crm_last_synced_at ? student.crm_last_synced_at.toISOString?.() ?? String(student.crm_last_synced_at) : null,
     xp: row.xp,
     coins: row.coins,
     level: row.level,
@@ -266,7 +270,9 @@ async function recordMistake(studentId, task, selected, correct, executor = db) 
   );
 }
 
-async function gradePractice(student, task, selected, instanceId) {
+async function gradePractice(student, task, submission, instanceId) {
+  if (Number.isInteger(submission)) submission = { selected: submission };
+  const questionType = task.question_type ?? "choice";
   const outcome = await db.transaction(async (client) => {
     await ensure(student, client);
     const { rows: instances } = await client.query(
@@ -278,7 +284,8 @@ async function gradePractice(student, task, selected, instanceId) {
     if (!instances.length) return { error: "practice_instance_invalid" };
     const instance = instances[0];
     if (instance.answered_at) {
-      if (instance.selected !== selected) return { error: "practice_instance_already_answered" };
+      if (instance.selected !== submission.selected ||
+          JSON.stringify(instance.written_answer ?? null) !== JSON.stringify(submission.answer ?? null)) return { error: "practice_instance_already_answered" };
       const replayOrder = Array.isArray(instance.option_order) ? instance.option_order : null;
       return {
         correct: instance.correct,
@@ -303,11 +310,14 @@ async function gradePractice(student, task, selected, instanceId) {
     // map it back to the stored option before comparing. Instances created
     // before option shuffling have no order and are already in storage order.
     const optionOrder = Array.isArray(instance.option_order) ? instance.option_order : null;
-    const storedSelected = optionOrder ? optionOrder[selected] : selected;
-    if (optionOrder && !Number.isInteger(storedSelected)) {
+    const selected = submission.selected;
+    const storedSelected = questionType === "choice" && optionOrder ? optionOrder[selected] : selected;
+    if (questionType === "choice" && optionOrder && !Number.isInteger(storedSelected)) {
       return { error: "practice_instance_invalid" };
     }
-    const correct = storedSelected === task.correct;
+    const graded = gradeAnswer({ ...task, questionType, correctIndex: task.correct, acceptedAnswers: task.accepted_answers }, questionType === "choice" ? { selected: storedSelected } : submission);
+    if (graded.error) return { error: graded.error };
+    const correct = graded.correct;
 
     await client.query(
       `INSERT INTO attempts (student_id, task_id, selected, correct, practice_instance_id)
@@ -404,9 +414,9 @@ async function gradePractice(student, task, selected, instanceId) {
     await client.query(
       `UPDATE practice_question_instances
           SET answered_at = now(), selected = $2, correct = $3,
-              award_xp = $4, award_coins = $5, leveled_up = $6
+              award_xp = $4, award_coins = $5, leveled_up = $6, written_answer = $7
         WHERE id = $1`,
-      [instanceId, selected, correct, award.gained, award.coins, award.leveledUp]
+      [instanceId, selected, correct, award.gained, award.coins, award.leveledUp, submission.answer == null ? null : JSON.stringify(submission.answer)]
     );
     // Report the correct answer as a position in the list the student saw.
     const shownCorrectIndex = optionOrder ? optionOrder.indexOf(task.correct) : task.correct;

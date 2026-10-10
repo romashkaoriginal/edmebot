@@ -4,7 +4,7 @@ export function enrolledSubjects(profile) {
 }
 
 export function subjectLabel(subject) {
-  return subject === "Русский" ? "Русский язык" : subject;
+  return subject;
 }
 
-export const SUBJECTS = ["Математика", "Русский", "Химия", "Физика"];
+export const SUBJECTS = ["Математика", "Русский язык", "Химия", "Физика", "Английский язык"];
