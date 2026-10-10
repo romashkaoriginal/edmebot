@@ -1252,9 +1252,16 @@
     "difficulty": "medium",
     "explanation": null,
     "hints": [],
-    "questionType": "text",
+    "questionType": "order",
     "prompt": "(late / you / this morning / why / were / ?) — _",
-    "options": [],
+    "options": [
+      "Why",
+      "were",
+      "you",
+      "late",
+      "this",
+      "morning?"
+    ],
     "correct": 0,
     "acceptedAnswers": [
       [
@@ -1268,9 +1275,14 @@
     "difficulty": "medium",
     "explanation": null,
     "hints": [],
-    "questionType": "text",
+    "questionType": "order",
     "prompt": "(difficult / your exam / was / ?) — _",
-    "options": [],
+    "options": [
+      "Was",
+      "your",
+      "exam",
+      "difficult?"
+    ],
     "correct": 0,
     "acceptedAnswers": [
       [
@@ -1284,9 +1296,17 @@
     "difficulty": "medium",
     "explanation": null,
     "hints": [],
-    "questionType": "text",
+    "questionType": "order",
     "prompt": "(last week / where / Sue and Chris / were / ?) — _",
-    "options": [],
+    "options": [
+      "Where",
+      "were",
+      "Sue",
+      "and",
+      "Chris",
+      "last",
+      "week?"
+    ],
     "correct": 0,
     "acceptedAnswers": [
       [
@@ -1300,9 +1320,16 @@
     "difficulty": "medium",
     "explanation": null,
     "hints": [],
-    "questionType": "text",
+    "questionType": "order",
     "prompt": "(your new camera / how much / was / ?) — _",
-    "options": [],
+    "options": [
+      "How",
+      "much",
+      "was",
+      "your",
+      "new",
+      "camera?"
+    ],
     "correct": 0,
     "acceptedAnswers": [
       [
@@ -1316,9 +1343,15 @@
     "difficulty": "medium",
     "explanation": null,
     "hints": [],
-    "questionType": "text",
+    "questionType": "order",
     "prompt": "(angry / you / yesterday / why / were / ?) — _",
-    "options": [],
+    "options": [
+      "Why",
+      "were",
+      "you",
+      "angry",
+      "yesterday?"
+    ],
     "correct": 0,
     "acceptedAnswers": [
       [
@@ -1332,9 +1365,16 @@
     "difficulty": "medium",
     "explanation": null,
     "hints": [],
-    "questionType": "text",
+    "questionType": "order",
     "prompt": "(nice / the weather / was / last week / ?) — _",
-    "options": [],
+    "options": [
+      "Was",
+      "the",
+      "weather",
+      "nice",
+      "last",
+      "week?"
+    ],
     "correct": 0,
     "acceptedAnswers": [
       [
@@ -2121,13 +2161,19 @@
     "difficulty": "medium",
     "explanation": null,
     "hints": [],
-    "questionType": "text",
-    "prompt": "Подбери дополнение к слову play.",
-    "options": [],
+    "questionType": "match",
+    "prompt": "Соедини слова, чтобы получились словосочетания.",
+    "options": [
+      "play",
+      "pick"
+    ],
     "correct": 0,
     "acceptedAnswers": [
       [
         "football and volleyball"
+      ],
+      [
+        "mushrooms and berries"
       ]
     ]
   },
@@ -2137,13 +2183,19 @@
     "difficulty": "medium",
     "explanation": null,
     "hints": [],
-    "questionType": "text",
-    "prompt": "Подбери дополнение к слову pick.",
-    "options": [],
+    "questionType": "match",
+    "prompt": "Соедини слова, чтобы получились словосочетания.",
+    "options": [
+      "pick",
+      "visit"
+    ],
     "correct": 0,
     "acceptedAnswers": [
       [
         "mushrooms and berries"
+      ],
+      [
+        "my grandparents"
       ]
     ]
   },
@@ -2153,13 +2205,19 @@
     "difficulty": "medium",
     "explanation": null,
     "hints": [],
-    "questionType": "text",
-    "prompt": "Подбери дополнение к слову visit.",
-    "options": [],
+    "questionType": "match",
+    "prompt": "Соедини слова, чтобы получились словосочетания.",
+    "options": [
+      "visit",
+      "help"
+    ],
     "correct": 0,
     "acceptedAnswers": [
       [
         "my grandparents"
+      ],
+      [
+        "parents in the garden"
       ]
     ]
   },
@@ -2169,13 +2227,19 @@
     "difficulty": "medium",
     "explanation": null,
     "hints": [],
-    "questionType": "text",
-    "prompt": "Подбери дополнение к слову help.",
-    "options": [],
+    "questionType": "match",
+    "prompt": "Соедини слова, чтобы получились словосочетания.",
+    "options": [
+      "help",
+      "dance"
+    ],
     "correct": 0,
     "acceptedAnswers": [
       [
         "parents in the garden"
+      ],
+      [
+        "at the camp disco"
       ]
     ]
   },
@@ -2185,13 +2249,19 @@
     "difficulty": "medium",
     "explanation": null,
     "hints": [],
-    "questionType": "text",
-    "prompt": "Подбери дополнение к слову dance.",
-    "options": [],
+    "questionType": "match",
+    "prompt": "Соедини слова, чтобы получились словосочетания.",
+    "options": [
+      "dance",
+      "watch"
+    ],
     "correct": 0,
     "acceptedAnswers": [
       [
         "at the camp disco"
+      ],
+      [
+        "exciting films"
       ]
     ]
   },
@@ -2201,13 +2271,19 @@
     "difficulty": "medium",
     "explanation": null,
     "hints": [],
-    "questionType": "text",
-    "prompt": "Подбери дополнение к слову watch.",
-    "options": [],
+    "questionType": "match",
+    "prompt": "Соедини слова, чтобы получились словосочетания.",
+    "options": [
+      "watch",
+      "climb"
+    ],
     "correct": 0,
     "acceptedAnswers": [
       [
         "exciting films"
+      ],
+      [
+        "a high mountain"
       ]
     ]
   },
@@ -2217,13 +2293,19 @@
     "difficulty": "medium",
     "explanation": null,
     "hints": [],
-    "questionType": "text",
-    "prompt": "Подбери дополнение к слову climb.",
-    "options": [],
+    "questionType": "match",
+    "prompt": "Соедини слова, чтобы получились словосочетания.",
+    "options": [
+      "climb",
+      "ride"
+    ],
     "correct": 0,
     "acceptedAnswers": [
       [
         "a high mountain"
+      ],
+      [
+        "bikes in the park"
       ]
     ]
   },
@@ -2233,13 +2315,19 @@
     "difficulty": "medium",
     "explanation": null,
     "hints": [],
-    "questionType": "text",
-    "prompt": "Подбери дополнение к слову ride.",
-    "options": [],
+    "questionType": "match",
+    "prompt": "Соедини слова, чтобы получились словосочетания.",
+    "options": [
+      "ride",
+      "play"
+    ],
     "correct": 0,
     "acceptedAnswers": [
       [
         "bikes in the park"
+      ],
+      [
+        "football and volleyball"
       ]
     ]
   },

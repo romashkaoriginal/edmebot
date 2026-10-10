@@ -46,7 +46,7 @@ router.get("/series", async (req, res, next) => {
         : [];
     const { rows } = await db.query(
       `SELECT id, topic, subject, prompt, options, difficulty, hints, question_type AS "questionType",
-              jsonb_array_length(accepted_answers) AS "blankCount",
+              jsonb_array_length(accepted_answers) AS "blankCount", accepted_answers AS "acceptedAnswers",
               correct AS "correctIndex", explanation
          FROM tasks WHERE grade = $1 AND subject = $2
          ORDER BY id ASC`,
@@ -68,9 +68,11 @@ router.get("/series", async (req, res, next) => {
         // storage order makes "А" always right. Shuffle per instance and keep
         // the permutation so the answer route can map the pick back.
         const optionCount = Array.isArray(task.options) ? task.options.length : 0;
-        const optionOrder = shuffle(Array.from({ length: optionCount }, (_, i) => i));
+        const optionOrder = task.questionType === "match" ? Array.from({ length: optionCount }, (_, i) => i) : shuffle(Array.from({ length: optionCount }, (_, i) => i));
         return {
           ...task,
+          pairChoices: task.questionType === "match" ? shuffle(task.acceptedAnswers.map((variants) => variants[0])) : undefined,
+          acceptedAnswers: undefined,
           id: String(task.id),
           instanceId: crypto.randomUUID(),
           options: optionOrder.map((source) => task.options[source]),

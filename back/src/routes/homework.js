@@ -95,7 +95,7 @@ router.get("/:id/tasks", async (req, res, next) => {
          FROM homework_questions WHERE homework_id = $1 ORDER BY position ASC, id ASC`,
       [hw.id]
     );
-    res.json({ homework: hw, tasks: assembleHomeworkTasks(hw, bankRows, ownRows).map(({ acceptedAnswers, ...task }) => ({ ...task, blankCount: acceptedAnswers.length })) });
+    res.json({ homework: hw, tasks: assembleHomeworkTasks(hw, bankRows, ownRows).map(({ acceptedAnswers, ...task }) => ({ ...task, blankCount: acceptedAnswers.length, pairChoices: task.questionType === "match" ? acceptedAnswers.map((variants) => variants[0]).sort() : undefined })) });
   } catch (e) {
     next(e);
   }

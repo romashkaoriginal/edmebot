@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js",
+    "dev": "node --watch index.js",
     "test": "node --test",
     "moyklass:check": "node scripts/moyklass-check.js"
   },
@@ -19,14 +19,11 @@
     "express": "5.2.1",
     "express-rate-limit": "8.6.1",
     "helmet": "8.3.0",
-    "multer": "2.2.0",
+    "multer": "2.4.0",
     "node-telegram-bot-api": "1.2.0",
     "pg": "8.22.0",
     "read-excel-file": "9.3.5",
     "write-excel-file": "4.1.1",
     "yauzl": "3.4.0"
-  },
-  "devDependencies": {
-    "nodemon": "3.1.14"
   }
 }

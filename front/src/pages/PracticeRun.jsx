@@ -70,7 +70,7 @@ export default function PracticeRun() {
     if (loadVersion === 0) {
       try {
         const cached = JSON.parse(localStorage.getItem(sessionKey) || "null");
-        if (cached && Date.now() - cached.savedAt < SESSION_TTL && Array.isArray(cached.tasks) && cached.tasks.length && cached.tasks.every((item) => item.questionType === "text" || item.questionType === "blanks" || Number.isInteger(item.correctIndex))) {
+        if (cached && Date.now() - cached.savedAt < SESSION_TTL && Array.isArray(cached.tasks) && cached.tasks.length && cached.tasks.every((item) => ["text", "blanks", "order", "match"].includes(item.questionType) || Number.isInteger(item.correctIndex))) {
           setTasks(cached.tasks);
           setIdx(Math.min(cached.idx ?? 0, cached.tasks.length - 1));
           setSelected(cached.selected ?? null);
@@ -197,7 +197,7 @@ export default function PracticeRun() {
     setActionError("");
     try {
       const data = await studentApi.answer({ taskId: task.id, instanceId: task.instanceId, ...(task.questionType === "choice" || !task.questionType ? { selected: answer } : { answer }) });
-      if (task.questionType === "text" || task.questionType === "blanks") answerHaptic(data.correct);
+      if (["text", "blanks", "order", "match"].includes(task.questionType)) answerHaptic(data.correct);
       const serverGraded = data.correct ? "correct" : "wrong";
       const savedFeedback = { ...nextFeedback, explanation: data.explanation, commonMistake: data.commonMistake, correctIndex: data.correctIndex, acceptedAnswers: data.acceptedAnswers, award: data.award };
       setSelected(answer);
@@ -286,8 +286,8 @@ export default function PracticeRun() {
             {hintText && !graded && <div className="pr__hint"><Lightbulb size={16} /><span>{hintText}</span></div>}
           </div>
 
-          {task.questionType === "text" || task.questionType === "blanks"
-            ? <WrittenAnswer questionType={task.questionType} prompt={task.prompt} blankCount={task.blankCount} value={selected} onChange={setSelected} onSubmit={submitWrittenAnswer} disabled={checking} graded={graded} acceptedAnswers={feedback?.acceptedAnswers} submitLabel={checking ? "Проверяем…" : "Проверить"} />
+          {["text", "blanks", "order", "match"].includes(task.questionType)
+            ? <WrittenAnswer key={task.id} options={task.options} pairChoices={task.pairChoices} questionType={task.questionType} prompt={task.prompt} blankCount={task.blankCount} value={selected} onChange={setSelected} onSubmit={submitWrittenAnswer} disabled={checking} graded={graded} acceptedAnswers={feedback?.acceptedAnswers} submitLabel={checking ? "Проверяем…" : "Проверить"} />
             : <OptionList options={task.options} selected={selected} onSelect={selectAnswer} state={graded} correctIndex={feedback?.correctIndex} disabled={!!graded} />}
           <div className="run__question-actions">
             {idx > 0 && <Button variant="soft" icon={ArrowLeft} onClick={() => restoreQuestion(idx - 1)}>Назад</Button>}

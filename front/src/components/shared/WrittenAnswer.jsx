@@ -1,13 +1,15 @@
 import { useRef } from "react";
 import { Check, X, PencilLine, ArrowRight } from "lucide-react";
 import "./WrittenAnswer.css";
+import InteractiveAnswer from "./InteractiveAnswer";
 
-export default function WrittenAnswer({ questionType, prompt, blankCount, value, onChange, onSubmit, disabled, graded, acceptedAnswers, submitLabel = "Проверить" }) {
+export default function WrittenAnswer({ questionType, prompt, blankCount, value, onChange, onSubmit, disabled, graded, acceptedAnswers, options, pairChoices, submitLabel = "Проверить" }) {
   const inputs = useRef([]);
   const isText = questionType === "text";
   const values = isText ? [typeof value === "string" ? value : ""] : Array.isArray(value) ? value : Array(blankCount || 1).fill("");
   const complete = values.every((item) => item.trim());
   const parts = !isText ? String(prompt ?? "").split("_") : [];
+  if (questionType === "order" || questionType === "match") return <InteractiveAnswer {...{ questionType, options, pairChoices, value, onChange, onSubmit, disabled, graded, acceptedAnswers, submitLabel }} />;
 
   function update(index, next) {
     if (isText) onChange(next);

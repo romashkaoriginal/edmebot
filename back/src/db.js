@@ -9,7 +9,7 @@ const connectionString = process.env.DATABASE_URL;
 // Bump whenever SCHEMA changes. init() skips the whole schema block when the
 // recorded version is already current, so a new CREATE/ALTER never reaches an
 // existing database unless this number moves.
-const SCHEMA_VERSION = 8;
+const SCHEMA_VERSION = 9;
 const databaseConfig = buildDatabaseConfig(connectionString);
 const pool = new Pool(databaseConfig);
 
@@ -167,7 +167,7 @@ ALTER TABLE tasks DROP CONSTRAINT IF EXISTS tasks_correct_check;
 ALTER TABLE tasks ADD CONSTRAINT tasks_correct_check
   CHECK (question_type <> 'choice' OR (correct >= 0 AND correct < jsonb_array_length(options))) NOT VALID;
 ALTER TABLE tasks DROP CONSTRAINT IF EXISTS tasks_question_type_check;
-ALTER TABLE tasks ADD CONSTRAINT tasks_question_type_check CHECK (question_type IN ('choice', 'text', 'blanks')) NOT VALID;
+ALTER TABLE tasks ADD CONSTRAINT tasks_question_type_check CHECK (question_type IN ('choice', 'text', 'blanks', 'order', 'match')) NOT VALID;
 
 CREATE TABLE IF NOT EXISTS homework (
   id           BIGSERIAL PRIMARY KEY,
@@ -252,7 +252,7 @@ CREATE INDEX IF NOT EXISTS idx_homework_questions_homework ON homework_questions
 ALTER TABLE homework_questions ADD COLUMN IF NOT EXISTS question_type TEXT NOT NULL DEFAULT 'choice';
 ALTER TABLE homework_questions ADD COLUMN IF NOT EXISTS accepted_answers JSONB NOT NULL DEFAULT '[]';
 ALTER TABLE homework_questions DROP CONSTRAINT IF EXISTS homework_questions_question_type_check;
-ALTER TABLE homework_questions ADD CONSTRAINT homework_questions_question_type_check CHECK (question_type IN ('choice', 'text', 'blanks')) NOT VALID;
+ALTER TABLE homework_questions ADD CONSTRAINT homework_questions_question_type_check CHECK (question_type IN ('choice', 'text', 'blanks', 'order', 'match')) NOT VALID;
 
 CREATE TABLE IF NOT EXISTS attempts (
   id           BIGSERIAL PRIMARY KEY,
@@ -521,7 +521,7 @@ async function seedEnglishGrade5() {
   }));
   await transaction(async (client) => {
     const marker = await client.query(
-      "INSERT INTO content_seeds (key) VALUES ('english-grade5-pdf-v1') ON CONFLICT DO NOTHING RETURNING key"
+      "INSERT INTO content_seeds (key) VALUES ('english-grade5-pdf-v2') ON CONFLICT DO NOTHING RETURNING key"
     );
     if (!marker.rowCount) return;
     await client.query(
@@ -534,7 +534,7 @@ async function seedEnglishGrade5() {
          difficulty text, hints jsonb, "questionType" text, "acceptedAnswers" jsonb,
          "sourceKey" text
        )
-     ON CONFLICT (source_key) DO NOTHING`,
+     ON CONFLICT (source_key) DO UPDATE SET question_type = EXCLUDED.question_type, options = EXCLUDED.options, accepted_answers = EXCLUDED.accepted_answers, prompt = EXCLUDED.prompt`,
       [JSON.stringify(questions)]
     );
   });

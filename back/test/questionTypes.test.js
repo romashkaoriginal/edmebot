@@ -31,3 +31,21 @@ test("English grade 5 data covers all exercises with valid answer shapes", () =>
     if (item.questionType === "blanks") assert.equal(item.prompt.split("_").length - 1, item.acceptedAnswers.length, item.sourceKey);
   }
 });
+
+test("word tiles preserve duplicates and reject words outside the bank", () => {
+  const task = cleanQuestionAnswer({ questionType: "order", acceptedAnswers: [["I think I can."]] }).value;
+  assert.equal(gradeAnswer(task, { answer: ["I", "think", "I", "can."] }).correct, true);
+  assert.equal(gradeAnswer(task, { answer: ["I", "I", "think", "can."] }).correct, false);
+  assert.equal(gradeAnswer(task, { answer: ["I", "think", "you", "can."] }).error, "invalid_answers");
+});
+
+test("matching checks each left label, rejects ambiguous pairs, and works in homework", () => {
+  const spec = cleanQuestionAnswer({ questionType: "match", options: ["play", "pick"], acceptedAnswers: [["football"], ["berries"]] });
+  assert.equal(spec.error, undefined);
+  assert.equal(gradeAnswer(spec.value, { answer: ["football", "berries"] }).correct, true);
+  assert.equal(gradeAnswer(spec.value, { answer: ["berries", "football"] }).correct, false);
+  assert.equal(gradeAnswer(spec.value, { answer: ["football"] }).error, "invalid_answers");
+  assert.equal(cleanQuestionAnswer({ questionType: "match", options: ["a", "b"], acceptedAnswers: [["same"], ["same"]] }).error, "invalid_pairs");
+  const tasks = assembleHomeworkTasks({ task_ids: [] }, [], [{ id: 1, ...spec.value }]);
+  assert.equal(gradeHomeworkAnswers(tasks, [{ taskId: "hq-1", answer: ["football", "berries"] }]).graded[0].correct, true);
+});

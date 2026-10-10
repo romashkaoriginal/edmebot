@@ -534,13 +534,13 @@ export default function HomeworkAdmin() {
                       <NewQuestionForm
                         form={newQuestionForm}
                         error={newQuestionError}
-                        onOption={setNewQuestionOption}
+                        onOptions={(options) => setNewQuestionForm((f) => ({ ...f, options }))} onOption={setNewQuestionOption}
                         onAddOption={addNewQuestionOption}
                         onRemoveOption={removeNewQuestionOption}
                         onPrompt={(prompt) => setNewQuestionForm((f) => ({ ...f, prompt }))}
                         onExplanation={(explanation) => setNewQuestionForm((f) => ({ ...f, explanation }))}
                         onCorrect={(correct) => setNewQuestionForm((f) => ({ ...f, correct }))}
-                        onType={(questionType) => setNewQuestionForm((f) => ({ ...f, questionType, acceptedAnswers: [[""]] }))}
+                        onType={(questionType) => setNewQuestionForm((f) => ({ ...f, questionType, options: ["", ""], acceptedAnswers: questionType === "match" ? [[""], [""]] : [[""]] }))}
                         onAcceptedAnswers={(acceptedAnswers) => setNewQuestionForm((f) => ({ ...f, acceptedAnswers }))}
                         onSubmit={addQuestionToHomework}
                       />
@@ -617,7 +617,7 @@ function initials(name) {
 // <form>, and a nested <form> is invalid HTML: the browser flattens it, so a
 // submit-type button in here would submit the outer homework form instead of
 // just adding the question.
-function NewQuestionForm({ form, error, onOption, onAddOption, onRemoveOption, onPrompt, onExplanation, onCorrect, onType, onAcceptedAnswers, onSubmit }) {
+function NewQuestionForm({ form, error, onOptions, onOption, onAddOption, onRemoveOption, onPrompt, onExplanation, onCorrect, onType, onAcceptedAnswers, onSubmit }) {
   return (
     <div className="aform" style={{ padding: "var(--sp-3)", background: "var(--surface-2)", borderRadius: "var(--r-md)" }}>
       <label className="afield">
@@ -635,6 +635,8 @@ function NewQuestionForm({ form, error, onOption, onAddOption, onRemoveOption, o
           <option value="choice">Выбор одного варианта</option>
           <option value="text">Написать ответ</option>
           <option value="blanks">Несколько пропусков</option>
+                <option value="order">Сборка предложения</option>
+                <option value="match">Сопоставление пар</option>
         </select>
         {form.questionType === "blanks" && <small>Обозначьте каждый пропуск знаком _ в условии вопроса.</small>}
       </label>
@@ -661,7 +663,7 @@ function NewQuestionForm({ form, error, onOption, onAddOption, onRemoveOption, o
         {form.options.length < 6 && (
           <Button type="button" variant="soft" size="sm" icon={Plus} onClick={onAddOption}>Добавить вариант</Button>
         )}
-      </div> : <FreeAnswerEditor questionType={form.questionType} acceptedAnswers={form.acceptedAnswers} onChange={onAcceptedAnswers} />}
+      </div> : <FreeAnswerEditor options={form.options} onOptionsChange={(options) => onOptions(options)} questionType={form.questionType} acceptedAnswers={form.acceptedAnswers} onChange={onAcceptedAnswers} />}
       <label className="afield">
         <span>Объяснение (необязательно)</span>
         <textarea

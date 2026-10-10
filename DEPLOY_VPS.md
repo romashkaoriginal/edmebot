@@ -192,3 +192,11 @@ ssh Edmepets "certbot certonly --webroot -w /var/www/certbot -d www.edme.of.by -
 
 (и добавить `edme.of.by` обратно в `server_name` в `front/nginx.conf`, если
 уберут `www`-редирект).
+
+## Автоматическая выкладка
+
+Push в main запускает CI: audit, backend-тесты, frontend lint и сборку. После успешных проверок job deploy отправляет точный SHA на VPS. Скрипт ops/deploy-vps.sh блокирует параллельные выкладки, проверяет чистоту tracked-файлов, применяет fast-forward, пересобирает Docker и ждёт API health. Устаревший SHA пропускается. Ошибка проверки здоровья завершает CI с ошибкой.
+
+GitHub Secrets: VPS_DEPLOY_KEY и VPS_KNOWN_HOSTS. На VPS ключ ограничен forced command /usr/local/bin/edmebot-ci-deploy; shell, forwarding и PTY для него отключены. При изменении ops/deploy-vps.sh обновите установленный скрипт через scp и chmod 700.
+
+Серверные изменения перед релизом 85cf728 сохранены в stash pre-deploy snapshot before 85cf728. Не применяйте этот stash целиком поверх новой версии.

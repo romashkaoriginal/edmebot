@@ -534,10 +534,12 @@ export default function Tasks() {
 
             <label className="afield">
               <span>Тип ответа</span>
-              <select className="aselect" value={form.questionType} onChange={(e) => setForm({ ...form, questionType: e.target.value, acceptedAnswers: [[""]] })}>
+              <select className="aselect" value={form.questionType} onChange={(e) => setForm({ ...form, questionType: e.target.value, options: ["", ""], acceptedAnswers: e.target.value === "match" ? [[""], [""]] : [[""]] })}>
                 <option value="choice">Выбор одного варианта</option>
                 <option value="text">Написать ответ</option>
                 <option value="blanks">Несколько пропусков</option>
+                <option value="order">Сборка предложения</option>
+                <option value="match">Сопоставление пар</option>
               </select>
               {form.questionType === "blanks" && <small>Обозначьте каждый пропуск знаком _ в условии вопроса.</small>}
             </label>
@@ -573,7 +575,7 @@ export default function Tasks() {
                   Добавить вариант
                 </Button>
               )}
-            </div> : <FreeAnswerEditor questionType={form.questionType} acceptedAnswers={form.acceptedAnswers} onChange={(acceptedAnswers) => setForm({ ...form, acceptedAnswers })} />}
+            </div> : <FreeAnswerEditor options={form.options} onOptionsChange={(options) => setForm((f) => ({ ...f, options }))} questionType={form.questionType} acceptedAnswers={form.acceptedAnswers} onChange={(acceptedAnswers) => setForm((f) => ({ ...f, acceptedAnswers }))} />}
 
             <label className="afield">
               <span>Пояснение (необязательно)</span>
