@@ -1,15 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "../router";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, ArrowRight, CircleHelp, Info, Lightbulb, PartyPopper, RefreshCw, X } from "lucide-react";
+import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
+import { ArrowRight, CircleHelp, Lightbulb, PartyPopper, RefreshCw, X } from "lucide-react";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import OptionList from "../components/shared/OptionList";
 import KnowledgeMap from "../components/shared/KnowledgeMap";
+import QuestionStage, { QuestionCard } from "../components/run/QuestionStage";
+import RunFooter from "../components/run/RunFooter";
+import RunProgress from "../components/run/RunProgress";
+import ConfettiBurst from "../components/run/ConfettiBurst";
+import SoundToggle from "../components/run/SoundToggle";
 import { isAuthError, studentApi } from "../api/student";
 import { subjectLabel } from "../utils/subjects";
 import { useApp } from "../store/AppStore";
-import { answerHaptic } from "../utils/haptics";
+import { answerHaptic, tapHaptic } from "../utils/haptics";
+import { answerPrompt, comboAt, feedbackTitle, isComboMilestone } from "../utils/answers";
 import useModalFocus from "../hooks/useModalFocus";
 import useBodyScrollLock from "../hooks/useBodyScrollLock";
 import "./RunMode.css";
@@ -19,7 +25,7 @@ const SESSION_TTL = 6 * 60 * 60 * 1000;
 export default function DiagnosticRun() {
   const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
-  const { hydrate } = useApp();
+  const { hydrate, profile } = useApp();
   // One diagnostic now covers every enrolled subject, so the cached session is
   // keyed per student rather than per subject.
   const sessionKey = useMemo(() => {
@@ -42,6 +48,10 @@ export default function DiagnosticRun() {
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [loadVersion, setLoadVersion] = useState(0);
+  // 1 = the next question slides in from the right, -1 = "back" from the left.
+  const [direction, setDirection] = useState(1);
+  // True only while the answer on screen was graded just now (see RunFooter).
+  const [fresh, setFresh] = useState(false);
   const explanationRef = useRef(null);
   useModalFocus(explanationRef, { active: showExplanation, onClose: () => setShowExplanation(false) });
   useBodyScrollLock();
@@ -91,7 +101,6 @@ export default function DiagnosticRun() {
   // With several subjects in one run, label each question so the switch from
   // one subject to the next is not disorienting.
   const multiSubject = new Set((questions ?? []).map((item) => item.subject)).size > 1;
-  const progress = questions?.length ? ((idx + (graded ? 1 : 0)) / questions.length) * 100 : 0;
   const hasProgress = idx > 0 || graded || answers.length > 0;
 
   function exitRun() {
@@ -101,6 +110,8 @@ export default function DiagnosticRun() {
 
   function restoreQuestion(target) {
     const saved = responses[target];
+    setDirection(target < idx ? -1 : 1);
+    setFresh(false);
     setIdx(target);
     setSelected(saved?.selected ?? null);
     setGraded(saved?.graded ?? null);
@@ -110,8 +121,17 @@ export default function DiagnosticRun() {
     setSubmitError("");
   }
 
-  function selectAnswer(answer) {
+  function pickOption(answer) {
     if (graded) return;
+    if (answer !== selected) tapHaptic();
+    setSelected(answer);
+    setSubmitError("");
+  }
+
+  // `answer` is null for "Не знаю": graded as a miss without picking an option.
+  function gradeAnswer(answer) {
+    if (graded) return;
+    setFresh(true);
     setSelected(answer);
     setSubmitError("");
     const correct = answer === question.correctIndex;
@@ -151,7 +171,7 @@ export default function DiagnosticRun() {
   }
 
   if (!questions.length) {
-    return <div className="run"><div className="run__body"><Card pad="lg" className="run__state-card"><h1>Вопросы ещё не готовы</h1><p>Для выбранного класса и предмета пока нет заданий. Сообщи репетитору.</p><Button variant="soft" onClick={() => navigate("/app")}>На главную</Button></Card></div></div>;
+    return <div className="run"><div className="run__body"><Card pad="lg" className="run__state-card"><h1>Вопросы ещё не готовы</h1><p>Для выбранного класса и предмета пока не хватает заданий. Выбери предмет и класс, для которых тест уже готов.</p><Button variant="soft" icon={RefreshCw} onClick={() => navigate("/app/onboarding", { replace: true })}>Выбрать предмет и класс</Button></Card></div></div>;
   }
 
   if (done) {
@@ -159,40 +179,54 @@ export default function DiagnosticRun() {
   }
 
   const sheetText = graded ? feedback?.explanation : question.hints?.[0];
+  const marks = questions.map((_, index) => (index === idx ? graded : responses[index]?.graded) ?? undefined);
+  const combo = graded === "correct" ? comboAt(marks, idx) : 0;
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className="run run--diagnostic">
       <header className="run__top">
         <button className="run__close" onClick={exitRun} aria-label="Выйти из диагностики"><X size={22} strokeWidth={2.4} /></button>
-        <div className="run__progress" role="progressbar" aria-label="Прогресс диагностики" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(progress)}><div className="run__progress-fill" style={{ transform: `scaleX(${progress / 100})` }} /></div>
-        <span className="run__counter font-display">{idx + 1}/{questions.length}</span>
+        <RunProgress marks={marks} current={idx} counter={`${idx + 1}/${questions.length}`} label="Прогресс диагностики" />
+        <SoundToggle />
       </header>
 
       <div className="run__body">
-        <Card className={`run__question ${graded ? `run__question--${graded}` : ""}`} pad="lg">
-          <div className="run__question-head">
-            <span className="run__qlabel">{multiSubject ? `${subjectLabel(question.subject)} · ` : ""}{formatTopicLabel(question.topic)}</span>
-            <span className="run__qnumber">Вопрос {idx + 1}</span>
-          </div>
-          <h1 className="run__prompt">{question.prompt}</h1>
-          <div className="run__assist">
-            {!graded && <Button variant="ghost" size="sm" icon={CircleHelp} onClick={() => selectAnswer(null)}>Не знаю</Button>}
-            {!graded && question.hints?.[0] && <Button variant="ghost" size="sm" icon={Lightbulb} onClick={() => { setHelpUsed(true); setShowExplanation(true); }}>Напомнить правило</Button>}
-            {graded && <Button variant="ghost" size="sm" icon={Info} onClick={() => setShowExplanation((value) => !value)}>{showExplanation ? "Скрыть объяснение" : "Показать объяснение"}</Button>}
-          </div>
-          <div className="run__notices" aria-live="polite">{submitError && <div className="run__action-error" role="alert">{submitError}</div>}</div>
-          <OptionList options={question.options} selected={selected} onSelect={selectAnswer} state={graded} correctIndex={feedback?.correctIndex} disabled={!!graded} />
-          {graded === "correct" && <ConfettiBurst reduceMotion={reduceMotion} />}
-          <div className="run__question-actions">
-            {idx > 0 && <Button variant="soft" icon={ArrowLeft} onClick={() => restoreQuestion(idx - 1)}>Назад</Button>}
-            {graded && <Button icon={ArrowRight} loading={submitting} onClick={next}>{idx + 1 >= questions.length ? "Завершить" : "Следующее"}</Button>}
-          </div>
-        </Card>
+        <QuestionStage stepKey={idx} direction={direction} overlay={fresh && isComboMilestone(combo) && <ConfettiBurst key={idx} />}>
+          <QuestionCard graded={graded} fitDeps={[question.prompt, question.options, graded, submitError]}>
+            <div className="run__question-head">
+              <span className="run__qlabel">{multiSubject ? `${subjectLabel(question.subject)} · ` : ""}{formatTopicLabel(question.topic)}</span>
+              <span className="run__qnumber">Вопрос {idx + 1}</span>
+            </div>
+            <h1 className="run__prompt">{question.prompt}</h1>
+            <div className="run__notices" aria-live="polite">{submitError && <div className="run__action-error" role="alert">{submitError}</div>}</div>
+            <OptionList options={question.options} selected={selected} onSelect={pickOption} state={graded} correctIndex={feedback?.correctIndex} disabled={!!graded} />
+          </QuestionCard>
+        </QuestionStage>
       </div>
+
+      <RunFooter
+        status={graded}
+        title={graded ? feedbackTitle(graded, idx, { skipped: selected === null }) : selected !== null ? "Готово? Жми «Проверить»" : answerPrompt(question)}
+        detail={graded === "wrong" ? `Верный ответ: ${question.options[feedback?.correctIndex] ?? ""}` : null}
+        combo={combo}
+        pet={profile.petSelected ? profile.pet.species : null}
+        fresh={fresh}
+        assist={<>
+          <Button variant="ghost" size="sm" icon={CircleHelp} onClick={() => gradeAnswer(null)}>Не знаю</Button>
+          {question.hints?.[0] && <Button variant="ghost" size="sm" icon={Lightbulb} aria-label="Напомнить правило" onClick={() => { setHelpUsed(true); setShowExplanation(true); }}>Правило</Button>}
+        </>}
+        onWhy={feedback?.explanation ? () => setShowExplanation(true) : null}
+        onBack={idx > 0 ? () => restoreQuestion(idx - 1) : null}
+        primary={graded
+          ? { label: idx + 1 >= questions.length ? "Завершить" : "Дальше", onClick: next, loading: submitting }
+          : { label: "Проверить", onClick: () => gradeAnswer(selected), disabled: selected === null }}
+      />
       <AnimatePresence initial={false}>
         {showExplanation && sheetText && <><motion.button type="button" className="run__sheet-backdrop" aria-label="Закрыть подсказку" onClick={() => setShowExplanation(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} /><motion.aside ref={explanationRef} tabIndex={-1} className="run__explanation-sheet" role="dialog" aria-modal="true" aria-label={graded ? "Объяснение" : "Напоминание правила"} initial={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(100%)" }} animate={{ opacity: 1, transform: "translateY(0)" }} exit={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(100%)" }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}><div><strong>{graded ? "Объяснение" : `Тема: ${formatTopicLabel(question.topic)}`}</strong><button type="button" onClick={() => setShowExplanation(false)} aria-label="Закрыть"><X size={20} /></button></div><p>{sheetText}</p></motion.aside></>}
       </AnimatePresence>
     </div>
+    </MotionConfig>
   );
 }
 
@@ -206,9 +240,4 @@ function formatTopicLabel(topic) {
     wordproblems: "Текстовые задачи",
   };
   return knownTopics[topic] ?? String(topic || "Тема задания").replaceAll(/[_-]+/g, " ");
-}
-
-function ConfettiBurst({ reduceMotion }) {
-  if (reduceMotion) return null;
-  return <div className="run__burst" aria-hidden="true">{Array.from({ length: 18 }, (_, index) => <i key={index} style={{ "--burst-index": index }} />)}</div>;
 }

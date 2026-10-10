@@ -1,17 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "../router";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Coins, Home, Info, Lightbulb, RefreshCw, X, Zap } from "lucide-react";
+import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
+import { Coins, Home, Lightbulb, RefreshCw, X, Zap } from "lucide-react";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import OptionList from "../components/shared/OptionList";
 import WrittenAnswer from "../components/shared/WrittenAnswer";
+import QuestionStage, { QuestionCard } from "../components/run/QuestionStage";
+import RunFooter from "../components/run/RunFooter";
+import RunProgress from "../components/run/RunProgress";
+import ConfettiBurst from "../components/run/ConfettiBurst";
+import ScoreRing from "../components/run/ScoreRing";
+import SoundToggle from "../components/run/SoundToggle";
 import { useApp } from "../store/AppStore";
 import { studentApi } from "../api/student";
-import { answerHaptic } from "../utils/haptics";
+import { answerHaptic, tapHaptic } from "../utils/haptics";
+import { answerPrompt, comboAt, correctAnswerText, feedbackTitle, isAnswerComplete, isComboMilestone, isWritten } from "../utils/answers";
 import { dateKey } from "../utils/date";
 import useModalFocus from "../hooks/useModalFocus";
-import useFitScale from "../hooks/useFitScale";
 import useBodyScrollLock from "../hooks/useBodyScrollLock";
 import "./RunMode.css";
 import "./PracticeRun.css";
@@ -20,6 +26,8 @@ import "./PracticeRun.css";
 // before that, so a resumed run never sends an instance id the server has
 // already swept and rejects with practice_instance_invalid.
 const SESSION_TTL = 5 * 60 * 60 * 1000;
+// An endless run has no total, so its progress bar shows the current batch.
+const BATCH = 5;
 
 export default function PracticeRun() {
   const navigate = useNavigate();
@@ -56,6 +64,11 @@ export default function PracticeRun() {
   const [actionError, setActionError] = useState("");
   const [seriesStale, setSeriesStale] = useState(false);
   const [liveAward, setLiveAward] = useState(null);
+  // 1 = the next question slides in from the right, -1 = "back" from the left.
+  const [direction, setDirection] = useState(1);
+  // True only while the answer on screen was graded just now, so reactions
+  // and confetti do not replay on a question the student merely revisits.
+  const [fresh, setFresh] = useState(false);
   const explanationRef = useRef(null);
   useModalFocus(explanationRef, { active: showExplanation, onClose: () => setShowExplanation(false) });
   // A run screen must never rubber-band/scroll, even by a stray drag — the
@@ -70,7 +83,7 @@ export default function PracticeRun() {
     if (loadVersion === 0) {
       try {
         const cached = JSON.parse(localStorage.getItem(sessionKey) || "null");
-        if (cached && Date.now() - cached.savedAt < SESSION_TTL && Array.isArray(cached.tasks) && cached.tasks.length && cached.tasks.every((item) => ["text", "blanks", "order", "match"].includes(item.questionType) || Number.isInteger(item.correctIndex))) {
+        if (cached && Date.now() - cached.savedAt < SESSION_TTL && Array.isArray(cached.tasks) && cached.tasks.length && cached.tasks.every((item) => isWritten(item) || Number.isInteger(item.correctIndex))) {
           setTasks(cached.tasks);
           setIdx(Math.min(cached.idx ?? 0, cached.tasks.length - 1));
           setSelected(cached.selected ?? null);
@@ -118,6 +131,8 @@ export default function PracticeRun() {
 
   function restoreQuestion(target) {
     const saved = responses[target];
+    setDirection(target < idx ? -1 : 1);
+    setFresh(false);
     setIdx(target);
     setSelected(saved?.selected ?? null);
     setGraded(saved?.graded ?? null);
@@ -147,8 +162,6 @@ export default function PracticeRun() {
     setLoadVersion((value) => value + 1);
   }
 
-  const fitRef = useFitScale([tasks?.[idx]?.prompt, tasks?.[idx]?.options, graded, hintText]);
-
   if (tasks === null) {
     return <div className="run"><div className="run__body">{loadError ? <RunError message={loadError} onRetry={() => setLoadVersion((value) => value + 1)} /> : <div className="run__loading" aria-label="Загружаем задания"><span /><span /><span /></div>}</div></div>;
   }
@@ -162,10 +175,21 @@ export default function PracticeRun() {
   const task = tasks[idx];
   const topicLabel = topics.find((topic) => topic.id === task.topic && (!task.subject || topic.subject === task.subject))?.name ?? task.topic;
 
-  function selectAnswer(answer) {
+  function pickOption(answer) {
     if (checking || graded) return;
+    if (answer !== selected) tapHaptic();
     setSelected(answer);
     setActionError("");
+  }
+
+  function checkAnswer() {
+    if (checking || graded || !isAnswerComplete(task, selected)) return;
+    setFresh(true);
+    if (isWritten(task)) submitWrittenAnswer(selected);
+    else gradeChoice(selected);
+  }
+
+  function gradeChoice(answer) {
     const correct = answer === task.correctIndex;
     const nextGraded = correct ? "correct" : "wrong";
     const nextFeedback = {
@@ -183,7 +207,6 @@ export default function PracticeRun() {
   }
 
   function submitWrittenAnswer(answer) {
-    if (checking || graded) return;
     const nextFeedback = { explanation: task.explanation, commonMistake: null, correctIndex: null, award: null };
     const response = { selected: answer, graded: null, feedback: nextFeedback, hintsUsed, hintText };
     saveAnswer({ answer, nextFeedback, response, correct: false });
@@ -197,7 +220,7 @@ export default function PracticeRun() {
     setActionError("");
     try {
       const data = await studentApi.answer({ taskId: task.id, instanceId: task.instanceId, ...(task.questionType === "choice" || !task.questionType ? { selected: answer } : { answer }) });
-      if (["text", "blanks", "order", "match"].includes(task.questionType)) answerHaptic(data.correct);
+      if (isWritten(task)) answerHaptic(data.correct);
       const serverGraded = data.correct ? "correct" : "wrong";
       const savedFeedback = { ...nextFeedback, explanation: data.explanation, commonMistake: data.commonMistake, correctIndex: data.correctIndex, acceptedAnswers: data.acceptedAnswers, award: data.award };
       setSelected(answer);
@@ -264,41 +287,66 @@ export default function PracticeRun() {
     }
   }
 
+  const marks = tasks.map((_, index) => (index === idx ? graded : responses[index]?.graded) ?? undefined);
+  const windowStart = isEndless ? Math.floor(idx / BATCH) * BATCH : 0;
+  const windowMarks = isEndless ? Array.from({ length: BATCH }, (_, index) => marks[windowStart + index]) : marks;
+  const combo = graded === "correct" ? comboAt(marks, idx) : 0;
+  const complete = isAnswerComplete(task, selected);
+  const hintsLeft = (task.hintCount ?? 0) - hintsUsed;
+  const rightAnswer = graded === "wrong" ? correctAnswerText(task, feedback ?? {}) : "";
+  // A full list of pairs does not fit the footer line; the tiles already mark
+  // the mixed-up ones and the sheet spells the right pairs out.
+  const missDetail = task.questionType === "match" ? "Красные пары перепутаны — верные в разборе" : rightAnswer ? `Верный ответ: ${rightAnswer}` : null;
+
   return (
+    <MotionConfig reducedMotion="user">
     <div className="run run--practice">
       <header className="run__top run__top--calm">
         <button className="run__close" onClick={exitRun} aria-label="Выйти из практики"><X size={22} strokeWidth={2.4} /></button>
         <LivePracticeStats profile={profile} award={liveAward} />
       </header>
+      <div className="run__progress-row">
+        <RunProgress marks={windowMarks} current={idx - windowStart} counter={isEndless ? `№ ${idx + 1}` : `${idx + 1}/${tasks.length}`} label="Прогресс серии" />
+      </div>
 
       <div className="run__body">
-        <Card ref={fitRef} className={`run__question ${graded ? `run__question--${graded}` : ""}`} pad="lg">
-          <div className="pr__qhead"><span className="run__qlabel">{topicLabel}</span><span className={`pr__diff pr__diff--${task.difficulty}`}>{diffLabel(task.difficulty)}</span></div>
-          <h1 className="run__prompt">{task.questionType === "blanks" ? "Вставь пропущенные слова" : task.prompt}</h1>
+        <QuestionStage stepKey={idx} direction={direction} overlay={fresh && isComboMilestone(combo) && <ConfettiBurst key={idx} />}>
+          <QuestionCard graded={graded} fitDeps={[task.prompt, task.options, graded, hintText, actionError]}>
+            <div className="pr__qhead"><span className="run__qlabel">{topicLabel}</span><span className={`pr__diff pr__diff--${task.difficulty}`}>{diffLabel(task.difficulty)}</span></div>
+            <h1 className="run__prompt">{task.questionType === "blanks" ? "Вставь пропущенные слова" : task.prompt}</h1>
 
-          <div className="run__assist">
-            {!graded && (task.hintCount ?? 0) > 0 && <Button variant="ghost" size="sm" icon={Lightbulb} loading={hintLoading} disabled={hintsUsed >= task.hintCount} onClick={revealHint}>Подсказка{task.hintCount - hintsUsed > 0 ? ` (${task.hintCount - hintsUsed})` : ""}</Button>}
-            {graded && <Button variant="ghost" size="sm" icon={Info} onClick={() => setShowExplanation((value) => !value)}>{showExplanation ? "Скрыть объяснение" : "Показать объяснение"}</Button>}
-          </div>
+            <div className="run__notices" aria-live="polite">
+              {actionError && <div className="run__action-error" role="alert"><span>{actionError}</span>{seriesStale ? <button type="button" onClick={startNewSeries}>Новая серия</button> : pendingSave && <button type="button" disabled={checking} onClick={() => saveAnswer(pendingSave)}>Повторить</button>}</div>}
+              {hintText && !graded && <div className="pr__hint"><Lightbulb size={16} /><span>{hintText}</span></div>}
+            </div>
 
-          <div className="run__notices" aria-live="polite">
-            {actionError && <div className="run__action-error" role="alert"><span>{actionError}</span>{seriesStale ? <button type="button" onClick={startNewSeries}>Новая серия</button> : pendingSave && <button type="button" disabled={checking} onClick={() => saveAnswer(pendingSave)}>Повторить</button>}</div>}
-            {hintText && !graded && <div className="pr__hint"><Lightbulb size={16} /><span>{hintText}</span></div>}
-          </div>
-
-          {["text", "blanks", "order", "match"].includes(task.questionType)
-            ? <WrittenAnswer key={task.id} options={task.options} pairChoices={task.pairChoices} questionType={task.questionType} prompt={task.prompt} blankCount={task.blankCount} value={selected} onChange={setSelected} onSubmit={submitWrittenAnswer} disabled={checking} graded={graded} acceptedAnswers={feedback?.acceptedAnswers} submitLabel={checking ? "Проверяем…" : "Проверить"} />
-            : <OptionList options={task.options} selected={selected} onSelect={selectAnswer} state={graded} correctIndex={feedback?.correctIndex} disabled={!!graded} />}
-          <div className="run__question-actions">
-            {idx > 0 && <Button variant="soft" icon={ArrowLeft} onClick={() => restoreQuestion(idx - 1)}>Назад</Button>}
-            {graded && <Button icon={ArrowRight} loading={extending} disabled={checking || !!pendingSave} onClick={nextTask}>{isEndless ? "Следующее" : idx + 1 >= tasks.length ? "Завершить" : "Следующее"}</Button>}
-          </div>
-        </Card>
+            {isWritten(task)
+              ? <WrittenAnswer options={task.options} pairChoices={task.pairChoices} questionType={task.questionType} prompt={task.prompt} blankCount={task.blankCount} value={selected} onChange={setSelected} disabled={checking} graded={graded} acceptedAnswers={feedback?.acceptedAnswers} />
+              : <OptionList options={task.options} selected={selected} onSelect={pickOption} state={graded} correctIndex={feedback?.correctIndex} disabled={checking || !!graded} />}
+          </QuestionCard>
+        </QuestionStage>
       </div>
+
+      <RunFooter
+        status={graded}
+        title={graded ? feedbackTitle(graded, idx) : complete ? "Готово? Жми «Проверить»" : answerPrompt(task)}
+        detail={graded === "wrong" ? missDetail : null}
+        award={feedback?.award}
+        combo={combo}
+        pet={profile.petSelected ? profile.pet.species : null}
+        fresh={fresh}
+        assist={(task.hintCount ?? 0) > 0 && <Button variant="ghost" size="sm" icon={Lightbulb} loading={hintLoading} disabled={hintsLeft <= 0} onClick={revealHint}>Подсказка{hintsLeft > 0 ? ` (${hintsLeft})` : ""}</Button>}
+        onWhy={feedback?.explanation ? () => setShowExplanation(true) : null}
+        onBack={idx > 0 ? () => restoreQuestion(idx - 1) : null}
+        primary={graded
+          ? { label: !isEndless && idx + 1 >= tasks.length ? "Завершить" : "Дальше", onClick: nextTask, loading: extending || checking, disabled: !!pendingSave }
+          : { label: "Проверить", onClick: checkAnswer, loading: checking, disabled: !complete }}
+      />
       <AnimatePresence initial={false}>
-        {showExplanation && feedback?.explanation && <><motion.button type="button" className="run__sheet-backdrop" aria-label="Закрыть объяснение" onClick={() => setShowExplanation(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} /><motion.aside ref={explanationRef} tabIndex={-1} className="run__explanation-sheet" role="dialog" aria-modal="true" aria-label="Объяснение" initial={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(100%)" }} animate={{ opacity: 1, transform: "translateY(0)" }} exit={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(100%)" }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}><div><strong>Объяснение</strong><button type="button" onClick={() => setShowExplanation(false)} aria-label="Закрыть объяснение"><X size={20} /></button></div><p>{feedback.explanation}</p>{graded === "wrong" && feedback.commonMistake && <small>{feedback.commonMistake}</small>}</motion.aside></>}
+        {showExplanation && feedback?.explanation && <><motion.button type="button" className="run__sheet-backdrop" aria-label="Закрыть объяснение" onClick={() => setShowExplanation(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} /><motion.aside ref={explanationRef} tabIndex={-1} className="run__explanation-sheet" role="dialog" aria-modal="true" aria-label="Объяснение" initial={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(100%)" }} animate={{ opacity: 1, transform: "translateY(0)" }} exit={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(100%)" }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}><div><strong>Объяснение</strong><button type="button" onClick={() => setShowExplanation(false)} aria-label="Закрыть объяснение"><X size={20} /></button></div>{rightAnswer && <div className="run__sheet-answer"><b>Верный ответ</b>{rightAnswer.split("; ").map((line) => <span key={line}>{line}</span>)}</div>}<p>{feedback.explanation}</p>{graded === "wrong" && feedback.commonMistake && <small>{feedback.commonMistake}</small>}</motion.aside></>}
       </AnimatePresence>
     </div>
+    </MotionConfig>
   );
 }
 
@@ -309,6 +357,7 @@ function LivePracticeStats({ profile, award }) {
   const xpNeeded = Math.max(1, profile.xpForNext - profile.xpFromLevel);
   const progress = Math.min(1, xpInLevel / xpNeeded);
   return <div className="run__live-stats" aria-label="Прогресс ученика">
+    <SoundToggle />
     <span className={`run__live-stat run__live-stat--streak ${lit ? "is-lit" : ""} ${award ? "is-celebrating" : ""}`}><span className="run__live-flame" aria-hidden="true">🔥</span><b>{profile.streak}</b></span>
     <span className="run__live-stat run__live-stat--coins"><Coins size={16} /><b>{profile.coins}</b>{award?.coins > 0 && <i key={`c-${award.id}`} className="run__live-gain">+{award.coins}</i>}</span>
     <span className="run__live-stat run__live-level"><span className="run__live-level-copy"><small>ур. {profile.level}</small><b>{profile.xp} опыта</b></span><span className="run__live-level-track"><i style={{ transform: `scaleX(${progress})` }} /></span>{award?.gained > 0 && <i key={`x-${award.id}`} className="run__live-gain">+{award.gained} опыта</i>}</span>
@@ -331,8 +380,8 @@ function Summary({ results, onExit }) {
   const summary = pct >= 80 ? "Уверенный результат" : pct >= 50 ? "Есть прогресс и темы для повторения" : "Нужна ещё одна спокойная попытка";
 
   return (
-    <div className="run run--result"><Card className="run__result-card" pad="lg">
-      <div className={`pr__score-ring pr__score-ring--${pct >= 80 ? "good" : pct >= 50 ? "mid" : "low"}`}><span className="font-display">{pct}%</span></div>
+    <div className="run run--result">{pct >= 80 && <ConfettiBurst />}<Card className="run__result-card run__result-card--stagger" pad="lg">
+      <ScoreRing pct={pct} />
       <h1>Серия завершена</h1><p className="run__result-lead">{summary}</p>
       <div className="pr__stats" aria-label="Результаты серии"><div className="pr__stat"><span className="pr__stat-num font-display">{correct}</span><span className="pr__stat-label">верно</span></div><div className="pr__stat"><span className="pr__stat-num font-display pr__stat-num--err">{errors}</span><span className="pr__stat-label">ошибок</span></div><div className="pr__stat"><span className="pr__stat-num font-display">{total}</span><span className="pr__stat-label">всего</span></div></div>
       {(gainedXp > 0 || gainedCoins > 0) && <div className="pr__reward" role="status"><span><Zap size={18} /> +{gainedXp} опыта</span><span><Coins size={18} /> +{gainedCoins} монет</span></div>}

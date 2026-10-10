@@ -39,27 +39,13 @@
     color: var(--ink);
   }
 }
-.run__progress {
-  flex: 1;
-  height: 10px;
-  background: color-mix(in oklch, var(--line) 76%, var(--surface-2));
-  border-radius: var(--r-pill);
-  overflow: hidden;
-}
-.run__progress-fill {
-  width: 100%;
-  height: 100%;
-  background: var(--accent);
-  border-radius: var(--r-pill);
-  transform-origin: left center;
-  transition: transform 240ms var(--ease-out);
-}
-.run__counter {
-  color: var(--muted);
-  font-size: var(--text-sm);
-  flex-shrink: 0;
-}
 .run__top--calm { justify-content: space-between; }
+/* Practice keeps the live stats in the top bar, so its progress gets its own row. */
+.run__progress-row {
+  display: flex;
+  flex-shrink: 0;
+  padding: 0 4px clamp(8px, 1.6vh, 14px);
+}
 .run__mode-label { color: var(--muted); font-size: var(--text-sm); font-weight: 800; }
 .run__calm-dot { width: 10px; height: 10px; margin: 17px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 4px var(--success-soft); }
 .run--diagnostic .run__top {
@@ -80,6 +66,18 @@
   display: flex;
   flex-direction: column;
   justify-content: stretch;
+}
+/* Questions swap inside a fixed stage: the outgoing and incoming cards overlap
+   for a moment, so neither can push the layout around. */
+.run__stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+.run__stage-item {
+  position: absolute;
+  inset: 0;
+  display: flex;
 }
 .run__qlabel {
   font-size: var(--text-xs);
@@ -151,22 +149,7 @@
   overflow: hidden;
   transition: background-color var(--dur-pop) var(--ease-out);
 }
-.run__question-actions {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-2);
-  min-height: 48px;
-  margin-top: clamp(7px, 1.2vh, 12px);
-  padding-top: clamp(7px, 1.2vh, 12px);
-  border-top: 1px solid var(--line);
-}
-.run__question-actions .btn:last-child { margin-left: auto; }
 .run__notices:empty { display: none; }
-.run__assist { display: flex; min-height: 44px; flex-wrap: wrap; align-items: center; gap: var(--sp-2); margin-bottom: 4px; }
-.run__assist:empty { display: none; }
-.run__assist .btn { min-height: 44px; padding-inline: 14px; border-radius: var(--r-md); background: var(--primary-soft); color: var(--primary-strong); }
 
 /* The card is a fixed-height column that never scrolls during a question:
    --fit-scale (written by useFitScale, see PracticeRun.jsx) shrinks the
@@ -179,16 +162,20 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
-  /* Room for focus rings and the scale/shake animations on the option buttons. */
-  padding: 2px;
-  margin: -2px;
+  /* Room for focus rings, the solid bottom edge of each option and the
+     scale/shake animations on the option buttons. */
+  padding: 2px 2px 5px;
+  margin: -2px -2px -5px;
 }
 
 .run__question .run__prompt,
 .run__question .pr__qhead,
-.run__question .run__assist,
+.run__question .run__question-head,
 .run__question .run__notices {
   flex-shrink: 0;
+}
+.run__question .run__prompt {
+  margin-bottom: calc(var(--fit-scale, 1) * clamp(10px, 2vh, var(--sp-4)));
 }
 
 .run__live-stats { display: flex; min-width: 0; align-items: center; justify-content: flex-end; gap: 6px; }
@@ -206,21 +193,9 @@
 @keyframes run-gain { 0% { opacity: 0; transform: translateY(5px); } 25% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-6px); } }
 @keyframes run-flame { 35% { transform: scale(1.22) rotate(-7deg); } 70% { transform: scale(1.08) rotate(4deg); } }
 
-.run__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-3);
-  min-height: 58px;
-  padding: clamp(10px, 1.8vh, var(--sp-4)) 0 4px;
-  background: var(--bg);
-}
-.run__footer .btn:last-child {
-  margin-left: auto;
-}
-
 /* ---- Result screen ---- */
 .run--result {
+  position: relative;
   justify-content: flex-start;
   overflow-y: auto;
   overscroll-behavior-y: contain;
@@ -249,6 +224,8 @@
 .run__explanation-sheet > div { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
 .run__explanation-sheet button { display: grid; width: 44px; height: 44px; place-items: center; border-radius: var(--r-pill); background: var(--surface-2); color: var(--muted); }
 .run__explanation-sheet p { margin-top: var(--sp-3); color: var(--ink); font-weight: 650; line-height: 1.5; text-wrap: pretty; }
+.run__explanation-sheet .run__sheet-answer { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 2px; margin-top: var(--sp-3); padding: var(--sp-3); border-radius: var(--r-sm); background: var(--success-soft); color: oklch(0.36 0.12 150); font-weight: 750; }
+.run__sheet-answer b { font-size: var(--text-xs); font-weight: 850; }
 .run__explanation-sheet small { display: block; margin-top: var(--sp-3); padding: var(--sp-3); border-radius: var(--r-sm); background: var(--danger-soft); color: var(--danger); font-weight: 700; }
 
 .run__burst,
@@ -268,6 +245,54 @@
   gap: var(--sp-3);
   margin-block: auto;
 }
+/* The result arrives in reading order rather than all at once. */
+.run__result-card--stagger > * {
+  animation: run-result-in 380ms var(--ease-out) backwards;
+}
+.run__result-card--stagger > :nth-child(2) { animation-delay: 80ms; }
+.run__result-card--stagger > :nth-child(3) { animation-delay: 140ms; }
+.run__result-card--stagger > :nth-child(4) { animation-delay: 200ms; }
+.run__result-card--stagger > :nth-child(5) { animation-delay: 260ms; }
+.run__result-card--stagger > :nth-child(n + 6) { animation-delay: 320ms; }
+@keyframes run-result-in {
+  from { opacity: 0; transform: translateY(12px); }
+}
+
+.score-ring {
+  position: relative;
+  display: grid;
+  width: 112px;
+  height: 112px;
+  flex-shrink: 0;
+  place-items: center;
+}
+.score-ring svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.score-ring circle {
+  fill: none;
+  stroke-width: 10;
+}
+.score-ring__track {
+  stroke: var(--surface-2);
+}
+.score-ring__value {
+  stroke: var(--_ring);
+  stroke-linecap: round;
+}
+.score-ring__num {
+  color: var(--_ring-ink, var(--_ring));
+  font-size: var(--text-xl);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+.score-ring--good { --_ring: var(--success); }
+.score-ring--mid { --_ring: var(--warning); --_ring-ink: var(--accent-strong); }
+.score-ring--low { --_ring: var(--danger); }
+
 .run__result-icon {
   display: grid;
   place-items: center;
@@ -297,12 +322,11 @@
 @media (max-width: 560px) {
   .run { padding: 9px 10px max(16px, calc(env(safe-area-inset-bottom) + 10px)); }
   .run__question.card--pad-lg { padding: clamp(12px, 2.4vh, var(--sp-5)); }
-  .run__footer { gap: 5px; }
-  .run__footer .btn { min-width: 0; flex: 0 1 auto; padding-inline: 11px; font-size: var(--text-sm); }
-  .run__footer .btn:last-child { flex: 0 1 58%; }
   .run__result-actions { width: 100%; }
   .run__result-actions .btn { width: 100%; }
   .run__explanation-sheet { bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 8px); }
+  /* Run screens hide the tab bar, so the sheet sits on the screen edge. */
+  .app--focus .run__explanation-sheet,
   .app--onboarding .run__explanation-sheet { bottom: max(8px, env(safe-area-inset-bottom, 0px)); }
 }
 
@@ -318,13 +342,11 @@
   .run__top { min-height: 42px; padding-bottom: 6px; }
   .run__close { width: 44px; height: 44px; }
   .run__prompt { font-size: 1.05rem; margin-block: 4px 8px; }
-  .run__footer { min-height: 50px; padding-top: 6px; }
-  .run__footer .btn { min-height: 44px; }
-  .run__question-actions { min-height: 44px; margin-top: 5px; padding-top: 5px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .run__loading span { animation: none; }
+  .run__result-card--stagger > * { animation: none; }
   .run__burst i, .pr__burst i { display: none; }
   .run__live-gain, .run__live-stat--streak.is-celebrating .run__live-flame { animation: none; }
 }

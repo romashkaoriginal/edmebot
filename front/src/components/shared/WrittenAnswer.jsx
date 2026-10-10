@@ -1,81 +1,91 @@
 import { useRef } from "react";
-import { Check, X, PencilLine, ArrowRight } from "lucide-react";
-import "./WrittenAnswer.css";
+import { partVerdicts } from "../../utils/answers";
 import InteractiveAnswer from "./InteractiveAnswer";
+import "./WrittenAnswer.css";
 
-export default function WrittenAnswer({ questionType, prompt, blankCount, value, onChange, onSubmit, disabled, graded, acceptedAnswers, options, pairChoices, submitLabel = "Проверить" }) {
+/**
+ * Answer area for every non-choice question type. Checking and feedback are
+ * owned by the run footer; this only collects the answer and, once graded,
+ * colours each part of it.
+ */
+export default function WrittenAnswer(props) {
+  const { questionType } = props;
+  if (questionType === "order" || questionType === "match") return <InteractiveAnswer {...props} />;
+  return questionType === "text" ? <TextAnswer {...props} /> : <BlanksAnswer {...props} />;
+}
+
+function TextAnswer({ value, onChange, disabled, graded }) {
+  return (
+    <div className="written-answer">
+      <div className="written-answer__exercise written-answer__exercise--compact">
+        <label className="written-answer__field">
+          <span className="sr-only">Твой ответ</span>
+          <input
+            className={graded ? `is-${graded}` : ""}
+            value={typeof value === "string" ? value : ""}
+            disabled={disabled || !!graded}
+            inputMode="text"
+            autoComplete="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            enterKeyHint="done"
+            onChange={(event) => onChange(event.target.value)}
+            placeholder="Введи ответ"
+          />
+        </label>
+      </div>
+    </div>
+  );
+}
+
+function BlanksAnswer({ prompt, blankCount, value, onChange, disabled, graded, acceptedAnswers }) {
   const inputs = useRef([]);
-  const isText = questionType === "text";
-  const values = isText ? [typeof value === "string" ? value : ""] : Array.isArray(value) ? value : Array(blankCount || 1).fill("");
-  const complete = values.every((item) => item.trim());
-  const parts = !isText ? String(prompt ?? "").split("_") : [];
-  if (questionType === "order" || questionType === "match") return <InteractiveAnswer {...{ questionType, options, pairChoices, value, onChange, onSubmit, disabled, graded, acceptedAnswers, submitLabel }} />;
+  const values = Array.isArray(value) ? value : Array(blankCount || 1).fill("");
+  const parts = String(prompt ?? "").split("_");
+  const verdicts = partVerdicts(graded, values, acceptedAnswers);
 
-  function update(index, next) {
-    if (isText) onChange(next);
-    else onChange(values.map((item, i) => i === index ? next : item));
+  // Enter walks through the blanks; on the last one it is left alone so the
+  // footer's primary action ("Проверить") picks it up.
+  function handleEnter(event, index) {
+    if (event.key !== "Enter" || index >= values.length - 1) return;
+    event.preventDefault();
+    inputs.current[index + 1]?.focus();
   }
 
-  function handleEnter(event, index) {
-    if (event.key !== "Enter") return;
-    event.preventDefault();
-    if (!isText && index < values.length - 1) inputs.current[index + 1]?.focus();
-    else if (complete && !disabled && !graded) onSubmit(value);
+  function blankState(index) {
+    if (verdicts) return verdicts[index] ? "is-correct" : "is-wrong";
+    return graded ? `is-${graded}` : "";
   }
 
   return (
-    <div className={`written-answer written-answer--${questionType} ${graded ? `written-answer--${graded}` : ""}`}>
+    <div className="written-answer">
       <div className="written-answer__exercise">
-        <div className="written-answer__eyebrow"><PencilLine size={16} aria-hidden="true" /> {isText ? "Напиши ответ" : "Заполни пропуски"}</div>
-        {isText ? (
-          <label className="written-answer__field">
-            <span>Твой ответ</span>
-            <input
-              ref={(node) => { inputs.current[0] = node; }}
-              value={values[0]}
-              disabled={disabled || !!graded}
-              inputMode="text"
-              autoComplete="off"
-              spellCheck={false}
-              onChange={(event) => update(0, event.target.value)}
-              onKeyDown={(event) => handleEnter(event, 0)}
-              placeholder="Введи ответ"
-            />
-          </label>
-        ) : (
-          <div className="written-answer__sentence" aria-label="Предложение с пропусками">
-            {parts.map((part, index) => (
-              <span key={index}>
-                {part}
-                {index < values.length && (
-                  <input
-                    ref={(node) => { inputs.current[index] = node; }}
-                    aria-label={`Пропуск ${index + 1} из ${values.length}`}
-                    value={values[index]}
-                    disabled={disabled || !!graded}
-                    inputMode="text"
-                    autoComplete="off"
-                    spellCheck={false}
-                    onChange={(event) => update(index, event.target.value)}
-                    onKeyDown={(event) => handleEnter(event, index)}
-                  />
-                )}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-      {graded && (
-        <div className={`written-answer__feedback written-answer__feedback--${graded}`} role="status" aria-live="polite">
-          <strong>{graded === "correct" ? <Check size={18} aria-hidden="true" /> : graded === "answered" ? <PencilLine size={18} aria-hidden="true" /> : <X size={18} aria-hidden="true" />} {graded === "correct" ? "Верно!" : graded === "answered" ? "Ответ записан" : "Почти получилось"}</strong>
-          {graded === "wrong" && acceptedAnswers?.length > 0 && <span>Правильный ответ: {acceptedAnswers.map((variants) => variants.join(" / ")).join("; ")}</span>}
+        <div className="written-answer__sentence" aria-label="Предложение с пропусками">
+          {parts.map((part, index) => (
+            <span key={index}>
+              {part}
+              {index < values.length && (
+                <input
+                  ref={(node) => { inputs.current[index] = node; }}
+                  className={blankState(index)}
+                  // The blank grows with the word typed into it.
+                  style={{ width: `calc(${Math.max(4, (values[index] ?? "").length + 1)}ch + 28px)` }}
+                  aria-label={`Пропуск ${index + 1} из ${values.length}`}
+                  value={values[index] ?? ""}
+                  disabled={disabled || !!graded}
+                  inputMode="text"
+                  autoComplete="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
+                  enterKeyHint={index < values.length - 1 ? "next" : "done"}
+                  onChange={(event) => onChange(values.map((item, i) => (i === index ? event.target.value : item)))}
+                  onKeyDown={(event) => handleEnter(event, index)}
+                />
+              )}
+            </span>
+          ))}
         </div>
-      )}
-      {!graded && (
-        <button type="button" className="written-answer__submit" disabled={disabled || !complete} onClick={() => onSubmit(value)}>
-          {submitLabel} <ArrowRight size={18} aria-hidden="true" />
-        </button>
-      )}
+      </div>
     </div>
   );
 }

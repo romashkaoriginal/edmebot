@@ -1,12 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "../router";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check, Home, Info, RefreshCw, X } from "lucide-react";
+import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
+import { Check, Home, RefreshCw, X } from "lucide-react";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import OptionList from "../components/shared/OptionList";
 import WrittenAnswer from "../components/shared/WrittenAnswer";
+import QuestionStage, { QuestionCard } from "../components/run/QuestionStage";
+import RunFooter from "../components/run/RunFooter";
+import RunProgress from "../components/run/RunProgress";
+import ConfettiBurst from "../components/run/ConfettiBurst";
+import ScoreRing from "../components/run/ScoreRing";
+import SoundToggle from "../components/run/SoundToggle";
+import { useApp } from "../store/AppStore";
 import { studentApi } from "../api/student";
+import { answerHaptic, tapHaptic } from "../utils/haptics";
+import { answerPrompt, comboAt, feedbackTitle, isAnswerComplete, isWritten } from "../utils/answers";
 import useModalFocus from "../hooks/useModalFocus";
 import useBodyScrollLock from "../hooks/useBodyScrollLock";
 import "./RunMode.css";
@@ -17,6 +26,7 @@ export default function HomeworkRun() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const reduceMotion = useReducedMotion();
+  const { profile } = useApp();
   const homeworkId = searchParams.get("id");
 
   const [homework, setHomework] = useState(null);
@@ -32,6 +42,10 @@ export default function HomeworkRun() {
   const [attemptId] = useState(() => crypto.randomUUID());
   const [submitError, setSubmitError] = useState("");
   const [result, setResult] = useState(null);
+  // 1 = the next question slides in from the right, -1 = "back" from the left.
+  const [direction, setDirection] = useState(1);
+  // True only while the answer on screen was given just now (see RunFooter).
+  const [fresh, setFresh] = useState(false);
   const explanationRef = useRef(null);
   useModalFocus(explanationRef, { active: showExplanation, onClose: () => setShowExplanation(false) });
   useBodyScrollLock();
@@ -58,11 +72,20 @@ export default function HomeworkRun() {
     navigate("/app/homework");
   }
 
+  // Choice answers are judged on the spot; written ones only after submitting.
+  function markOf(index) {
+    const saved = answers[index];
+    if (!saved) return null;
+    return tasks[index].questionType === "choice" ? (saved.selected === tasks[index].correctIndex ? "correct" : "wrong") : "answered";
+  }
+
   function restoreQuestion(target) {
     const saved = answers[target];
+    setDirection(target < idx ? -1 : 1);
+    setFresh(false);
     setIdx(target);
     setSelected(saved?.answer ?? saved?.selected ?? null);
-    setGraded(saved ? (tasks[target].questionType === "choice" ? (saved.selected === tasks[target].correctIndex ? "correct" : "wrong") : "answered") : null);
+    setGraded(markOf(target));
     setShowExplanation(false);
   }
 
@@ -84,19 +107,24 @@ export default function HomeworkRun() {
 
   const task = tasks[idx];
 
-  function selectAnswer(answer) {
+  function pickOption(answer) {
     if (graded) return;
+    if (answer !== selected) tapHaptic();
     setSelected(answer);
-    const correct = answer === task.correctIndex;
-    setGraded(correct ? "correct" : "wrong");
-    setAnswers((cur) => ({ ...cur, [idx]: { taskId: task.id, selected: answer } }));
   }
 
-  function submitWrittenAnswer(answer) {
-    if (graded) return;
-    setSelected(answer);
-    setGraded("answered");
-    setAnswers((cur) => ({ ...cur, [idx]: { taskId: task.id, answer } }));
+  function checkAnswer() {
+    if (graded || !isAnswerComplete(task, selected)) return;
+    setFresh(true);
+    if (isWritten(task)) {
+      setGraded("answered");
+      setAnswers((cur) => ({ ...cur, [idx]: { taskId: task.id, answer: selected } }));
+      return;
+    }
+    const correct = selected === task.correctIndex;
+    setGraded(correct ? "correct" : "wrong");
+    setAnswers((cur) => ({ ...cur, [idx]: { taskId: task.id, selected } }));
+    answerHaptic(correct);
   }
 
   async function nextOrSubmit() {
@@ -118,41 +146,54 @@ export default function HomeworkRun() {
     }
   }
 
+  const written = isWritten(task);
+  const marks = tasks.map((_, index) => (index === idx ? graded : markOf(index)) ?? undefined);
+  const combo = graded === "correct" ? comboAt(marks, idx) : 0;
+  const complete = isAnswerComplete(task, selected);
+  const checkLabel = written ? "Сохранить ответ" : "Проверить";
+
   return (
+    <MotionConfig reducedMotion="user">
     <div className="run run--practice">
-      <header className="run__top run__top--calm">
+      <header className="run__top">
         <button className="run__close" onClick={exitRun} aria-label="Выйти из домашки"><X size={22} strokeWidth={2.4} /></button>
-        <span className="run__counter">{idx + 1} / {tasks.length}</span>
+        <RunProgress marks={marks} current={idx} counter={`${idx + 1}/${tasks.length}`} label="Прогресс домашки" />
+        <SoundToggle />
       </header>
 
       <div className="run__body">
-        <Card className={`run__question ${graded ? `run__question--${graded}` : ""}`} pad="lg">
-          <div className="pr__qhead"><span className="run__qlabel">{homework?.title}</span><span className={`pr__diff pr__diff--${task.difficulty}`}>{diffLabel(task.difficulty)}</span></div>
-          <h1 className="run__prompt">{task.questionType === "blanks" ? "Вставь пропущенные слова" : task.prompt}</h1>
+        <QuestionStage stepKey={idx} direction={direction}>
+          <QuestionCard graded={graded} fitDeps={[task.prompt, task.options, graded, submitError]}>
+            <div className="pr__qhead"><span className="run__qlabel">{homework?.title}</span><span className={`pr__diff pr__diff--${task.difficulty}`}>{diffLabel(task.difficulty)}</span></div>
+            <h1 className="run__prompt">{task.questionType === "blanks" ? "Вставь пропущенные слова" : task.prompt}</h1>
 
-          <div className="run__assist">
-            {graded && <Button variant="ghost" size="sm" icon={Info} onClick={() => setShowExplanation((v) => !v)}>{showExplanation ? "Скрыть объяснение" : "Показать объяснение"}</Button>}
-          </div>
+            {submitError && <div className="run__notices"><div className="run__action-error" role="alert"><span>{submitError}</span></div></div>}
 
-          {submitError && <div className="run__notices"><div className="run__action-error" role="alert"><span>{submitError}</span></div></div>}
-
-          {["text", "blanks", "order", "match"].includes(task.questionType)
-            ? <WrittenAnswer key={task.id} options={task.options} pairChoices={task.pairChoices} questionType={task.questionType} prompt={task.prompt} blankCount={task.blankCount} value={selected} onChange={setSelected} onSubmit={submitWrittenAnswer} disabled={submitting} graded={graded} submitLabel="Сохранить ответ" />
-            : <OptionList options={task.options} selected={selected} onSelect={selectAnswer} state={graded} correctIndex={task.correctIndex} disabled={!!graded} />}
-          <div className="run__question-actions">
-            {idx > 0 && <Button variant="soft" icon={ArrowLeft} onClick={() => restoreQuestion(idx - 1)}>Назад</Button>}
-            {graded && (
-              <Button icon={ArrowRight} loading={submitting} onClick={nextOrSubmit}>
-                {idx + 1 >= tasks.length ? "Сдать домашку" : "Следующее"}
-              </Button>
-            )}
-          </div>
-        </Card>
+            {written
+              ? <WrittenAnswer options={task.options} pairChoices={task.pairChoices} questionType={task.questionType} prompt={task.prompt} blankCount={task.blankCount} value={selected} onChange={setSelected} disabled={submitting} graded={graded} />
+              : <OptionList options={task.options} selected={selected} onSelect={pickOption} state={graded} correctIndex={task.correctIndex} disabled={!!graded} />}
+          </QuestionCard>
+        </QuestionStage>
       </div>
+
+      <RunFooter
+        status={graded}
+        title={graded ? feedbackTitle(graded, idx) : complete ? `Готово? Жми «${checkLabel}»` : answerPrompt(task)}
+        detail={graded === "wrong" ? `Верный ответ: ${task.options[task.correctIndex] ?? ""}` : graded === "answered" ? "Проверим, когда сдашь домашку" : null}
+        combo={combo}
+        pet={profile.petSelected ? profile.pet.species : null}
+        fresh={fresh}
+        onWhy={task.explanation ? () => setShowExplanation(true) : null}
+        onBack={idx > 0 ? () => restoreQuestion(idx - 1) : null}
+        primary={graded
+          ? { label: idx + 1 >= tasks.length ? "Сдать домашку" : "Дальше", onClick: nextOrSubmit, loading: submitting }
+          : { label: checkLabel, onClick: checkAnswer, disabled: !complete }}
+      />
       <AnimatePresence initial={false}>
         {showExplanation && task.explanation && <><motion.button type="button" className="run__sheet-backdrop" aria-label="Закрыть объяснение" onClick={() => setShowExplanation(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} /><motion.aside ref={explanationRef} tabIndex={-1} className="run__explanation-sheet" role="dialog" aria-modal="true" aria-label="Объяснение" initial={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(100%)" }} animate={{ opacity: 1, transform: "translateY(0)" }} exit={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(100%)" }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}><div><strong>Объяснение</strong><button type="button" onClick={() => setShowExplanation(false)} aria-label="Закрыть объяснение"><X size={20} /></button></div><p>{task.explanation}</p></motion.aside></>}
       </AnimatePresence>
     </div>
+    </MotionConfig>
   );
 }
 
@@ -173,8 +214,9 @@ function HomeworkSummary({ result, onExit }) {
       <div className="hwrun__rotate-notice" role="alert">
         <p>Поверни телефон вертикально, чтобы увидеть результаты.</p>
       </div>
-      <Card className="run__result-card" pad="lg">
-        <div className={`pr__score-ring pr__score-ring--${pct >= 80 ? "good" : pct >= 50 ? "mid" : "low"}`}><span className="font-display">{pct}%</span></div>
+      {solved && <ConfettiBurst />}
+      <Card className="run__result-card run__result-card--stagger" pad="lg">
+        <ScoreRing pct={pct} />
         <h1>Домашка сдана</h1>
         <p className="run__result-lead">{summary}</p>
         <div className="pr__stats" aria-label="Результаты домашки">

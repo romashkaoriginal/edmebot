@@ -16,12 +16,18 @@ export default function useFitScale(deps = []) {
     if (!node) return undefined;
 
     let frame = 0;
+    // A flex child that clips its own content (the option list) never makes the
+    // container itself overflow, so such children are marked with data-fit-clip
+    // and checked directly.
+    const overflows = () =>
+      node.scrollHeight > node.clientHeight + 1 ||
+      [...node.querySelectorAll("[data-fit-clip]")].some((child) => child.scrollHeight > child.clientHeight + 1);
     const measure = () => {
       node.style.setProperty("--fit-scale", 1);
       let scale = 1;
       // Overflow is measured across a couple of frames because option text
       // reflows as the scale itself changes line count.
-      for (let i = 0; i < 12 && node.scrollHeight > node.clientHeight + 1 && scale > MIN_SCALE; i += 1) {
+      for (let i = 0; i < 12 && overflows() && scale > MIN_SCALE; i += 1) {
         scale = Math.max(MIN_SCALE, scale - STEP);
         node.style.setProperty("--fit-scale", scale);
       }
