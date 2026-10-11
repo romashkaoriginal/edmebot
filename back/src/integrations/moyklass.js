@@ -20,7 +20,7 @@ async function fields() {
       const required = ["access", "until", "kind", "subjects", "lastOpened", "telegramId", "appUserId", "lastSync"];
       const missing = required.filter((key) => !byAlias.has(alias(key)));
       if (missing.length) throw new Error(`CRM attributes missing: ${missing.join(", ")}`);
-      const expected = { access: ["checkbox", "boolean"], until: ["date", "string"], kind: ["select"], subjects: ["multiselect"], lastOpened: ["string"], telegramId: ["string", "number", "unique"], appUserId: ["string", "number", "unique"], lastSync: ["string"] };
+      const expected = { access: ["checkbox", "boolean"], until: ["date", "string"], kind: ["select"], subjects: ["select"], lastOpened: ["string"], telegramId: ["string", "number", "unique"], appUserId: ["string", "number", "unique"], lastSync: ["string"] };
       for (const [key, types] of Object.entries(expected)) {
         if (!types.includes(byAlias.get(alias(key)).type)) throw new Error(`CRM attribute ${alias(key)} must be ${types.join("/")}`);
       }
@@ -82,7 +82,7 @@ async function recordError(studentId, error) {
 
 async function applyUser(user, studentId) {
   const definitions = await fields();
-  const access = parseAccess(user);
+  const access = parseAccess(user, new Date(), definitions.get(alias("subjects"))?.variants || []);
   const hash = fingerprint(access);
   const parsedUpdatedAt = user.updatedAt ? new Date(user.updatedAt) : null;
   const sourceUpdatedAt = parsedUpdatedAt && !Number.isNaN(parsedUpdatedAt.getTime()) ? parsedUpdatedAt : null;
@@ -154,7 +154,7 @@ async function applyUser(user, studentId) {
   // between the first GET and this write.
   if (access.enabled && access.deadline && access.deadline <= new Date()) {
     const latest = await client.getUser(user.id);
-    const currentAccess = parseAccess(latest);
+    const currentAccess = parseAccess(latest, new Date(), definitions.get(alias("subjects"))?.variants || []);
     if (currentAccess.deadline?.getTime() !== access.deadline.getTime() || currentAccess.enabled !== access.enabled) {
       return applyUser(latest, studentId);
     }
@@ -209,12 +209,12 @@ function syncStudent(studentId) {
 async function bindStudent(studentId, userId) {
   if (!isEnabled()) throw new Error("MOYKLASS_API_KEY is not configured");
   if (!crmId(userId)) throw new Error("invalid_crm_user_id");
-  await fields();
+  const definitions = await fields();
   const student = (await db.query("SELECT * FROM students WHERE id = $1", [studentId])).rows[0];
   if (!student || !/^\d+$/.test(student.tg_id || "")) throw new Error("student_not_found_or_no_telegram_id");
   if (student.moyklass_user_id && String(student.moyklass_user_id) !== String(userId)) throw new Error("student_already_linked");
   const user = await client.getUser(userId);
-  const access = parseAccess(user);
+  const access = parseAccess(user, new Date(), definitions.get(alias("subjects"))?.variants || []);
   if (access.error?.startsWith("Unknown CRM subject")) throw new Error(access.error);
   if (identityValue(user, "telegramId") && identityValue(user, "telegramId") !== String(student.tg_id)) throw new Error("crm_telegram_id_conflict");
   if (identityValue(user, "appUserId") && identityValue(user, "appUserId") !== String(student.id)) throw new Error("crm_app_user_id_conflict");

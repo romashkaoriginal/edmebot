@@ -1,15 +1,15 @@
 const { normalizeSubject } = require("../subjects");
 
 const FIELD_ALIASES = Object.freeze({
-  access: "bot_access",
-  until: "bot_access_until",
-  kind: "bot_access_kind",
-  subjects: "bot_subjects",
-  lastOpened: "bot_last_opened",
-  telegramId: "bot_telegram_id",
-  appUserId: "bot_user_id",
-  lastSync: "bot_last_sync",
-  error: "bot_sync_error",
+  access: "bot__dostup",
+  until: "bot__dostup_do",
+  kind: "bot__tip_dostupa",
+  subjects: "bot__predmety",
+  lastOpened: "bot__posledniy_vhod",
+  telegramId: "bot__telegram_id",
+  appUserId: "bot__id_polzovatelya",
+  lastSync: "bot__poslednyaya_sinhronizaciya",
+  error: "bot__oshibka_sinhronizacii",
 });
 const TAG_NAMES = Object.freeze({ trial: "Пробный период", subscription: "Подписка есть", paid: "Бот оплачен", unpaid: "Бот не оплачен" });
 const KNOWN_SUBJECTS = new Set(["Математика", "Русский язык", "Химия", "Физика", "Английский язык"]);
@@ -51,7 +51,7 @@ function subjectMap() {
   return configured;
 }
 
-function parseAccess(user, now = new Date()) {
+function parseAccess(user, now = new Date(), subjectVariants = []) {
   const accessValue = attribute(user, "access")?.value;
   const enabled = accessValue === true || accessValue === 1 || accessValue === "true" || accessValue === "1";
   const deadline = parseDeadline(attribute(user, "until")?.value);
@@ -61,7 +61,9 @@ function parseAccess(user, now = new Date()) {
   const trial = kindName === "пробный" || kindName === "trial";
   const paid = kindName === "платный" || kindName === "paid";
   const mapping = subjectMap();
-  const selected = attribute(user, "subjects")?.valueIds || [];
+  for (const variant of subjectVariants) mapping[String(variant.id)] = variant.name;
+  const subjectAttribute = attribute(user, "subjects");
+  const selected = subjectAttribute?.valueId != null ? [subjectAttribute.valueId] : subjectAttribute?.valueIds || [];
   const subjects = [];
   for (const id of selected) {
     const mapped = mapping[String(id)];
