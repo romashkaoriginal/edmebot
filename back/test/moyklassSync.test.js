@@ -242,6 +242,40 @@ test("an expired deadline closes the grant in the CRM and keeps the student pend
   } finally { restore(); }
 });
 
+test("extending the deadline of a still-enabled grant keeps access without any other change", async () => {
+  const restore = quiet();
+  try {
+    const { crm, store, integration } = load();
+    grant(crm, { until: new Date(Date.now() + DAY).toISOString() });
+    link(crm, store);
+    await integration.syncStudent(7);
+    const first = store.student.access_until;
+    grant(crm, { until: new Date(Date.now() + 10 * DAY).toISOString() });
+    await integration.syncStudent(7);
+    assert.equal(store.student.status, "active");
+    assert.ok(store.student.access_until > first);
+  } finally { restore(); }
+});
+
+test("after expiry the bot clears the access flag, so a renewal needs the flag switched on again", async () => {
+  const restore = quiet();
+  try {
+    const { crm, store, integration } = load();
+    grant(crm, { until: new Date(Date.now() - 60_000).toISOString() });
+    link(crm, store);
+    await integration.syncStudent(7);
+    assert.equal(crm.value("bot__dostup"), "false");
+    // Only the deadline is extended: access stays closed on purpose.
+    crm.set("bot__dostup_do", { value: new Date(Date.now() + 10 * DAY).toISOString() });
+    await integration.syncStudent(7);
+    assert.equal(store.student.status, "pending");
+    crm.set("bot__dostup", { value: "true" });
+    await integration.syncStudent(7);
+    assert.equal(store.student.status, "active");
+    assert.deepEqual(crm.user.tags.map((tag) => tag.name), ["Пробный период"]);
+  } finally { restore(); }
+});
+
 test("a student without a grade cannot become active and the reason is reported to the CRM", async () => {
   const restore = quiet();
   try {
