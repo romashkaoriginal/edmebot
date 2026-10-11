@@ -8,20 +8,38 @@ const client = new MoyklassClient();
 let running = false;
 let timer = null;
 let fieldsPromise = null;
+let fieldsCache = null;
+let fieldsAt = 0;
+const FIELDS_TTL_MS = 5 * 60_000;
 const pendingSyncs = new Map();
 const MANAGED_TAGS = new Set(Object.values(TAG_NAMES));
 
 function isEnabled() { return client.enabled; }
 
 async function fields() {
+  if (fieldsCache && Date.now() - fieldsAt < FIELDS_TTL_MS) return fieldsCache;
   if (!fieldsPromise) {
     fieldsPromise = client.getAttributes().then((all) => {
       const { byAlias, errors } = validateAttributes(all);
-      if (errors.length) throw new Error(`CRM fields invalid: ${errors.join("; ")}`);
+      if (errors.length) {
+        const invalid = new Error(`CRM fields invalid: ${errors.join("; ")}`);
+        invalid.crmFieldsInvalid = true;
+        throw invalid;
+      }
+      fieldsCache = byAlias;
+      fieldsAt = Date.now();
       return byAlias;
-    }).catch((error) => { fieldsPromise = null; throw error; });
+    }).finally(() => { fieldsPromise = null; });
   }
-  return fieldsPromise;
+  try {
+    return await fieldsPromise;
+  } catch (error) {
+    // A CRM outage must not stop syncing with the last known good fields,
+    // but a changed, invalid field set must never be trusted.
+    if (fieldsCache && !error.crmFieldsInvalid) return fieldsCache;
+    fieldsCache = null;
+    throw error;
+  }
 }
 
 function crmId(value) {
@@ -215,7 +233,14 @@ async function bindStudent(studentId, userId) {
   if (!identityValue(user, "appUserId")) await client.setAttribute(userId, alias("appUserId"), { value: String(student.id) });
   const linked = await db.query("UPDATE students SET moyklass_user_id = $2 WHERE id = $1 AND (moyklass_user_id IS NULL OR moyklass_user_id = $2)", [studentId, userId]);
   if (!linked.rowCount) throw new Error("student_already_linked");
-  await syncStudent(studentId);
+  // The link is already committed; a failed first sync is recorded on the
+  // student and retried by reconciliation, so it must not look like a failed link.
+  try {
+    await syncStudent(studentId);
+    return { synced: true };
+  } catch {
+    return { synced: false };
+  }
 }
 
 async function reconcile() {

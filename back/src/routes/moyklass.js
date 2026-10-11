@@ -34,8 +34,8 @@ router.post("/students/:id/link", requireAuth, requireRole("admin"), async (req,
     if (!Number.isSafeInteger(studentId) || studentId <= 0 || !Number.isSafeInteger(crmUserId) || crmUserId <= 0) {
       return res.status(400).json({ error: "invalid_id" });
     }
-    await integration.bindStudent(studentId, crmUserId);
-    res.json({ ok: true });
+    const { synced } = await integration.bindStudent(studentId, crmUserId);
+    res.json({ ok: true, synced });
   } catch (error) {
     if (error.code === "23505" || /conflict|already_linked/.test(error.message)) {
       return res.status(409).json({ error: error.message });
