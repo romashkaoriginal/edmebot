@@ -510,35 +510,40 @@ export default function Students() {
                   </div>
                   <div className="arow__actions">
                     {!isDemo && !s.moyklass_user_id && <button
-                      className={`aicon-btn${open && panel === "crm" ? " is-active" : ""}`}
+                      className={`aicon-btn aaction${open && panel === "crm" ? " is-active" : ""}`}
                       onClick={() => togglePanel(s.id, "crm")}
-                      aria-label="Привязать к Мой Класс"
+                      title="Связать ученика с карточкой в «Мой Класс»: после этого доступ и предметы задаются в CRM"
                       aria-expanded={open && panel === "crm"}
                     >
-                      <Link2 size={17} strokeWidth={2.4} />
+                      <Link2 size={16} strokeWidth={2.4} />
+                      <span className="aaction__label">Привязать CRM</span>
                     </button>}
                     <button
-                      className={`aicon-btn aicon-btn--bonus${open && panel === "bonus" ? " is-active" : ""}`}
+                      className={`aicon-btn aicon-btn--bonus aaction${open && panel === "bonus" ? " is-active" : ""}`}
                       onClick={() => togglePanel(s.id, "bonus")}
-                      aria-label="Бонусы"
+                      title="Баланс монет, история и начисление бонусов"
                       aria-expanded={open && panel === "bonus"}
                     >
-                      <Coins size={17} strokeWidth={2.4} />
+                      <Coins size={16} strokeWidth={2.4} />
+                      <span className="aaction__label">Монеты</span>
                     </button>
                     {!s.moyklass_user_id && <button
-                      className={`aicon-btn aicon-btn--subjects${open && panel === "subjects" ? " is-active" : ""}`}
+                      className={`aicon-btn aicon-btn--subjects aaction${open && panel === "subjects" ? " is-active" : ""}`}
                       onClick={() => togglePanel(s.id, "subjects")}
-                      aria-label="Предметы"
+                      title="Предметы и класс ученика"
                       aria-expanded={open && panel === "subjects"}
                     >
-                      <BookMarked size={17} strokeWidth={2.4} />
+                      <BookMarked size={16} strokeWidth={2.4} />
+                      <span className="aaction__label">Предметы</span>
                       <ChevronDown size={13} strokeWidth={2.6} className="aicon-btn__chev" />
                     </button>}
-                    {!s.moyklass_user_id && <button className="aicon-btn aicon-btn--edit" onClick={() => edit(s)} aria-label="Редактировать">
-                      <Pencil size={17} strokeWidth={2.4} />
+                    {!s.moyklass_user_id && <button className="aicon-btn aicon-btn--edit aaction" onClick={() => edit(s)} title="Имя, класс, срок доступа">
+                      <Pencil size={16} strokeWidth={2.4} />
+                      <span className="aaction__label">Изменить</span>
                     </button>}
-                    {!s.moyklass_user_id && <button className="aicon-btn aicon-btn--delete" onClick={() => remove(s.id)} aria-label="Удалить">
-                      <Trash2 size={17} strokeWidth={2.4} />
+                    {!s.moyklass_user_id && <button className="aicon-btn aicon-btn--delete aaction" onClick={() => remove(s.id)} title="Удалить ученика вместе с историей">
+                      <Trash2 size={16} strokeWidth={2.4} />
+                      <span className="aaction__label">Удалить</span>
                     </button>}
                   </div>
                   {open && panel === "bonus" && <BonusPanel studentId={s.id} />}

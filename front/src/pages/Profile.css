@@ -336,3 +336,19 @@
 @media (prefers-reduced-motion: reduce) {
   .prof__stats--loading span { animation: none; }
 }
+
+.prof__access {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-lg);
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+.prof__access svg { flex-shrink: 0; }
+.prof__access div { display: grid; gap: 2px; min-width: 0; }
+.prof__access strong { font-size: var(--text-base); }
+.prof__access span { font-size: var(--text-sm); opacity: 0.85; }
+.prof__access--urgent { background: var(--warning-soft); color: var(--accent-strong); }
+

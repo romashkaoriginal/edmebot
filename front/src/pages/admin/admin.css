@@ -1813,3 +1813,17 @@
     flex: 1;
   }
 }
+
+/* Student row actions: icon plus a visible label, so nothing needs a click to be understood. */
+.arow__actions { flex-wrap: wrap; justify-content: flex-end; }
+.aicon-btn.aaction {
+  height: 40px;
+  min-width: 0;
+  padding-inline: var(--sp-3);
+  gap: 6px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.aaction__label { line-height: 1; }
+

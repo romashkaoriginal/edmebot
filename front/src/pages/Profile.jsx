@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "../router";
-import { Flame, Zap, Target, CheckCircle2, Lightbulb, Trophy, RefreshCw, ChevronDown, ListChecks } from "lucide-react";
+import { Flame, Zap, Target, CheckCircle2, Lightbulb, Trophy, RefreshCw, ChevronDown, ListChecks, CalendarClock } from "lucide-react";
 import Card from "../components/ui/Card";
 import ProgressBar from "../components/ui/ProgressBar";
 import SectionTitle from "../components/ui/SectionTitle";
@@ -21,6 +21,33 @@ const WEEKDAY_LABELS = {
 
 function localizeWeekday(day) {
   return WEEKDAY_LABELS[String(day).slice(0, 3)] ?? day;
+}
+
+const ACCESS_WARN_DAYS = 3;
+
+// Shows when the student's access ends. Hidden for unlimited access (no deadline).
+function AccessNotice({ profile }) {
+  if (profile.status !== "active" || !profile.accessUntil) return null;
+  const end = new Date(profile.accessUntil);
+  if (Number.isNaN(end.getTime())) return null;
+  const daysLeft = Math.ceil((end.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+  if (daysLeft <= 0) return null;
+  const date = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long" }).format(end);
+  const urgent = daysLeft <= ACCESS_WARN_DAYS;
+  const kind = profile.accessKind === "trial" ? "Пробный доступ" : "Доступ";
+  return (
+    <div className={`prof__access${urgent ? " prof__access--urgent" : ""}`} role={urgent ? "status" : undefined}>
+      <CalendarClock size={20} strokeWidth={2.4} aria-hidden="true" />
+      <div>
+        <strong>{kind} до {date}</strong>
+        <span>
+          {urgent
+            ? `Осталось ${daysLeft} ${plural(daysLeft, "день", "дня", "дней")}. Чтобы продлить, напиши своему преподавателю.`
+            : `Осталось ${daysLeft} ${plural(daysLeft, "день", "дня", "дней")}`}
+        </span>
+      </div>
+    </div>
+  );
 }
 
 export default function Profile() {
@@ -98,6 +125,8 @@ export default function Profile() {
           </span>
         </Link>
       </Card>
+
+      <AccessNotice profile={profile} />
 
       <ProfileHomeOverview />
 
