@@ -13,6 +13,28 @@ const FIELD_ALIASES = Object.freeze({
 });
 const TAG_NAMES = Object.freeze({ trial: "Пробный период", subscription: "Подписка есть", paid: "Бот оплачен", unpaid: "Бот не оплачен" });
 const KNOWN_SUBJECTS = new Set(["Математика", "Русский язык", "Химия", "Физика", "Английский язык"]);
+const FIELD_TYPES = Object.freeze({
+  access: ["boolean", "checkbox"], until: ["string"], kind: ["select"], subjects: ["select"],
+  lastOpened: ["string"], telegramId: ["string"], appUserId: ["string"],
+  lastSync: ["string"], error: ["string"],
+});
+
+function validateAttributes(attributes) {
+  const byAlias = new Map(attributes.map((field) => [field.alias, field]));
+  const errors = [];
+  for (const [key, allowedTypes] of Object.entries(FIELD_TYPES)) {
+    const field = byAlias.get(alias(key));
+    if (!field) { if (key !== "error") errors.push(`Missing field: ${alias(key)}`); continue; }
+    if (!allowedTypes.includes(field.type)) errors.push(`${field.name} (${field.alias}): expected ${allowedTypes.join("/")}, got ${field.type}`);
+  }
+  for (const [key, expected] of [["kind", ["Пробный", "Платный"]], ["subjects", [...KNOWN_SUBJECTS]]]) {
+    const field = byAlias.get(alias(key));
+    if (!field || field.type !== "select") continue;
+    const present = new Set((field.variants || []).map((variant) => variant.name));
+    for (const name of expected) if (!present.has(name)) errors.push(`${field.name}: missing option ${name}`);
+  }
+  return { byAlias, errors };
+}
 
 function alias(key) {
   return process.env[`MOYKLASS_ATTR_${key.toUpperCase()}`] || FIELD_ALIASES[key];
@@ -85,4 +107,4 @@ function desiredTagNames(access) {
     : [TAG_NAMES.unpaid];
 }
 
-module.exports = { FIELD_ALIASES, TAG_NAMES, alias, attribute, parseDeadline, parseAccess, desiredTagNames };
+module.exports = { FIELD_ALIASES, TAG_NAMES, alias, attribute, parseDeadline, parseAccess, desiredTagNames, validateAttributes };

@@ -1,7 +1,7 @@
 const crypto = require("crypto");
 const db = require("../db");
 const { MoyklassClient } = require("./moyklassClient");
-const { TAG_NAMES, alias, attribute, parseAccess, desiredTagNames } = require("./moyklassAccess");
+const { TAG_NAMES, alias, attribute, parseAccess, desiredTagNames, validateAttributes } = require("./moyklassAccess");
 const { logEvent } = require("../utils/eventLog");
 
 const client = new MoyklassClient();
@@ -16,17 +16,8 @@ function isEnabled() { return client.enabled; }
 async function fields() {
   if (!fieldsPromise) {
     fieldsPromise = client.getAttributes().then((all) => {
-      const byAlias = new Map(all.map((item) => [item.alias, item]));
-      const required = ["access", "until", "kind", "subjects", "lastOpened", "telegramId", "appUserId", "lastSync"];
-      const missing = required.filter((key) => !byAlias.has(alias(key)));
-      if (missing.length) throw new Error(`CRM attributes missing: ${missing.join(", ")}`);
-      const expected = { access: ["checkbox", "boolean"], until: ["date", "string"], kind: ["select"], subjects: ["select"], lastOpened: ["string"], telegramId: ["string", "number", "unique"], appUserId: ["string", "number", "unique"], lastSync: ["string"] };
-      for (const [key, types] of Object.entries(expected)) {
-        if (!types.includes(byAlias.get(alias(key)).type)) throw new Error(`CRM attribute ${alias(key)} must be ${types.join("/")}`);
-      }
-      if (byAlias.has(alias("error")) && byAlias.get(alias("error")).type !== "string") {
-        throw new Error(`CRM attribute ${alias("error")} must be string`);
-      }
+      const { byAlias, errors } = validateAttributes(all);
+      if (errors.length) throw new Error(`CRM fields invalid: ${errors.join("; ")}`);
       return byAlias;
     }).catch((error) => { fieldsPromise = null; throw error; });
   }

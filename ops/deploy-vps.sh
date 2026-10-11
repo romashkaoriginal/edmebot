@@ -10,6 +10,8 @@ git fetch origin main
 # An older CI run must never deploy over a newer push.
 [[ "$(git rev-parse origin/main)" == "$release" ]] || { echo "Superseded release; skipping"; exit 0; }
 git merge --ff-only "$release"
+docker compose build backend
+docker compose run --rm --no-deps backend npm run moyklass:check
 docker compose up -d --build
 for attempt in {1..30}; do
   if curl --fail --silent --show-error https://www.edme.of.by/api/health | grep -q '"status":"ok"'; then
