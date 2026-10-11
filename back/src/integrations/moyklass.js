@@ -133,7 +133,7 @@ async function applyUser(user, studentId) {
   if (changed) {
     logEvent("crm_access_changed", null, {
       studentId,
-      status: active ? "active" : "pending",
+      status: access.active ? "active" : "pending",
       accessEnabled: access.enabled,
       accessKind: access.kind,
       accessUntil: access.deadline?.toISOString() ?? null,
