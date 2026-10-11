@@ -10,6 +10,7 @@ git fetch origin main
 # An older CI run must never deploy over a newer push.
 [[ "$(git rev-parse origin/main)" == "$release" ]] || { echo "Superseded release; skipping"; exit 0; }
 git merge --ff-only "$release"
+install -m 700 ops/moyklass-watch.sh /usr/local/bin/edmebot-moyklass-watch
 docker compose build backend
 docker compose run --rm --no-deps backend npm run moyklass:check
 docker compose up -d --build

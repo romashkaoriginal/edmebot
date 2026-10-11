@@ -213,6 +213,6 @@ ssh Edmepets "certbot certonly --webroot -w /var/www/certbot -d www.edme.of.by -
 Push в main запускает CI: audit, backend-тесты, frontend lint и сборку. После успешных проверок job deploy отправляет точный SHA на VPS. Скрипт ops/deploy-vps.sh блокирует параллельные выкладки, проверяет чистоту tracked-файлов, применяет fast-forward, пересобирает Docker и ждёт API health. Устаревший SHA пропускается. Ошибка проверки здоровья завершает CI с ошибкой.
 Перед перезапуском сервисов скрипт сверяет поля CRM «Мой Класс» с ожидаемыми алиасами, типами и вариантами через `npm run moyklass:check` в новом образе backend. При несовпадении выкладка останавливается; работающие контейнеры остаются прежними.
 
-GitHub Secrets: VPS_DEPLOY_KEY и VPS_KNOWN_HOSTS. На VPS ключ ограничен forced command /usr/local/bin/edmebot-ci-deploy; shell, forwarding и PTY для него отключены. При изменении ops/deploy-vps.sh обновите установленный скрипт через scp и chmod 700.
+GitHub Secrets: VPS_DEPLOY_KEY и VPS_KNOWN_HOSTS. На VPS ключ ограничен forced command /usr/local/bin/edmebot-ci-deploy; shell, forwarding и PTY для него отключены. При изменении ops/deploy-vps.sh обновите установленный скрипт через scp и chmod 700. Скрипт ежедневной проверки Moyklass (ops/moyklass-watch.sh) деплой-скрипт ставит сам из репозитория; cron: `17 6 * * * /usr/local/bin/edmebot-moyklass-watch`.
 
 Серверные изменения перед релизом 85cf728 сохранены в stash pre-deploy snapshot before 85cf728. Не применяйте этот stash целиком поверх новой версии.
